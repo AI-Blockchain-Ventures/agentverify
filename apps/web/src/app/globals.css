@@ -1,0 +1,74 @@
+@import "tailwindcss";
+
+@theme {
+  --color-bg: #080B14;
+  --color-surface: #0D1117;
+  --color-card: #0F1623;
+  --color-border: #1E2D40;
+  --color-border-light: #243244;
+  --color-cyan: #06B6D4;
+  --color-cyan-light: #22D3EE;
+  --color-purple: #7C3AED;
+  --color-purple-light: #A78BFA;
+  --color-green: #10B981;
+  --color-red: #EF4444;
+  --color-orange: #F59E0B;
+  --color-soft: #94A3B8;
+  --color-muted: #4B6080;
+
+  --font-sans: Inter, system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+}
+
+@layer base {
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    background-color: var(--color-bg);
+    color: #F1F5F9;
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+    background-image:
+      radial-gradient(ellipse 80% 50% at 50% -20%,
+        rgba(6,182,212,0.08) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 40% at 80% 20%,
+        rgba(124,58,237,0.06) 0%, transparent 50%);
+    background-attachment: fixed;
+  }
+  ::selection { background: rgba(6,182,212,0.25); color: white; }
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: #080B14; }
+  ::-webkit-scrollbar-thumb { background: #1E2D40; border-radius: 2px; }
+}
+
+@media print {
+  .no-print { display: none !important; }
+
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+
+  body {
+    background-color: #080B14 !important;
+    color: #F1F5F9 !important;
+  }
+
+  .bg-\[\#0F1623\] { background-color: #0F1623 !important; }
+  .bg-\[\#080B14\] { background-color: #080B14 !important; }
+  .bg-\[\#0D1117\] { background-color: #0D1117 !important; }
+  .text-white { color: #ffffff !important; }
+  .text-\[\#94A3B8\] { color: #94A3B8 !important; }
+  .text-\[\#4B6080\] { color: #4B6080 !important; }
+  .text-\[\#06B6D4\] { color: #06B6D4 !important; }
+  .text-\[\#10B981\] { color: #10B981 !important; }
+  .text-\[\#EF4444\] { color: #EF4444 !important; }
+  .border-\[\#1E2D40\] { border-color: #1E2D40 !important; }
+
+  @page {
+    margin: 1cm;
+    size: A4;
+  }
+}

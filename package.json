@@ -1,0 +1,13 @@
+{
+  "name": "agentverify",
+  "private": true,
+  "workspaces": ["apps/*", "packages/*"],
+  "scripts": {
+    "dev": "npm run dev --workspace=apps/web",
+    "build": "npm run build --workspace=apps/web",
+    "export": "npm run export --workspace=apps/web",
+    "build:scanner": "npm run build --workspace=packages/scanner",
+    "build:cli": "npm run build --workspace=packages/cli",
+    "lint": "npm run lint --workspace=apps/web"
+  }
+}

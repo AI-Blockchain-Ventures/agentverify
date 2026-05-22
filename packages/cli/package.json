@@ -1,0 +1,42 @@
+{
+  "name": "agentverify",
+  "version": "1.0.1",
+  "description": "CLI and SDK for Agent Verify — execution trust analysis for AI agents",
+  "bin": {
+    "agentverify": "./dist/cli.js"
+  },
+  "main": "./dist/sdk.js",
+  "module": "./dist/sdk.mjs",
+  "types": "./dist/sdk.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/sdk.d.ts",
+      "import": "./dist/sdk.mjs",
+      "require": "./dist/sdk.js"
+    },
+    "./cli": "./dist/cli.js"
+  },
+  "files": ["dist", "README.md", "LICENSE"],
+  "scripts": {
+    "build": "tsup src/cli.ts src/sdk.ts --format cjs,esm --dts --clean",
+    "dev": "tsup src/cli.ts src/sdk.ts --format cjs,esm --dts --watch",
+    "prepublishOnly": "npm run build"
+  },
+  "engines": { "node": ">=18.0.0" },
+  "keywords": [
+    "ai", "agents", "security", "verification", "a2spa",
+    "agent-security", "llm", "ai-safety", "cli"
+  ],
+  "author": "AI Blockchain Ventures LLC <hello@aiblockchainventures.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/AI-Blockchain-Ventures/agentverify"
+  },
+  "homepage": "https://aimodularity.com/agentverify",
+  "devDependencies": {
+    "tsup": "^8.0.0",
+    "typescript": "^5.0.0",
+    "@types/node": "^20.0.0"
+  }
+}

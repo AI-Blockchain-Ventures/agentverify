@@ -1,0 +1,53 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build outputs
+.next/
+dist/
+build/
+out/
+
+# Environment variables - NEVER commit these
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+apps/web/.env.local
+apps/web/.env
+
+# Scanner package - proprietary, keep private
+packages/scanner/
+
+# Cloudflare
+.wrangler/
+workers/api/.wrangler/
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Test files
+test-agents/
+
+# npm auth token
+.npmrc
+
+# CLI test files
+packages/cli/dist/
+
+apps/web/next-env.d.ts
+
+apps/web/AGENTS.md
+apps/web/CLAUDE.md
+apps/web/.htaccess

@@ -30,7 +30,7 @@ export function RuntimeBOM({ bom }: { bom: RuntimeBOMType }) {
         <h3 className="font-semibold text-white">Runtime Bill of Materials</h3>
       </div>
       <p className="mb-5 text-xs text-[#4B6080]">Complete inventory of this agent&apos;s execution identity</p>
-      <div className="grid grid-cols-1 gap-px bg-[#1E2D40] rounded-lg overflow-hidden sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-px overflow-hidden rounded-lg bg-[#1E2D40] md:grid-cols-2">
         {labels.map(([key, label]) => {
           const raw = bom[key]
           const value = raw === null || raw === undefined ? 'Unknown' : String(raw)

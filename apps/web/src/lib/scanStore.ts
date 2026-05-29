@@ -73,8 +73,10 @@ export async function saveReport(uid: string, result: ScanResult): Promise<void>
 }
 
 export async function savePublicReport(result: ScanResult): Promise<void> {
+  const reportUrl = `https://aimodularity.com/agentverify/report?id=${result.reportId}`
   const payload = sanitize({
     reportId: result.reportId,
+    reportUrl,
     source: 'public',
     createdAt: result.metadata.scannedAt,
     createdAtServer: serverTimestamp(),

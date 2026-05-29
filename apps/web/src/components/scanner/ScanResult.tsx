@@ -8,12 +8,23 @@ import { CategoryScores } from './CategoryScores'
 import { FindingCard } from './FindingCard'
 import { RuntimeBOM } from './RuntimeBOM'
 import { OptimizationTeaser } from './OptimizationTeaser'
+import { AgentFixer } from './AgentFixer'
+import { generateSummary } from '@/lib/generateSummary'
 
-export function ScanResult({ result, onNewScan, reportUrl }: { result: ScanResultType; onNewScan: () => void; reportUrl?: string }) {
+interface ScanResultProps {
+  result: ScanResultType
+  onNewScan: () => void
+  reportUrl?: string
+  originalContent?: string
+}
+
+export function ScanResult({ result, onNewScan, reportUrl, originalContent = '' }: ScanResultProps) {
   const verified = result.verdict === 'VERIFIED'
   const verdictRef = useRef<HTMLDivElement>(null)
   const [showSummary, setShowSummary] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [view, setView] = useState<'findings' | 'fixer'>('findings')
+  const summary = generateSummary(result)
   const catA = result.findings.filter(f => f.category === 'A').length
   const catB = result.findings.filter(f => f.category === 'B').length
   const issueText = result.findings.length === 0
@@ -40,13 +51,13 @@ export function ScanResult({ result, onNewScan, reportUrl }: { result: ScanResul
       {/* Verdict card */}
       <div ref={verdictRef} className="mb-6 overflow-hidden rounded-xl border border-[#1E2D40] bg-[#0F1623] text-center">
         <div className={`h-1 w-full ${verified ? 'bg-[#10B981]' : 'bg-[#EF4444]'}`} />
-        <div className="p-8">
-          <div className={`text-2xl font-bold ${verified ? 'text-[#10B981]' : 'text-[#EF4444]'}`}>
+        <div className="p-5 md:p-8">
+          <div className={`text-xl font-bold md:text-2xl ${verified ? 'text-[#10B981]' : 'text-[#EF4444]'}`}>
             {verified ? '✓ Execution Authorized' : '✗ Execution Not Authorized'}
           </div>
           <p className="mt-2 text-sm text-[#4B6080]">{issueText}</p>
           <div className="mt-6 text-xs font-medium uppercase tracking-widest text-[#4B6080]">Risk Score</div>
-          <div className="text-7xl font-bold tracking-tight text-white">
+          <div className="text-5xl font-bold tracking-tight text-white md:text-7xl">
             {result.riskScore}
             <span className="text-2xl text-[#4B6080]">/100</span>
           </div>
@@ -66,7 +77,15 @@ export function ScanResult({ result, onNewScan, reportUrl }: { result: ScanResul
             <Badge variant="muted">{result.riskLevel}</Badge>
             <Badge variant="cli">{result.confidence}% confidence</Badge>
           </div>
-          <div className="mt-4 flex flex-wrap justify-center gap-4 text-xs text-[#4B6080]">
+          <div className="mt-3 flex flex-wrap justify-center gap-4 text-xs text-[#3D5166]">
+            <span>Scanned in {result.metadata.scanDuration ?? 0}ms</span>
+            <span>·</span>
+            <span>Optimization: {result.optimizationScore ?? 0}/50</span>
+            <span>·</span>
+            <span>{result.metadata.detectedLanguage}</span>
+            {result.metadata.selectedPlatform && <><span>·</span><span>{result.metadata.selectedPlatform}</span></>}
+          </div>
+          <div className="mt-4 flex flex-col items-center justify-center gap-2 text-xs text-[#4B6080] sm:flex-row sm:flex-wrap sm:gap-4">
             <span>{result.metadata.fileName}</span>
             {result.metadata.selectedPlatform && <span>{result.metadata.selectedPlatform}</span>}
             <span>{new Date(result.metadata.scannedAt).toLocaleString()}</span>
@@ -76,8 +95,25 @@ export function ScanResult({ result, onNewScan, reportUrl }: { result: ScanResul
 
       <CategoryScores scores={result.categoryScores} />
 
+      <div className="mb-6 rounded-xl border border-[#1A2535] bg-[#0D1321] p-5">
+        <div className="mb-3 flex items-center gap-2"><span className="text-xs font-bold uppercase tracking-wider text-[#3D5166]">Executive Summary</span></div>
+        <p className="mb-3 text-sm font-medium text-white">{summary.headline}</p>
+        <ul className="mb-4 space-y-1.5">
+          {summary.bullets.map((b, i) => (
+            <li key={i} className="flex items-start gap-2 text-sm text-[#8896A8]"><span className={`mt-1 h-1.5 w-1.5 shrink-0 rounded-full ${result.verdict === 'VERIFIED' ? 'bg-[#00B37E]' : 'bg-[#E03E3E]'}`} />{b}</li>
+          ))}
+        </ul>
+        {result.verdict !== 'VERIFIED' && <div className="rounded-lg border border-[#E03E3E]/20 bg-[#E03E3E]/5 p-3"><p className="mb-1 text-xs font-medium text-[#E03E3E]">Attack Surface</p><p className="text-xs text-[#8896A8]">{summary.attackerView}</p></div>}
+        <p className="mt-3 text-xs text-[#3D5166]">{summary.action}</p>
+      </div>
+
+      <div className="mb-6 flex gap-1 border-b border-[#1A2535]">
+        <button onClick={() => setView('findings')} className={`px-4 py-2 text-sm font-medium transition-colors ${view === 'findings' ? '-mb-px border-b-2 border-[#00C4CC] text-white' : 'text-[#3D5166] hover:text-[#8896A8]'}`}>Findings ({result.findings.length})</button>
+        <button onClick={() => setView('fixer')} className={`px-4 py-2 text-sm font-medium transition-colors ${view === 'fixer' ? '-mb-px border-b-2 border-[#00C4CC] text-white' : 'text-[#3D5166] hover:text-[#8896A8]'}`}>✦ Agent Fixer</button>
+      </div>
+
       {/* Findings */}
-      <div className="mb-6">
+      {view === 'findings' ? <div className="mb-6">
         <h3 className="mb-3 font-semibold text-white">
           Findings
           {result.findings.length > 0 && (
@@ -97,29 +133,29 @@ export function ScanResult({ result, onNewScan, reportUrl }: { result: ScanResul
             <div className="mt-1 text-sm text-[#4B6080]">This agent passed all 15 security checks</div>
           </div>
         )}
-      </div>
+      </div> : <AgentFixer result={result} originalContent={originalContent} />}
 
       <RuntimeBOM bom={result.bom} />
       <OptimizationTeaser findings={result.findings} />
 
       {/* Actions */}
-      <div className="mt-8 flex flex-wrap gap-3">
+      <div className="mt-8 flex flex-col gap-3 sm:flex-row">
         <button
           onClick={onNewScan}
-          className="rounded-lg bg-[#06B6D4] px-5 py-2.5 text-sm font-semibold text-[#080B14] transition-colors hover:bg-[#22D3EE]"
+            className="rounded-lg bg-[#06B6D4] px-5 py-2.5 text-sm font-semibold text-[#080B14] transition-colors hover:bg-[#22D3EE]"
         >
           Run New Scan
         </button>
         <button
           onClick={copy}
           disabled={!reportUrl}
-          className="rounded-lg border border-[#1E2D40] px-5 py-2.5 text-sm font-semibold text-[#94A3B8] transition-colors hover:border-[#243244] hover:text-white disabled:opacity-30"
+            className="rounded-lg border border-[#1E2D40] px-5 py-2.5 text-sm font-semibold text-[#94A3B8] transition-colors hover:border-[#243244] hover:text-white disabled:opacity-30"
         >
           {copied ? 'Copied!' : 'Copy Report Link'}
         </button>
         {reportUrl && (
-          <Link href={`/agentverify/report?id=${encodeURIComponent(result.reportId)}`}>
-            <button className="rounded-lg border border-[#1E2D40] px-5 py-2.5 text-sm font-semibold text-[#94A3B8] transition-colors hover:border-[#243244] hover:text-white">
+          <Link href={`/report?id=${encodeURIComponent(result.reportId)}`}>
+            <button className="w-full rounded-lg border border-[#1E2D40] px-5 py-2.5 text-sm font-semibold text-[#94A3B8] transition-colors hover:border-[#243244] hover:text-white sm:w-auto">
               View Full Report →
             </button>
           </Link>

@@ -7,15 +7,15 @@ const steps = [
 
 export function HowItWorks() {
   return (
-    <section className="border-t border-[#1E2D40] px-6 py-20">
+    <section className="border-t border-[#1E2D40] px-4 py-16 md:px-6 md:py-20">
       <div className="mx-auto max-w-6xl">
         <div className="mb-16 text-center">
           <p className="text-xs font-medium uppercase tracking-widest text-[#94A3B8]">HOW IT WORKS</p>
-          <h2 className="mt-2 text-4xl font-bold text-white">Four steps to execution trust</h2>
+          <h2 className="mt-2 text-3xl font-bold text-white md:text-4xl">Four steps to execution trust</h2>
         </div>
-        <div className="grid gap-4 md:grid-cols-4">
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
           {steps.map(([num, title, desc]) => (
-            <div key={num} className="rounded-xl border border-[#1E2D40] bg-[#0F1623] p-6 transition-colors hover:border-[#243244]">
+            <div key={num} className="rounded-xl border border-[#1E2D40] bg-[#0F1623] p-4 transition-colors hover:border-[#243244] md:p-6">
               <div className="text-5xl font-bold leading-none text-[#1E2D40]">{num}</div>
               <h3 className="mb-2 mt-4 font-semibold text-white">{title}</h3>
               <p className="text-sm leading-relaxed text-[#94A3B8]">{desc}</p>

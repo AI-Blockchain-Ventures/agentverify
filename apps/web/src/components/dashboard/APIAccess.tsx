@@ -88,11 +88,11 @@ export function APIAccess() {
           <div className="h-10 animate-pulse rounded-lg bg-[#080B14]" />
         ) : apiKey ? (
           <>
-            <div className="flex gap-2">
+            <div className="flex flex-col gap-2 sm:flex-row">
               <input
                 readOnly
                 value={apiKey}
-                className="flex-1 rounded-lg border border-[#1E2D40] bg-[#080B14] px-4 py-2.5 font-mono text-sm text-[#06B6D4] outline-none"
+                className="min-w-0 flex-1 rounded-lg border border-[#1E2D40] bg-[#080B14] px-4 py-2.5 font-mono text-sm text-[#06B6D4] outline-none"
               />
               <button
                 onClick={copyKey}
@@ -127,7 +127,7 @@ export function APIAccess() {
 
         <p className="mb-2 text-xs font-medium uppercase tracking-wider text-[#4B6080]">Install</p>
         <div className="relative">
-          <pre className="rounded-lg border border-[#1E2D40] bg-[#080B14] px-4 py-3 font-mono text-sm text-[#06B6D4]">{installCommand}</pre>
+          <pre className="overflow-x-auto rounded-lg border border-[#1E2D40] bg-[#080B14] px-4 py-3 pr-16 font-mono text-sm text-[#06B6D4]">{installCommand}</pre>
           <button
             onClick={copyInstall}
             className="absolute right-2 top-2 rounded border border-[#1E2D40] bg-[#080B14] px-2 py-1 text-xs text-[#4B6080] transition-colors hover:text-white"
@@ -138,7 +138,7 @@ export function APIAccess() {
 
         <p className="mb-2 mt-4 text-xs font-medium uppercase tracking-wider text-[#4B6080]">Scan</p>
         <div className="relative">
-          <pre className="overflow-x-auto rounded-lg border border-[#1E2D40] bg-[#080B14] px-4 py-3 font-mono text-sm text-[#06B6D4]">{scanCommand}</pre>
+          <pre className="overflow-x-auto rounded-lg border border-[#1E2D40] bg-[#080B14] px-4 py-3 pr-16 font-mono text-sm text-[#06B6D4]">{scanCommand}</pre>
           <button
             onClick={copyScan}
             className="absolute right-2 top-2 rounded border border-[#1E2D40] bg-[#080B14] px-2 py-1 text-xs text-[#4B6080] transition-colors hover:text-white"

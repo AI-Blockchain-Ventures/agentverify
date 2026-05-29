@@ -21,7 +21,7 @@ export function ScoreBar({ score, maxScore, label, category, showLabel = true }:
   return (
     <div>
       {showLabel && (
-        <div className="mb-2 flex justify-between text-sm">
+        <div className="mb-2 flex flex-col gap-1 text-sm sm:flex-row sm:justify-between">
           <span className="text-gray-400">{label}</span>
           <span className={scoreColor}>{score}/{maxScore}</span>
         </div>

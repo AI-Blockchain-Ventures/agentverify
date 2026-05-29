@@ -19,17 +19,20 @@ export function ReportList({ user, onRunScan, onNewReports, onClearNotification 
   const [newCount, setNewCount] = useState(0)
   const baselineCount = useRef(0)
   const isFirstLoad = useRef(true)
+  const seenCliIds = useRef<Set<string>>(new Set())
+  const cliInitialized = useRef(false)
 
   useEffect(() => {
     if (!user) return
     setLoading(true)
     isFirstLoad.current = true
     baselineCount.current = 0
+    seenCliIds.current = new Set()
+    cliInitialized.current = false
 
     let dashboardReports: StoredReport[] = []
     let cliReports: StoredReport[] = []
     let loaded = 0
-    let cliFirstLoad = true
 
     const merge = () => {
       const all = sortReports([...dashboardReports, ...cliReports])
@@ -76,20 +79,22 @@ export function ReportList({ user, onRunScan, onNewReports, onClearNotification 
     const unsubCli = onSnapshot(
       cliQuery,
       snap => {
-        const newCliReports = snap.docs.map(d => normalize(d.data(), d.id))
-        if (cliFirstLoad) {
-          cliReports = newCliReports
-          cliFirstLoad = false
-          setNewCount(0)
-          onClearNotification?.()
+        const allCliReports = snap.docs.map(d => normalize(d.data(), d.id))
+        cliReports = allCliReports
+
+        if (!cliInitialized.current) {
+          snap.docs.forEach(d => seenCliIds.current.add(d.id))
+          cliInitialized.current = true
           merge()
           return
         }
-        const added = Math.max(0, newCliReports.length - cliReports.length)
-        cliReports = newCliReports
-        if (added > 0) {
-          setNewCount(c => c + added)
-          onNewReports?.(added)
+
+        const newDocs = snap.docs.filter(d => !seenCliIds.current.has(d.id))
+        newDocs.forEach(d => seenCliIds.current.add(d.id))
+
+        if (newDocs.length > 0) {
+          setNewCount(c => c + newDocs.length)
+          onNewReports?.(newDocs.length)
         }
         merge()
       },
@@ -153,7 +158,14 @@ export function ReportList({ user, onRunScan, onNewReports, onClearNotification 
           </button>
         </div>
       )}
-      <div className="space-y-3">
+      <div className="overflow-hidden rounded-xl border border-[#1A2535]">
+        <div className="flex items-center gap-4 border-b border-[#1A2535] bg-[#0A0F1A] px-4 py-2">
+          <div className="w-2" />
+          <p className="flex-1 text-xs font-medium uppercase tracking-wider text-[#3D5166]">Agent</p>
+          <p className="text-xs font-medium uppercase tracking-wider text-[#3D5166]">Score</p>
+          <p className="w-16 text-xs font-medium uppercase tracking-wider text-[#3D5166]">Issues</p>
+          <div className="w-4" />
+        </div>
         {reports.map(report => (
           <ReportCard key={`${report.source}-${report.reportId}`} report={report} />
         ))}

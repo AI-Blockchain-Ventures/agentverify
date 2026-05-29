@@ -7,6 +7,9 @@ import { Button } from '@/components/ui/Button'
 const getAuthError = (code: string): string => {
   const errors: Record<string, string> = {
     'auth/wrong-password': 'Incorrect password',
+    'auth/popup-blocked': 'Popup was blocked. Please allow popups for this site.',
+    'auth/invalid-action-code': 'Sign in link expired. Please try again.',
+    'auth/cancelled-popup-request': '',
     'auth/user-not-found': 'No account found with this email',
     'auth/email-already-in-use': 'An account already exists with this email',
     'auth/weak-password': 'Password must be at least 6 characters',

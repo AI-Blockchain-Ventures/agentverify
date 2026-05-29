@@ -19,7 +19,7 @@
 
 ---
 
-## 🔨 v1.1.0 — Make It Sticky (In Progress)
+## ✅ v1.1.0 — Make It Sticky (Shipped)
 
 **Agent Fixer**
 - After every scan, show a corrected version of the agent code

@@ -1,21 +1,19 @@
 @import "tailwindcss";
 
 @theme {
-  --color-bg: #080B14;
-  --color-surface: #0D1117;
-  --color-card: #0F1623;
-  --color-border: #1E2D40;
-  --color-border-light: #243244;
-  --color-cyan: #06B6D4;
-  --color-cyan-light: #22D3EE;
-  --color-purple: #7C3AED;
-  --color-purple-light: #A78BFA;
-  --color-green: #10B981;
-  --color-red: #EF4444;
-  --color-orange: #F59E0B;
-  --color-soft: #94A3B8;
-  --color-muted: #4B6080;
-
+  --color-bg: #060A0F;
+  --color-surface: #0A0F1A;
+  --color-card: #0D1321;
+  --color-border: #1A2535;
+  --color-border-light: #1F2D40;
+  --color-cyan: #00C4CC;
+  --color-cyan-light: #00D9E0;
+  --color-purple: #6E3AED;
+  --color-green: #00B37E;
+  --color-red: #E03E3E;
+  --color-orange: #E07B39;
+  --color-soft: #8896A8;
+  --color-muted: #3D5166;
   --font-sans: Inter, system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
 }
@@ -24,22 +22,16 @@
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html { scroll-behavior: smooth; }
   body {
-    background-color: var(--color-bg);
-    color: #F1F5F9;
-    font-family: var(--font-sans);
+    background-color: #060A0F;
+    color: #E8EDF2;
+    font-family: Inter, system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
     min-height: 100vh;
-    background-image:
-      radial-gradient(ellipse 80% 50% at 50% -20%,
-        rgba(6,182,212,0.08) 0%, transparent 60%),
-      radial-gradient(ellipse 60% 40% at 80% 20%,
-        rgba(124,58,237,0.06) 0%, transparent 50%);
-    background-attachment: fixed;
   }
-  ::selection { background: rgba(6,182,212,0.25); color: white; }
+  ::selection { background: rgba(0,196,204,0.2); color: white; }
   ::-webkit-scrollbar { width: 4px; }
-  ::-webkit-scrollbar-track { background: #080B14; }
-  ::-webkit-scrollbar-thumb { background: #1E2D40; border-radius: 2px; }
+  ::-webkit-scrollbar-track { background: #060A0F; }
+  ::-webkit-scrollbar-thumb { background: #1A2535; border-radius: 2px; }
 }
 
 @media print {
@@ -48,13 +40,15 @@
   * {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
-    color-adjust: exact !important;
   }
 
   body {
-    background-color: #080B14 !important;
-    color: #F1F5F9 !important;
+    background-color: #060A0F !important;
   }
+
+  .print-page-break { page-break-before: always; }
+  .verdict-banner { page-break-inside: avoid; }
+  .finding-card { page-break-inside: avoid; }
 
   .bg-\[\#0F1623\] { background-color: #0F1623 !important; }
   .bg-\[\#080B14\] { background-color: #080B14 !important; }

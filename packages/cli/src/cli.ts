@@ -5,7 +5,7 @@ import { join, relative, extname } from 'path'
 import { scan } from './sdk'
 import type { ScanResult } from './types'
 
-const VERSION = '1.0.0'
+const VERSION = '1.1.0'
 const API_URL = 'https://agentverify-api.agentverify.workers.dev/v1/scan'
 
 // ANSI colors

@@ -1,23 +1,15 @@
-import type { Finding, StoredReport } from '@/types'
+import type { StoredReport } from '@/types'
 import Link from 'next/link'
-import { Badge } from '@/components/ui/Badge'
 
 export function ReportCard({ report }: { report: StoredReport }) {
   const verdict = report.verdict ?? report.result?.verdict ?? 'NOT VERIFIED'
   const riskScore = report.riskScore ?? report.result?.riskScore ?? 0
-  const riskLevel = report.riskLevel ?? report.result?.riskLevel ?? 'High Risk'
   const fileName = report.fileName ?? report.result?.metadata?.fileName ?? 'Agent Config'
   const scannedAt = report.scannedAt ?? report.result?.metadata?.scannedAt ?? ''
   const findings = report.findings ?? report.result?.findings ?? []
   const reportId = report.reportId ?? report.result?.reportId ?? ''
   const source = report.source ?? 'dashboard'
   const findingsCount = Array.isArray(findings) ? findings.length : 0
-
-  const topFindings = Array.isArray(findings)
-    ? (typeof findings[0] === 'string'
-        ? (findings as string[]).slice(0, 2)
-        : (findings as Finding[]).slice(0, 2).map(f => f.title))
-    : []
 
   const verified = verdict === 'VERIFIED'
 
@@ -26,51 +18,22 @@ export function ReportCard({ report }: { report: StoredReport }) {
     : ''
 
   return (
-    <Link href={`/agentverify/report?id=${encodeURIComponent(reportId)}`}>
-      <div className="cursor-pointer rounded-xl border border-[#1E2D40] bg-[#0F1623] p-5 transition-colors hover:border-[#243244]">
-        {/* Score bar at top */}
-        <div className="mb-4 h-0.5 w-full rounded-full bg-[#1E2D40] overflow-hidden">
-          <div
-            className={`h-full rounded-full transition-all ${verified ? 'bg-[#10B981]' : riskScore >= 50 ? 'bg-[#F59E0B]' : 'bg-[#EF4444]'}`}
-            style={{ width: `${riskScore}%` }}
-          />
+    <Link href={`/report?id=${encodeURIComponent(reportId)}`}>
+      <div className="group flex cursor-pointer items-center gap-4 border-b border-[#1A2535] px-4 py-3 transition-colors hover:bg-[#0D1321]">
+        <div className={`h-2 w-2 shrink-0 rounded-full ${verified ? 'bg-[#00B37E]' : 'bg-[#E03E3E]'}`} />
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-medium text-white">{fileName}</p>
+          <p className="mt-0.5 text-xs text-[#3D5166]">{source === 'cli' ? 'CLI' : 'Dashboard'} · {formattedDate}</p>
         </div>
-
-        <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <Badge variant={verified ? 'verified' : 'failed'}>{verdict}</Badge>
-            {source === 'cli' && <Badge variant="cli">CLI</Badge>}
-            <span className="font-mono text-xs text-[#4B6080]">{reportId.slice(0, 8)}...</span>
-          </div>
-          <span className="text-xs text-[#4B6080]">{formattedDate}</span>
+        <div className="shrink-0 text-right">
+          <p className={`text-sm font-bold ${verified ? 'text-[#00B37E]' : riskScore >= 50 ? 'text-[#E07B39]' : 'text-[#E03E3E]'}`}>{riskScore}</p>
+          <p className="text-xs text-[#3D5166]">/100</p>
         </div>
-
-        <div className="mb-1">
-          <span className="font-medium text-white">{fileName}</span>
+        <div className="w-16 shrink-0 text-right">
+          <p className="text-xs text-[#8896A8]">{findingsCount} issue{findingsCount !== 1 ? 's' : ''}</p>
         </div>
-
-        <p className="mb-3 text-sm text-[#4B6080]">
-          Score: <span className={`font-semibold ${verified ? 'text-[#10B981]' : riskScore >= 50 ? 'text-[#F59E0B]' : 'text-[#EF4444]'}`}>{riskScore}</span>/100 · {riskLevel}
-        </p>
-
-        <p className="mb-3 text-xs text-[#4B6080]">
-          {findingsCount === 0
-            ? 'No issues detected'
-            : `${findingsCount} finding${findingsCount === 1 ? '' : 's'}`}
-        </p>
-
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex flex-wrap gap-1.5">
-            {topFindings.map((title, i) => (
-              <span key={i} className="rounded-full border border-[#1E2D40] bg-[#0D1117] px-2 py-0.5 text-xs text-[#4B6080]">
-                {title}
-              </span>
-            ))}
-          </div>
-          <span className="text-xs text-[#4B6080] hover:text-white transition-colors">Open →</span>
-        </div>
+        <span className="shrink-0 text-sm text-[#3D5166] transition-colors group-hover:text-[#8896A8]">→</span>
       </div>
-        <br />
     </Link>
   )
 }

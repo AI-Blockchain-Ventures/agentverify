@@ -6,9 +6,9 @@ const cards = [
 
 export function WhatYouGet() {
   return (
-    <section className="mx-auto max-w-6xl px-6 py-20">
+    <section className="mx-auto max-w-6xl px-4 py-16 md:px-6 md:py-20">
       <p className="text-xs font-medium uppercase tracking-widest text-[#94A3B8]">WHAT YOU GET</p>
-      <h2 className="mb-10 mt-2 text-4xl font-bold text-white">More than a scanner.</h2>
+      <h2 className="mb-10 mt-2 text-3xl font-bold text-white md:text-4xl">More than a scanner.</h2>
       <div className="grid gap-6 md:grid-cols-3">
         {cards.map(([icon, title, body]) => (
           <div key={title} className="rounded-xl border border-[#1E2D40] bg-[#0F1623] p-6">

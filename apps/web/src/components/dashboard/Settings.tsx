@@ -22,7 +22,7 @@ export function Settings() {
       </div>
       <div className="rounded-xl border border-gray-800 bg-gray-950 p-6">
         <h2 className="text-xl font-bold text-white">Version</h2>
-        <p className="mt-2 font-mono text-sm text-gray-500">Agent Verify Web v1.0.0</p>
+        <p className="mt-2 font-mono text-sm text-gray-500">Agent Verify Web v1.1.0</p>
       </div>
     </div>
   )

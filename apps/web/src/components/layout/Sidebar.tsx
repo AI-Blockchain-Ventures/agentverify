@@ -14,19 +14,20 @@ const tabs: Array<{ id: DashboardTab; label: string; icon: string }> = [
 export function Sidebar({ active, onChange, reportBadge }: { active: DashboardTab; onChange: (tab: DashboardTab) => void; reportBadge?: number }) {
   const { user, signOut } = useAuth()
   return (
-    <aside className="fixed left-0 top-0 flex h-screen w-56 flex-col border-r border-[#1E2D40] bg-[#080B14]">
-      <div className="flex items-center gap-2.5 border-b border-[#1E2D40] px-4 py-4">
-        <img src={assetUrl('/logo.png')} alt="Agent Verify" className="h-13" />
+    <aside className="fixed left-0 top-0 flex h-screen w-52 flex-col border-r border-[#1A2535] bg-[#060A0F]">
+      <div className="border-b border-[#1A2535] px-4 py-3">
+        <img src={assetUrl('/logo.png')} alt="Agent Verify" className="h-10" />
+        <span className="text-xs text-[#3D5166]">v1.1.0</span>
       </div>
       <nav className="flex-1 space-y-0.5 px-2 py-4">
         {tabs.map(tab => (
           <button
             key={tab.id}
             onClick={() => onChange(tab.id)}
-            className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors ${
+            className={`flex w-full items-center gap-3 rounded-lg px-2 py-2 text-xs transition-colors ${
               active === tab.id
-                ? 'bg-[#0D1117] font-medium text-white border-l-2 border-[#06B6D4]'
-                : 'text-[#4B6080] hover:bg-[#0D1117]/50 hover:text-[#94A3B8]'
+                ? 'border-l-2 border-[#00C4CC] bg-[#0D1321] font-medium text-white'
+                : 'text-[#3D5166] hover:bg-[#0D1321]/50 hover:text-[#8896A8]'
             }`}
           >
             <span className="text-base">{tab.icon}</span>
@@ -38,10 +39,15 @@ export function Sidebar({ active, onChange, reportBadge }: { active: DashboardTa
             ) : null}
           </button>
         ))}
+        <div className="mt-2 border-t border-[#1A2535] px-3 py-2">
+          <p className="mb-2 text-xs uppercase tracking-wider text-[#3D5166]">Resources</p>
+          <a href="https://github.com/AI-Blockchain-Ventures/agentverify" target="_blank" rel="noreferrer" className="flex items-center gap-2 rounded px-2 py-1.5 text-xs text-[#3D5166] transition-colors hover:text-[#8896A8]">↗ GitHub</a>
+          <a href="mailto:hello@aiblockchainventures.com" className="flex items-center gap-2 rounded px-2 py-1.5 text-xs text-[#3D5166] transition-colors hover:text-[#8896A8]">✉ Support</a>
+        </div>
       </nav>
-      <div className="border-t border-[#1E2D40] px-4 py-4">
-        <div className="mb-3 truncate text-xs text-[#4B6080]">{user?.email ?? ''}</div>
-        <button onClick={signOut} className="cursor-pointer text-xs text-[#4B6080] transition-colors hover:text-white">
+      <div className="border-t border-[#1A2535] px-4 py-4">
+        <div className="mb-3 truncate text-xs text-[#3D5166]">{user?.email ?? ''}</div>
+        <button onClick={signOut} className="cursor-pointer text-xs text-[#3D5166] transition-colors hover:text-white">
           Sign out
         </button>
       </div>

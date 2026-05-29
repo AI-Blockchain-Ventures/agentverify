@@ -1,53 +1,32 @@
-# Dependencies
-node_modules/
-.pnp
-.pnp.js
+# Never commit
+.env
+.env.local
+apps/web/.env.local
+apps/web/.env
+apps/web/next-env.d.ts
+apps/web/.htaccess
+
+# Scanner — proprietary IP, keep private
+packages/scanner/
 
 # Build outputs
 .next/
-dist/
-build/
 out/
-
-# Environment variables - NEVER commit these
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-apps/web/.env.local
-apps/web/.env
-
-# Scanner package - proprietary, keep private
-packages/scanner/
-
-# Cloudflare
+dist/
 .wrangler/
-workers/api/.wrangler/
 
-# Logs
-*.log
-npm-debug.log*
+# Dependencies
+node_modules/
 
-# OS files
+# OS
 .DS_Store
 Thumbs.db
 
-# IDE
-.vscode/
-.idea/
+# Logs
+*.log
 
 # Test files
 test-agents/
 
-# npm auth token
+# npm token - never commit
 .npmrc
-
-# CLI test files
-packages/cli/dist/
-
-apps/web/next-env.d.ts
-
-apps/web/AGENTS.md
-apps/web/CLAUDE.md
-apps/web/.htaccess

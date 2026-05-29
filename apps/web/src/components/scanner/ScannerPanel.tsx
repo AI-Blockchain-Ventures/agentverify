@@ -82,8 +82,9 @@ export function ScannerPanel({ user, onScanComplete }: ScannerPanelProps) {
   if (result) return (
     <ScanResult
       result={result}
+      originalContent={content}
       onNewScan={() => setResult(null)}
-      reportUrl={`${typeof window !== 'undefined' ? window.location.origin : ''}/agentverify/report?id=${encodeURIComponent(result.reportId)}`}
+      reportUrl={`https://aimodularity.com/agentverify/report?id=${encodeURIComponent(result.reportId)}`}
     />
   )
 
@@ -130,7 +131,7 @@ export function ScannerPanel({ user, onScanComplete }: ScannerPanelProps) {
           <textarea
             value={content}
             onChange={e => setContent(e.target.value)}
-            className="h-48 w-full resize-none rounded-xl border border-[#1E2D40] bg-[#080B14] p-4 font-mono text-sm text-[#94A3B8] outline-none transition-colors focus:border-[#06B6D4]/50 placeholder:text-[#4B6080]"
+            className="h-40 w-full resize-none rounded-xl border border-[#1E2D40] bg-[#080B14] p-4 font-mono text-sm text-[#94A3B8] outline-none transition-colors placeholder:text-[#4B6080] focus:border-[#06B6D4]/50 md:h-48"
             placeholder="// Paste your agent configuration here..."
           />
           <input
@@ -152,7 +153,7 @@ export function ScannerPanel({ user, onScanComplete }: ScannerPanelProps) {
             <button
               key={item.name}
               onClick={() => setSelectedPlatform(item.name)}
-              className={`flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-xs transition-colors ${
+              className={`flex cursor-pointer items-center gap-1.5 rounded-lg border px-2 py-1.5 text-xs transition-colors md:px-3 md:py-2 ${
                 selectedPlatform === item.name
                   ? 'border-[#06B6D4]/50 bg-[#06B6D4]/10 text-white'
                   : 'border-[#1E2D40] text-[#4B6080] hover:border-[#243244] hover:text-[#94A3B8]'

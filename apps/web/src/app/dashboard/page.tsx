@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import type { DashboardTab } from '@/types'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { Sidebar } from '@/components/layout/Sidebar'
+import { BottomNav } from '@/components/layout/BottomNav'
 import { ScannerPanel } from '@/components/scanner/ScannerPanel'
 import { ReportList } from '@/components/dashboard/ReportList'
 import { APIAccess } from '@/components/dashboard/APIAccess'
@@ -52,12 +53,22 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-[#080B14]">
-      <Sidebar active={tab} onChange={changeTab} reportBadge={reportBadge} />
-      <main className="ml-56 min-h-screen">
-        <div className="mx-auto max-w-4xl px-8 py-8">
-          <div className="mb-8 border-b border-[#1E2D40] pb-6">
-            <h1 className="text-2xl font-bold text-white">{pageCopy[tab].title}</h1>
-            <p className="mt-1 text-sm text-[#4B6080]">{pageCopy[tab].subtitle}</p>
+      <div className="hidden md:block">
+        <Sidebar active={tab} onChange={changeTab} reportBadge={reportBadge} />
+      </div>
+      <main className="min-h-screen pb-20 md:ml-52 md:pb-0">
+        <div className="mx-auto max-w-4xl px-4 py-6 md:px-8 md:py-8">
+          <div className="mb-6 flex items-center justify-between border-b border-[#1A2535] pb-4">
+            <div>
+              <h1 className="text-lg font-semibold text-white">{pageCopy[tab].title}</h1>
+              <p className="mt-0.5 text-xs text-[#3D5166]">{pageCopy[tab].subtitle}</p>
+            </div>
+            {tab === 'scan' && (
+              <div className="flex items-center gap-2 text-xs text-[#3D5166]">
+                <span className="h-1.5 w-1.5 rounded-full bg-[#00B37E]" />
+                API Online
+              </div>
+            )}
           </div>
           {tab === 'scan' && (
             <ScannerPanel
@@ -78,6 +89,7 @@ export default function DashboardPage() {
           {tab === 'settings' && <Settings />}
         </div>
       </main>
+      <BottomNav active={tab} onChange={changeTab} reportBadge={reportBadge} />
     </div>
   )
 }

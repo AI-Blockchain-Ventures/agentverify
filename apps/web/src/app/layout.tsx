@@ -13,9 +13,9 @@ export const metadata: Metadata = {
   title: "Agent Verify — Execution Trust Analysis",
   description: "Determine whether your AI agent is authorized, scoped, and safe to execute.",
   icons: {
-    icon: "/agentverify/logo.png",
-    shortcut: "/agentverify/logo.png",
-    apple: "/agentverify/logo.png",
+    icon: "https://aimodularity.com/agentverify/agentverify-icon.png",
+    shortcut: "https://aimodularity.com/agentverify/agentverify-icon.png",
+    apple: "https://aimodularity.com/agentverify/agentverify-icon.png",
   },
 
   // Open Graph metadata for social sharing
@@ -48,9 +48,9 @@ export default function RootLayout({
       className={`${inter.variable} h-full antialiased`}
     >
       <head>
-        <link rel="icon" href="/agentverify/agentverify-icon.png" />
-        <link rel="shortcut icon" href="/agentverify/agentverify-icon.png" />
-        <link rel="apple-touch-icon" href="/agentverify/agentverify-icon.png" />
+        <link rel="icon" href="/agentverify-icon.png" />
+        <link rel="shortcut icon" href="/agentverify-icon.png" />
+        <link rel="apple-touch-icon" href="/agentverify-icon.png" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
 
 

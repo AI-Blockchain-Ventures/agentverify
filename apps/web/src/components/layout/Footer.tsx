@@ -3,7 +3,7 @@ import Link from 'next/link'
 export function Footer() {
   return (
     <footer className="border-t border-[#1E2D40] bg-[#080B14] px-6 py-12">
-      <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-6 md:flex-row">
+      <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-6 text-center md:flex-row md:text-left">
         <div className="text-center md:text-left">
           <div className="text-sm font-semibold text-white">Agent Verify</div>
           <div className="mt-1 text-sm text-[#4B6080]">© 2026 AI Blockchain Ventures LLC</div>

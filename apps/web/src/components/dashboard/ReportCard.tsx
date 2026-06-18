@@ -18,21 +18,21 @@ export function ReportCard({ report }: { report: StoredReport }) {
     : ''
 
   return (
-    <Link href={`/report?id=${encodeURIComponent(reportId)}`}>
-      <div className="group flex cursor-pointer items-center gap-4 border-b border-[#1A2535] px-4 py-3 transition-colors hover:bg-[#0D1321]">
+    <Link href={`/report/?id=${encodeURIComponent(reportId)}`}>
+      <div style={{ backgroundColor: 'var(--card)', borderBottom: '1px solid var(--border)' }} className="group flex cursor-pointer items-center gap-4 px-4 py-3 transition-opacity hover:opacity-80">
         <div className={`h-2 w-2 shrink-0 rounded-full ${verified ? 'bg-[#00B37E]' : 'bg-[#E03E3E]'}`} />
         <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-medium text-white">{fileName}</p>
-          <p className="mt-0.5 text-xs text-[#3D5166]">{source === 'cli' ? 'CLI' : 'Dashboard'} · {formattedDate}</p>
+          <p style={{ color: 'var(--text-primary)' }} className="truncate text-sm font-medium">{fileName}</p>
+          <p style={{ color: 'var(--text-muted)' }} className="mt-0.5 text-xs">{source === 'cli' ? 'CLI' : 'Dashboard'} · {formattedDate}</p>
         </div>
         <div className="shrink-0 text-right">
           <p className={`text-sm font-bold ${verified ? 'text-[#00B37E]' : riskScore >= 50 ? 'text-[#E07B39]' : 'text-[#E03E3E]'}`}>{riskScore}</p>
-          <p className="text-xs text-[#3D5166]">/100</p>
+          <p style={{ color: 'var(--text-muted)' }} className="text-xs">/100</p>
         </div>
         <div className="w-16 shrink-0 text-right">
-          <p className="text-xs text-[#8896A8]">{findingsCount} issue{findingsCount !== 1 ? 's' : ''}</p>
+          <p style={{ color: 'var(--text-secondary)' }} className="text-xs">{findingsCount} issue{findingsCount !== 1 ? 's' : ''}</p>
         </div>
-        <span className="shrink-0 text-sm text-[#3D5166] transition-colors group-hover:text-[#8896A8]">→</span>
+        <span style={{ color: 'var(--text-muted)' }} className="shrink-0 text-sm transition-opacity group-hover:opacity-70">→</span>
       </div>
     </Link>
   )

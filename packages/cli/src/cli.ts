@@ -5,7 +5,7 @@ import { join, relative, extname } from 'path'
 import { scan } from './sdk'
 import type { ScanResult } from './types'
 
-const VERSION = '1.1.0'
+const VERSION = '1.2.0'
 const API_URL = 'https://agentverify-api.agentverify.workers.dev/v1/scan'
 
 // ANSI colors
@@ -151,7 +151,7 @@ function printVerdict(result: ScanResult, fileName: string) {
   write(`  ${icon} ${verdict}  ${name}  score: ${score}  ${findings}`)
 
   if (result.saved && result.reportId) {
-    write(`    ${c.gray}→ Report: https://aimodularity.com/agentverify/report?id=${result.reportId}${c.reset}`)
+    write(`    ${c.gray}→ Report: https://aimodularity.com/agentverify/report/?id=${result.reportId}${c.reset}`)
   }
 }
 

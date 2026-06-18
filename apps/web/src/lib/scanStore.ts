@@ -1,4 +1,4 @@
-import type { ScanResult, StoredReport, Verdict, RiskLevel } from '@/types'
+import type { Finding, RiskLevel, ScanResult, Severity, StoredReport, Verdict } from '@/types'
 import { db } from './firebase'
 import {
   collection,
@@ -31,6 +31,40 @@ const sanitize = (obj: Record<string, unknown>): Record<string, unknown> =>
     Object.entries(obj).map(([k, v]) => [k, v === undefined ? null : v])
   )
 
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null && !Array.isArray(value)
+
+const normalizeFindings = (raw: unknown): Finding[] => {
+  if (!Array.isArray(raw)) return []
+  return raw.map((f, i) => {
+    if (typeof f === 'string') {
+      return {
+        id: String(i),
+        title: f,
+        category: 'B' as const,
+        severity: 'medium' as const,
+        whatIsWrong: '',
+        whyItMatters: '',
+        recommendedFix: '',
+      }
+    }
+
+    const finding = isRecord(f) ? f : {}
+    return {
+      id: typeof finding.id === 'string' ? finding.id : String(i),
+      title: typeof finding.title === 'string' ? finding.title : '',
+      category: (finding.category ?? 'B') as 'A' | 'B',
+      severity: (finding.severity ?? 'medium') as Severity,
+      whatIsWrong: typeof finding.whatIsWrong === 'string' ? finding.whatIsWrong : '',
+      whyItMatters: typeof finding.whyItMatters === 'string' ? finding.whyItMatters : '',
+      recommendedFix: typeof finding.recommendedFix === 'string' ? finding.recommendedFix : '',
+      evidence: typeof finding.evidence === 'string' ? finding.evidence : undefined,
+      quickFix: typeof finding.quickFix === 'string' ? finding.quickFix : undefined,
+      compliance: isRecord(finding.compliance) ? finding.compliance as Finding['compliance'] : undefined,
+    }
+  })
+}
+
 export const normalize = (doc: DocumentData, id: string): StoredReport => ({
   reportId: doc.reportId ?? id,
   verdict: doc.verdict ?? doc.result?.verdict ?? ('NOT VERIFIED' as Verdict),
@@ -39,10 +73,15 @@ export const normalize = (doc: DocumentData, id: string): StoredReport => ({
   fileName: doc.fileName ?? doc.agentName ?? doc.metadata?.fileName ?? doc.result?.metadata?.fileName ?? 'Agent Config',
   scannedAt: parseDate(doc.scannedAt ?? doc.createdAt ?? doc.metadata?.scannedAt ?? doc.result?.metadata?.scannedAt),
   source: doc.source ?? 'dashboard',
-  findings: doc.findings ?? doc.result?.findings ?? [],
+  findings: normalizeFindings(doc.findings ?? doc.result?.findings),
   platform: doc.platform ?? doc.metadata?.selectedPlatform ?? doc.result?.metadata?.selectedPlatform ?? null,
   agentName: doc.agentName ?? doc.result?.bom?.agentName ?? null,
-  uid: doc.uid ?? typeof doc.userId === 'string' ? doc.userId : undefined,
+  uid: typeof doc.uid === 'string' ? doc.uid : typeof doc.userId === 'string' ? doc.userId : undefined,
+  userId: typeof doc.userId === 'string' ? doc.userId : undefined,
+  isPrivate: doc.isPrivate === true,
+  isPublic: doc.isPublic === true,
+  password: typeof doc.password === 'string' ? doc.password : null,
+  _source: doc._source === 'cli' || doc._source === 'user' || doc._source === 'public' ? doc._source : undefined,
   createdAt: doc.createdAt ?? doc.result?.metadata?.scannedAt ?? undefined,
 })
 
@@ -54,26 +93,55 @@ export const sortReports = (reports: StoredReport[]): StoredReport[] =>
   })
 
 export async function saveReport(uid: string, result: ScanResult): Promise<void> {
-  const payload = sanitize({
+  const reportData = sanitize({
     reportId: result.reportId,
+    uid,
+    userId: uid,
     verdict: result.verdict,
     riskScore: result.riskScore,
     riskLevel: result.riskLevel,
     fileName: result.metadata.fileName,
     agentName: result.bom.agentName ?? null,
     platform: result.metadata.selectedPlatform ?? null,
-    findings: result.findings.map(f => f.title),
+    findings: result.findings.map(f => ({
+      id: f.id,
+      title: f.title,
+      category: f.category,
+      severity: f.severity,
+      whatIsWrong: f.whatIsWrong,
+      whyItMatters: f.whyItMatters,
+      recommendedFix: f.recommendedFix,
+      evidence: f.evidence ?? null,
+      quickFix: f.quickFix ?? null,
+      compliance: f.compliance ?? null,
+    })),
     scannedAt: result.metadata.scannedAt ?? new Date().toISOString(),
     source: 'dashboard',
-    userId: uid,
+    isPrivate: true,
+    isPublic: false,
+    password: null,
     categoryScores: result.categoryScores,
-    bom: { ...result.bom },
+    bom: {
+      detectedLanguage: result.bom.detectedLanguage,
+      detectedFramework: result.bom.detectedFramework ?? null,
+      detectedPlatform: result.bom.detectedPlatform ?? null,
+      agentName: result.bom.agentName ?? null,
+      toolAccessLevel: result.bom.toolAccessLevel,
+      credentialExposure: result.bom.credentialExposure,
+      memoryPersistence: result.bom.memoryPersistence,
+      auditLogging: result.bom.auditLogging,
+      humanGates: result.bom.humanGates,
+      rateLimiting: result.bom.rateLimiting,
+      promptInjectionSurface: result.bom.promptInjectionSurface,
+      delegationScope: result.bom.delegationScope,
+    },
   })
-  await setDoc(doc(db, 'users', uid, 'reports', result.reportId), payload)
+  await setDoc(doc(db, 'users', uid, 'reports', result.reportId), reportData)
+  await setDoc(doc(db, 'reports', result.reportId), reportData)
 }
 
 export async function savePublicReport(result: ScanResult): Promise<void> {
-  const reportUrl = `https://aimodularity.com/agentverify/report?id=${result.reportId}`
+  const reportUrl = `https://aimodularity.com/agentverify/report/?id=${result.reportId}`
   const payload = sanitize({
     reportId: result.reportId,
     reportUrl,

@@ -112,8 +112,8 @@ export function ReportList({ user, onRunScan, onNewReports, onClearNotification 
 
   if (loading) {
     return (
-      <div className="flex items-center gap-3 text-sm text-[#4B6080]">
-        <div className="h-4 w-4 animate-spin rounded-full border-2 border-[#1E2D40] border-t-[#06B6D4]" />
+      <div style={{ color: 'var(--text-muted)' }} className="flex items-center gap-3 text-sm">
+        <div style={{ borderColor: 'var(--border)', borderTopColor: '#06B6D4' }} className="h-4 w-4 animate-spin rounded-full border-2" />
         Loading reports...
       </div>
     )
@@ -121,10 +121,10 @@ export function ReportList({ user, onRunScan, onNewReports, onClearNotification 
 
   if (!reports.length) {
     return (
-      <div className="rounded-xl border border-[#1E2D40] bg-[#0F1623] p-12 text-center">
-        <div className="mb-4 text-4xl text-[#4B6080]">≡</div>
-        <h3 className="text-lg font-bold text-white">No reports yet</h3>
-        <p className="mt-2 text-sm text-[#4B6080]">
+      <div style={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)' }} className="rounded-xl p-12 text-center">
+        <div style={{ color: 'var(--text-muted)' }} className="mb-4 text-4xl">≡</div>
+        <h3 style={{ color: 'var(--text-primary)' }} className="text-lg font-bold">No reports yet</h3>
+        <p style={{ color: 'var(--text-muted)' }} className="mt-2 text-sm">
           Run your first verification scan to populate this workspace.
         </p>
         <button
@@ -143,7 +143,7 @@ export function ReportList({ user, onRunScan, onNewReports, onClearNotification 
         <div className="mb-4 flex items-center justify-between rounded-xl border border-[#06B6D4]/20 bg-[#06B6D4]/5 px-4 py-3">
           <div className="flex items-center gap-2">
             <span className="h-2 w-2 rounded-full bg-[#06B6D4] animate-pulse" />
-            <span className="text-sm text-white">
+            <span style={{ color: 'var(--text-primary)' }} className="text-sm">
               {newCount} new report{newCount > 1 ? 's' : ''} added
             </span>
           </div>
@@ -152,18 +152,19 @@ export function ReportList({ user, onRunScan, onNewReports, onClearNotification 
               setNewCount(0)
               onClearNotification?.()
             }}
-            className="text-xs text-[#4B6080] hover:text-white transition-colors"
+            style={{ color: 'var(--text-muted)' }}
+            className="text-xs transition-colors hover:opacity-70"
           >
             Dismiss
           </button>
         </div>
       )}
-      <div className="overflow-hidden rounded-xl border border-[#1A2535]">
-        <div className="flex items-center gap-4 border-b border-[#1A2535] bg-[#0A0F1A] px-4 py-2">
+      <div style={{ border: '1px solid var(--border)' }} className="overflow-hidden rounded-xl">
+        <div style={{ backgroundColor: 'var(--surface)', borderBottom: '1px solid var(--border)' }} className="flex items-center gap-4 px-4 py-2">
           <div className="w-2" />
-          <p className="flex-1 text-xs font-medium uppercase tracking-wider text-[#3D5166]">Agent</p>
-          <p className="text-xs font-medium uppercase tracking-wider text-[#3D5166]">Score</p>
-          <p className="w-16 text-xs font-medium uppercase tracking-wider text-[#3D5166]">Issues</p>
+          <p style={{ color: 'var(--text-muted)' }} className="flex-1 text-xs font-medium uppercase tracking-wider">Agent</p>
+          <p style={{ color: 'var(--text-muted)' }} className="text-xs font-medium uppercase tracking-wider">Score</p>
+          <p style={{ color: 'var(--text-muted)' }} className="w-16 text-xs font-medium uppercase tracking-wider">Issues</p>
           <div className="w-4" />
         </div>
         {reports.map(report => (

@@ -80,31 +80,34 @@ export function APIAccess() {
 
   return (
     <div className="mx-auto max-w-lg space-y-6">
-      <section className="rounded-xl border border-[#1E2D40] bg-[#0F1623] p-6">
-        <h2 className="font-semibold text-white">Your API Key</h2>
-        <p className="mb-4 mt-1 text-xs text-[#4B6080]">You&apos;ll need this to run scans.</p>
+      <section style={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)' }} className="rounded-xl p-6">
+        <h2 style={{ color: 'var(--text-primary)' }} className="font-semibold">Your API Key</h2>
+        <p style={{ color: 'var(--text-muted)' }} className="mb-4 mt-1 text-xs">You&apos;ll need this to run scans.</p>
 
         {keyLoading ? (
-          <div className="h-10 animate-pulse rounded-lg bg-[#080B14]" />
+          <div style={{ backgroundColor: 'var(--input-bg)' }} className="h-10 animate-pulse rounded-lg" />
         ) : apiKey ? (
           <>
             <div className="flex flex-col gap-2 sm:flex-row">
               <input
                 readOnly
                 value={apiKey}
-                className="min-w-0 flex-1 rounded-lg border border-[#1E2D40] bg-[#080B14] px-4 py-2.5 font-mono text-sm text-[#06B6D4] outline-none"
+                style={{ backgroundColor: 'var(--input-bg)', border: '1px solid var(--input-border)' }}
+                className="min-w-0 flex-1 rounded-lg px-4 py-2.5 font-mono text-sm text-[#06B6D4] outline-none"
               />
               <button
                 onClick={copyKey}
-                className="min-w-[70px] rounded-lg border border-[#1E2D40] px-4 py-2.5 text-sm text-[#94A3B8] transition-colors hover:text-white"
+                style={{ border: '1px solid var(--border)', color: 'var(--text-secondary)' }}
+                className="min-w-[70px] rounded-lg px-4 py-2.5 text-sm transition-colors hover:opacity-70"
               >
                 {keyCopied ? '✓ Copied' : 'Copy'}
               </button>
             </div>
-            <p className="mt-2 text-xs text-[#4B6080]">Never share this key or commit it to version control</p>
+            <p style={{ color: 'var(--text-muted)' }} className="mt-2 text-xs">Never share this key or commit it to version control</p>
             <button
               onClick={generateKey}
-              className="mt-2 inline-block cursor-pointer text-xs text-[#4B6080] transition-colors hover:text-white"
+              style={{ color: 'var(--text-muted)' }}
+              className="mt-2 inline-block cursor-pointer text-xs transition-colors hover:opacity-70"
             >
               Regenerate
             </button>
@@ -121,40 +124,42 @@ export function APIAccess() {
         {keyError && <p className="mt-2 text-xs text-[#EF4444]">{keyError}</p>}
       </section>
 
-      <section className="rounded-xl border border-[#1E2D40] bg-[#0F1623] p-6">
-        <h2 className="font-semibold text-white">Scan your project</h2>
-        <p className="mb-5 mt-1 text-xs text-[#4B6080]">Install once, scan any project from your terminal.</p>
+      <section style={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)' }} className="rounded-xl p-6">
+        <h2 style={{ color: 'var(--text-primary)' }} className="font-semibold">Scan your project</h2>
+        <p style={{ color: 'var(--text-muted)' }} className="mb-5 mt-1 text-xs">Install once, scan any project from your terminal.</p>
 
-        <p className="mb-2 text-xs font-medium uppercase tracking-wider text-[#4B6080]">Install</p>
+        <p style={{ color: 'var(--text-muted)' }} className="mb-2 text-xs font-medium uppercase tracking-wider">Install</p>
         <div className="relative">
-          <pre className="overflow-x-auto rounded-lg border border-[#1E2D40] bg-[#080B14] px-4 py-3 pr-16 font-mono text-sm text-[#06B6D4]">{installCommand}</pre>
+          <pre style={{ backgroundColor: 'var(--input-bg)', border: '1px solid var(--border)' }} className="overflow-x-auto rounded-lg px-4 py-3 pr-16 font-mono text-sm text-[#00C4CC]">{installCommand}</pre>
           <button
             onClick={copyInstall}
-            className="absolute right-2 top-2 rounded border border-[#1E2D40] bg-[#080B14] px-2 py-1 text-xs text-[#4B6080] transition-colors hover:text-white"
+            style={{ backgroundColor: 'var(--input-bg)', border: '1px solid var(--border)', color: 'var(--text-muted)' }}
+            className="absolute right-2 top-2 rounded px-2 py-1 text-xs transition-colors hover:opacity-70"
           >
             {installCopied ? '✓' : 'Copy'}
           </button>
         </div>
 
-        <p className="mb-2 mt-4 text-xs font-medium uppercase tracking-wider text-[#4B6080]">Scan</p>
+        <p style={{ color: 'var(--text-muted)' }} className="mb-2 mt-4 text-xs font-medium uppercase tracking-wider">Scan</p>
         <div className="relative">
-          <pre className="overflow-x-auto rounded-lg border border-[#1E2D40] bg-[#080B14] px-4 py-3 pr-16 font-mono text-sm text-[#06B6D4]">{scanCommand}</pre>
+          <pre style={{ backgroundColor: 'var(--input-bg)', border: '1px solid var(--border)' }} className="overflow-x-auto rounded-lg px-4 py-3 pr-16 font-mono text-sm text-[#00C4CC]">{scanCommand}</pre>
           <button
             onClick={copyScan}
-            className="absolute right-2 top-2 rounded border border-[#1E2D40] bg-[#080B14] px-2 py-1 text-xs text-[#4B6080] transition-colors hover:text-white"
+            style={{ backgroundColor: 'var(--input-bg)', border: '1px solid var(--border)', color: 'var(--text-muted)' }}
+            className="absolute right-2 top-2 rounded px-2 py-1 text-xs transition-colors hover:opacity-70"
           >
             {scanCopied ? '✓' : 'Copy'}
           </button>
         </div>
 
-        <p className="mt-3 text-xs text-[#4B6080]">
+        <p style={{ color: 'var(--text-muted)' }} className="mt-3 text-xs">
           Scans every agent file in your project. Results save to your Reports tab automatically.
         </p>
       </section>
 
-      <p className="text-center text-xs text-[#4B6080]">
+      <p style={{ color: 'var(--text-muted)' }} className="text-center text-xs">
         Need help?{' '}
-        <a href="mailto:hello@aiblockchainventures.com" className="text-[#94A3B8] transition-colors hover:text-white">
+        <a href="mailto:hello@aiblockchainventures.com" style={{ color: 'var(--text-secondary)' }} className="transition-colors hover:opacity-70">
           hello@aiblockchainventures.com
         </a>
       </p>

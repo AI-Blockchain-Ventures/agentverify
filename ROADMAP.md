@@ -8,7 +8,7 @@
 ## ✅ v1.0.0 — Foundation (Shipped May 2026)
 
 - Web app with execution trust analysis dashboard
-- 15-signal scanner across A2SPA Protocol Compliance and General Agent Security
+- 15-signal scanner across Protocol Compliance and Security Controls
 - Runtime Bill of Materials (BOM)
 - Findings with fix guidance
 - CLI scanner via npm (`agentverify`)
@@ -19,7 +19,7 @@
 
 ---
 
-## ✅ v1.1.0 — Make It Sticky (Shipped)
+## ✅ v1.2.0 — Make It Sticky (Shipped)
 
 **Agent Fixer**
 - After every scan, show a corrected version of the agent code
@@ -51,7 +51,7 @@
 
 ---
 
-## 📋 v1.2.0 — Make It Shareable (Month 2)
+## ✅ v1.2.0 — Make It Shareable (Shipped June 2026)
 
 **Verified Badge**
 - Agents that pass get a badge for their README
@@ -148,5 +148,5 @@ Core intelligence (scoring engine, execution trust methodology, A2SPA protocol) 
 
 ---
 
-*Last updated: May 2026*
+*Last updated: June 2026*
 *AI Blockchain Ventures LLC — hello@aiblockchainventures.com*

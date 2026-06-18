@@ -57,7 +57,7 @@ export function generateSummary(result: ScanResult): {
     : `${critical.length} critical issues create exploitable attack vectors.`
 
   const action = critical.length > 0
-    ? `Resolve ${critical.length} critical finding${critical.length !== 1 ? 's' : ''} before deployment. Contact aiblockchainventures.com for A2SPA integration support.`
+    ? `Resolve ${critical.length} critical finding${critical.length !== 1 ? 's' : ''} before deployment. Contact aiblockchainventures.com for integration support.`
     : `Address ${findings.length} finding${findings.length !== 1 ? 's' : ''} to improve your security posture.`
 
   return { headline, bullets: bullets.length ? bullets : findings.slice(0, 3).map((f: Finding) => f.title), attackerView, action }

@@ -40,8 +40,8 @@ export default function DashboardPage() {
 
   if (loading || !user) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#080B14]">
-        <div className="text-sm text-[#4B6080]">Loading secure workspace...</div>
+      <div style={{ backgroundColor: 'var(--bg)' }} className="flex min-h-screen items-center justify-center">
+        <div style={{ color: 'var(--text-muted)' }} className="text-sm">Loading secure workspace...</div>
       </div>
     )
   }
@@ -52,19 +52,19 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#080B14]">
+    <div style={{ backgroundColor: 'var(--bg)' }} className="min-h-screen">
       <div className="hidden md:block">
         <Sidebar active={tab} onChange={changeTab} reportBadge={reportBadge} />
       </div>
       <main className="min-h-screen pb-20 md:ml-52 md:pb-0">
         <div className="mx-auto max-w-4xl px-4 py-6 md:px-8 md:py-8">
-          <div className="mb-6 flex items-center justify-between border-b border-[#1A2535] pb-4">
+          <div style={{ borderBottom: '1px solid var(--border)' }} className="mb-6 flex items-center justify-between pb-4">
             <div>
-              <h1 className="text-lg font-semibold text-white">{pageCopy[tab].title}</h1>
-              <p className="mt-0.5 text-xs text-[#3D5166]">{pageCopy[tab].subtitle}</p>
+              <h1 style={{ color: 'var(--text-primary)' }} className="text-lg font-semibold">{pageCopy[tab].title}</h1>
+              <p style={{ color: 'var(--text-muted)' }} className="mt-0.5 text-xs">{pageCopy[tab].subtitle}</p>
             </div>
             {tab === 'scan' && (
-              <div className="flex items-center gap-2 text-xs text-[#3D5166]">
+              <div style={{ color: 'var(--text-muted)' }} className="flex items-center gap-2 text-xs">
                 <span className="h-1.5 w-1.5 rounded-full bg-[#00B37E]" />
                 API Online
               </div>

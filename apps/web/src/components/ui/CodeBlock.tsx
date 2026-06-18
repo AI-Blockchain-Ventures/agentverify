@@ -20,11 +20,11 @@ export function CodeBlock({ code, language, showCopy = true, filename }: CodeBlo
   }
 
   return (
-    <div className="overflow-hidden rounded-lg border border-gray-800 bg-black">
+    <div style={{ backgroundColor: 'var(--input-bg)', border: '1px solid var(--border)' }} className="overflow-hidden rounded-lg">
       {label && (
-        <div className="flex items-center justify-between border-b border-gray-800 bg-gray-950 px-4 py-2">
-          <span className="font-mono text-xs text-gray-500">{label}</span>
-          {showCopy && <button onClick={copy} className="text-xs text-gray-500 hover:text-white">{copied ? 'Copied!' : 'Copy'}</button>}
+        <div style={{ backgroundColor: 'var(--surface)', borderBottom: '1px solid var(--border)' }} className="flex items-center justify-between px-4 py-2">
+          <span style={{ color: 'var(--text-muted)' }} className="font-mono text-xs">{label}</span>
+          {showCopy && <button onClick={copy} style={{ color: 'var(--text-muted)' }} className="text-xs hover:opacity-70">{copied ? 'Copied!' : 'Copy'}</button>}
         </div>
       )}
       <pre className="overflow-x-auto p-4 font-mono text-sm leading-relaxed text-green"><code>{code}</code></pre>

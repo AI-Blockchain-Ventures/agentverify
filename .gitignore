@@ -30,3 +30,9 @@ test-agents/
 
 # npm token - never commit
 .npmrc
+
+
+apps/web/src/app/agentspoofed/
+apps/web/src/components/spoof/
+apps/web/src/lib/spoofFirebase.ts
+spoof/

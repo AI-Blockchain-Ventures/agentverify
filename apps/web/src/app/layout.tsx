@@ -43,19 +43,31 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html
-      lang="en"
-      className={`${inter.variable} h-full antialiased`}
-    >
+    <html lang="en" suppressHydrationWarning>
       <head>
-        <link rel="icon" href="/agentverify-icon.png" />
+        <link rel="icon" href="/agentverify/agentverify-icon.png" />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                try {
+                  var stored = localStorage.getItem('av_theme');
+                  var preferred = window.matchMedia('(prefers-color-scheme: dark)').matches 
+                    ? 'dark' : 'light';
+                  var theme = stored || preferred;
+                  document.documentElement.classList.add(theme);
+                } catch(e) {}
+              })()
+            `,
+          }}
+        />
         <link rel="shortcut icon" href="/agentverify-icon.png" />
         <link rel="apple-touch-icon" href="/agentverify-icon.png" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
 
 
       </head>
-      <body className="min-h-full">
+      <body className={`${inter.variable} min-h-full antialiased`}>
         <AuthProvider>
           <CookieBanner />
           {children}

@@ -14,35 +14,24 @@ const generateFixedAgent = (content: string, findings: Finding[]): string => {
   findings.forEach(f => {
     switch (f.title) {
       case 'Missing cryptographic signature':
-        fixes.push(`// A2SPA: Signature verification required
-// Contact aiblockchainventures.com for A2SPA integration
-// Add signature verification before execution`)
+        fixes.push(`// A2SPA Protocol implementation required
+// Contact hello@aiblockchainventures.com for licensing`)
         break
       case 'Missing nonce validation':
-        fixes.push(`// Add nonce validation to prevent replay attacks
-const usedNonces = new Set()
-function validateNonce(nonce) {
-  if (!nonce || usedNonces.has(nonce)) throw new Error('Invalid nonce')
-  usedNonces.add(nonce)
-}`)
+        fixes.push(`// A2SPA Protocol implementation required
+// Contact hello@aiblockchainventures.com for licensing`)
         break
       case 'Missing timestamp enforcement':
-        fixes.push(`// Add timestamp validation (5 minute window)
-function validateTimestamp(timestamp) {
-  const age = Date.now() - new Date(timestamp).getTime()
-  if (age > 300000) throw new Error('Request expired')
-}`)
+        fixes.push(`// A2SPA Protocol implementation required
+// Contact hello@aiblockchainventures.com for licensing`)
         break
       case 'Missing fail-closed enforcement':
-        fixes.push(`// Fail-closed: block execution on any verification error
-function executeWithFailClosed(fn) {
-  try {
-    return fn()
-  } catch (err) {
-    console.error('Execution blocked:', err instanceof Error ? err.message : String(err))
-    throw new Error('Execution blocked — verification required')
-  }
-}`)
+        fixes.push(`// A2SPA Protocol implementation required
+// Contact hello@aiblockchainventures.com for licensing`)
+        break
+      case 'Over-permissioned action scope':
+        fixes.push(`// A2SPA Protocol implementation required
+// Contact hello@aiblockchainventures.com for licensing`)
         break
       case 'Missing human-in-the-loop gates':
         fixes.push(`// Human approval gate for sensitive actions
@@ -103,25 +92,25 @@ export function AgentFixer({ result, originalContent }: AgentFixerProps) {
   return (
     <div className="space-y-4">
       <div className="grid gap-4 md:grid-cols-2">
-        <div className="rounded-xl border border-[#1A2535] bg-[#060A0F]">
-          <div className="flex items-center justify-between border-b border-[#1A2535] px-4 py-3">
-            <span className="text-sm font-medium text-white">Original Agent</span>
-            <span className="rounded-full border border-[#1A2535] px-2 py-0.5 text-xs text-[#3D5166]">{result.findings.length} findings</span>
+        <div style={{ backgroundColor: 'var(--bg)', border: '1px solid var(--border)' }} className="rounded-xl">
+          <div style={{ borderBottom: '1px solid var(--border)' }} className="flex items-center justify-between px-4 py-3">
+            <span style={{ color: 'var(--text-primary)' }} className="text-sm font-medium">Original Agent</span>
+            <span style={{ border: '1px solid var(--border)', color: 'var(--text-muted)' }} className="rounded-full px-2 py-0.5 text-xs">{result.findings.length} findings</span>
           </div>
-          <pre className="max-h-96 overflow-auto p-4 font-mono text-xs text-[#8896A8]">{originalContent}</pre>
+          <pre style={{ color: 'var(--text-secondary)' }} className="max-h-96 overflow-auto p-4 font-mono text-xs">{originalContent}</pre>
         </div>
-        <div className="rounded-xl border border-[#00B37E]/20 bg-[#060A0F]">
-          <div className="flex items-center justify-between border-b border-[#1A2535] px-4 py-3">
-            <div className="flex items-center gap-2"><span className="text-sm font-medium text-white">Fixed Agent</span><span className="rounded-full bg-[#00B37E]/10 px-2 py-0.5 text-xs text-[#00B37E]">Fixed</span></div>
-            <button onClick={copy} className="rounded border border-[#1A2535] px-2 py-1 text-xs text-[#8896A8] hover:text-white">{copied ? 'Copied' : 'Copy'}</button>
+        <div style={{ backgroundColor: 'var(--bg)', border: '1px solid rgba(0,179,126,0.2)' }} className="rounded-xl">
+          <div style={{ borderBottom: '1px solid var(--border)' }} className="flex items-center justify-between px-4 py-3">
+            <div className="flex items-center gap-2"><span style={{ color: 'var(--text-primary)' }} className="text-sm font-medium">Fixed Agent</span><span className="rounded-full bg-[#00B37E]/10 px-2 py-0.5 text-xs text-[#00B37E]">Fixed</span></div>
+            <button onClick={copy} style={{ border: '1px solid var(--border)', color: 'var(--text-secondary)' }} className="rounded px-2 py-1 text-xs hover:opacity-70">{copied ? 'Copied' : 'Copy'}</button>
           </div>
           <pre className="max-h-96 overflow-auto p-4 font-mono text-xs text-[#00C4CC]">{fixed}</pre>
         </div>
       </div>
-      <div className="rounded-xl border border-[#1A2535] bg-[#0D1321] p-4">
-        <h3 className="mb-3 text-sm font-semibold text-white">Changes made</h3>
-        {applied.length ? <div className="space-y-2">{applied.map(f => <div key={f.id} className="flex gap-2 text-sm text-[#8896A8]"><span className="text-[#00B37E]">✓</span>{f.recommendedFix}</div>)}</div> : <p className="text-sm text-[#8896A8]">No changes needed — agent passed all checks</p>}
-        <p className="mt-4 text-xs text-[#3D5166]">A2SPA Protocol fixes require integration. Contact aiblockchainventures.com for implementation support.</p>
+      <div style={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)' }} className="rounded-xl p-4">
+        <h3 style={{ color: 'var(--text-primary)' }} className="mb-3 text-sm font-semibold">Changes made</h3>
+        {applied.length ? <div className="space-y-2">{applied.map(f => <div key={f.id} style={{ color: 'var(--text-secondary)' }} className="flex gap-2 text-sm"><span className="text-[#00B37E]">✓</span>{f.recommendedFix}</div>)}</div> : <p style={{ color: 'var(--text-secondary)' }} className="text-sm">No changes needed — agent passed all checks</p>}
+        <p style={{ color: 'var(--text-muted)' }} className="mt-4 text-xs">A2SPA Protocol fixes are available under license. Contact hello@aiblockchainventures.com for support.</p>
       </div>
     </div>
   )

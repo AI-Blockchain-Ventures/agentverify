@@ -37,6 +37,11 @@ export interface StoredReport {
   platform?: string | null
   agentName?: string | null
   uid?: string
+  userId?: string
+  isPrivate?: boolean
+  isPublic?: boolean
+  password?: string | null
+  _source?: 'cli' | 'user' | 'public'
   createdAt?: string
   result?: ScanResult
   [key: string]: unknown

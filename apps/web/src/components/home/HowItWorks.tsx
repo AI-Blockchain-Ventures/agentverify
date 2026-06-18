@@ -1,24 +1,24 @@
 const steps = [
-  ['01', 'Submit', 'Paste code or upload a file. JSON, YAML, Python, JavaScript, TypeScript.'],
-  ['02', 'Analyze', '15-signal pipeline runs deterministic analysis across both vulnerability categories.'],
-  ['03', 'Verdict', 'VERIFIED or NOT VERIFIED. Binary result with 100-point risk score.'],
-  ['04', 'Report', 'Runtime BOM, categorized findings, and fix recommendations. Shareable link.'],
+  ['01', 'Submit', 'Paste agent code or upload a config file. JavaScript, Python, YAML, JSON — any format.'],
+  ['02', 'Analyze', '15 signals run in milliseconds. No data leaves your browser for dashboard scans.'],
+  ['03', 'Verdict', 'VERIFIED or NOT VERIFIED with a 100-point score, severity breakdown, compliance mapping, and evidence extracts.'],
+  ['04', 'Fix & Share', 'Every finding includes remediation guidance. Keep reports private, password protect them, or share a public link and README badge.'],
 ]
 
 export function HowItWorks() {
   return (
-    <section className="border-t border-[#1E2D40] px-4 py-16 md:px-6 md:py-20">
+    <section style={{ borderTop: '1px solid var(--border)' }} className="px-4 py-16 md:px-6 md:py-20">
       <div className="mx-auto max-w-6xl">
         <div className="mb-16 text-center">
-          <p className="text-xs font-medium uppercase tracking-widest text-[#94A3B8]">HOW IT WORKS</p>
-          <h2 className="mt-2 text-3xl font-bold text-white md:text-4xl">Four steps to execution trust</h2>
+          <p style={{ color: 'var(--text-secondary)' }} className="text-xs font-medium uppercase tracking-widest">HOW IT WORKS</p>
+          <h2 style={{ color: 'var(--text-primary)' }} className="mt-2 text-3xl font-bold md:text-4xl">Four steps to execution trust</h2>
         </div>
         <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
           {steps.map(([num, title, desc]) => (
-            <div key={num} className="rounded-xl border border-[#1E2D40] bg-[#0F1623] p-4 transition-colors hover:border-[#243244] md:p-6">
-              <div className="text-5xl font-bold leading-none text-[#1E2D40]">{num}</div>
-              <h3 className="mb-2 mt-4 font-semibold text-white">{title}</h3>
-              <p className="text-sm leading-relaxed text-[#94A3B8]">{desc}</p>
+            <div key={num} style={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)' }} className="rounded-xl p-4 transition-opacity hover:opacity-80 md:p-6">
+              <div style={{ color: 'var(--border-light)' }} className="text-5xl font-bold leading-none">{num}</div>
+              <h3 style={{ color: 'var(--text-primary)' }} className="mb-2 mt-4 font-semibold">{title}</h3>
+              <p style={{ color: 'var(--text-secondary)' }} className="text-sm leading-relaxed">{desc}</p>
             </div>
           ))}
         </div>

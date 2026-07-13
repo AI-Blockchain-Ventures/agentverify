@@ -1,4 +1,4 @@
-﻿name: Public CI
+name: Public CI
 
 on:
   push:
@@ -17,6 +17,9 @@ jobs:
         with:
           node-version: '24'
           cache: 'npm'
+
+      - name: Generate public scanner stub
+        run: node scripts/create-ci-scanner-stub.mjs
 
       - name: Install dependencies
         run: npm ci

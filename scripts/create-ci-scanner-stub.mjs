@@ -1,6 +1,6 @@
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs'
 
-if (existsSync('packages/scanner')) process.exit(0)
+if (existsSync('packages/scanner/package.json')) process.exit(0)
 
 mkdirSync('packages/scanner/src', { recursive: true })
 mkdirSync('packages/scanner/dist', { recursive: true })
@@ -9,6 +9,7 @@ writeFileSync('packages/scanner/package.json', `${JSON.stringify({
   name: '@agentverify/scanner',
   version: '1.3.0',
   private: true,
+  type: 'module',
   main: './dist/index.js',
   module: './dist/index.js',
   types: './dist/index.d.ts',
@@ -110,12 +111,11 @@ export interface ScanResult {
   }
 }
 
-export function scan(input: ScanInput): ScanResult
 `
 
-const implementation = `export function scan(input) {
+const implementation = `export function scan(input: ScanInput): ScanResult {
   return {
-    reportId: 'CI-STUB-REPORT',
+    reportId: 'REPORT-CI-STUB',
     verdict: 'NOT VERIFIED',
     riskScore: 0,
     riskLevel: 'High Risk',
@@ -141,4 +141,6 @@ const implementation = `export function scan(input) {
 
 writeFileSync('packages/scanner/src/index.ts', `${types}\n${implementation}`)
 writeFileSync('packages/scanner/dist/index.d.ts', types)
-writeFileSync('packages/scanner/dist/index.js', implementation)
+const jsImplementation = implementation
+  .replace('export function scan(input: ScanInput): ScanResult {', 'export function scan(input) {')
+writeFileSync('packages/scanner/dist/index.js', jsImplementation)

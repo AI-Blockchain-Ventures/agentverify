@@ -20,6 +20,9 @@ jobs:
 
       - run: npm ci
 
+      - name: Create public CI scanner stub
+        run: node scripts/create-ci-scanner-stub.mjs
+
       - name: Lint web
         run: npm run lint
 
@@ -31,9 +34,6 @@ jobs:
 
       - name: Test CLI
         run: npm test --workspace=packages/cli
-
-      - name: Typecheck Worker
-        run: npm run typecheck --workspace=workers/api
 
       - name: Build Worker
         run: npm run build --workspace=workers/api

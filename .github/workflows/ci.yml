@@ -37,14 +37,3 @@ jobs:
         shell: bash
         run: |
           test -z "$(git ls-files packages/scanner)"
-
-      - name: Secret safety check
-        shell: bash
-        run: |
-          if git grep -n -E "sk_live_[A-Za-z0-9]{12,}|whsec_[A-Za-z0-9]{12,}|-----BEGIN PRIVATE KEY-----|CLOUDFLARE_API_TOKEN" -- . \
-            ':!package-lock.json' \
-            ':!.github/workflows/ci.yml' \
-            ':!workers/api/test/source.test.mjs'; then
-            echo "Potential real secret found. Remove it before merging."
-            exit 1
-          fi

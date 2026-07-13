@@ -3,7 +3,7 @@
 
 Scan AI agent configurations for execution-risk and security issues before production deployment.
 
-Agent Verify v1.3.0 includes the web dashboard, private report history, CLI/API scanning, GitHub Action wrapper, A2SPA guidance, Stripe test-mode Pro checkout, and D1-backed billing status. Live Stripe billing is not enabled.
+Agent Verify v1.3.0 includes the web dashboard, private report history, CLI/API scanning, GitHub Action wrapper, A2SPA guidance, live Stripe Pro checkout, and D1-backed billing status.
 
 ## Web App
 https://aimodularity.com/agentverify/
@@ -27,13 +27,17 @@ Saved CLI reports appear in the dashboard when API report save succeeds. Dashboa
 
 ## Plans
 - Free: 10 scans/month guidance, basic findings, private report history.
-- Pro test mode: $19.99/month, 100 scans/month guidance, PDF export, report sharing, full remediation, corrected snippets, and A2SPA guidance.
+- Pro: $19.99/month, live Stripe checkout, 100 scans/month guidance, PDF export, report sharing, full remediation, corrected snippets, and A2SPA guidance.
 - Team: Coming soon.
 - Enterprise: Contact us.
 
 ## Launch Notes
-- Stripe remains in test mode. Do not configure live keys without explicit approval.
+- Live Stripe billing is enabled for Pro checkout. Never commit Stripe secret keys or webhook signing secrets.
 - Billing state is stored in Cloudflare D1; reports remain in Firebase/Firestore.
+- Dashboard scan quota enforcement is still launch guidance until server-side dashboard scan issuance is completed.
+- Team is coming soon. Enterprise is contact us.
+- Password-protected sharing is deferred unless report delivery is server-enforced.
+- Firestore report privacy and rules still require separate review before any rules deployment.
 - The notification center is deferred for launch. The dashboard keeps only new-report count indicators on Reports navigation and report list surfaces.
 - The scanner package is proprietary/private and intentionally ignored by Git in this workspace.
 - Never commit API keys, Stripe keys, webhook secrets, Firebase keys, Cloudflare tokens, A2SPA private keys, `.env*`, `.dev.vars`, or local Wrangler state.

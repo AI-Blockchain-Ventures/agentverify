@@ -1,4 +1,4 @@
-name: CI
+name: Public CI
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
     branches: [main]
 
 jobs:
-  build:
+  public:
     runs-on: ubuntu-latest
 
     steps:
@@ -20,15 +20,6 @@ jobs:
 
       - run: npm ci
 
-      - name: Create public CI scanner stub
-        run: node scripts/create-ci-scanner-stub.mjs
-
-      - name: Lint web
-        run: npm run lint
-
-      - name: Build web
-        run: npm run build --workspace=apps/web
-
       - name: Build CLI
         run: npm run build --workspace=packages/cli
 
@@ -40,3 +31,13 @@ jobs:
 
       - name: Test Worker
         run: npm test --workspace=workers/api
+
+      - name: Secret safety check
+        shell: bash
+        run: |
+          ! git grep -n "sk_live_\|whsec_\|-----BEGIN PRIVATE KEY-----\|CLOUDFLARE_API_TOKEN" -- . ':!package-lock.json'
+
+      - name: Confirm private scanner is not tracked
+        shell: bash
+        run: |
+          test -z "$(git ls-files packages/scanner)"

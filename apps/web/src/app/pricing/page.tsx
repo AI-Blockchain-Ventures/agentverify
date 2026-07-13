@@ -75,7 +75,7 @@ export default function PricingPage() {
 
         <div style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }} className="mx-auto mt-8 max-w-3xl rounded-3xl p-5 text-center shadow-xl shadow-black/5">
           <p style={{ color: 'var(--text-primary)' }} className="text-sm font-semibold">Billing status</p>
-          <p style={{ color: 'var(--text-muted)' }} className="mt-1 text-sm">Pro checkout is connected to the secure billing API for Stripe test-mode validation. Team remains coming soon and Enterprise is contact-only.</p>
+          <p style={{ color: 'var(--text-muted)' }} className="mt-1 text-sm">Pro checkout is connected to the secure billing API for live Stripe billing. Team remains coming soon and Enterprise is contact-only.</p>
           {message && <p className="mt-3 text-sm text-[#E07B39]">{message}</p>}
         </div>
 

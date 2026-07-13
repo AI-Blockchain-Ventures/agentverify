@@ -40,6 +40,7 @@ Saved CLI reports appear in the dashboard when API report save succeeds. Dashboa
 - Firestore report privacy and rules still require separate review before any rules deployment.
 - The notification center is deferred for launch. The dashboard keeps only new-report count indicators on Reports navigation and report list surfaces.
 - The scanner package is proprietary/private and intentionally ignored by Git in this workspace.
+- Public GitHub CI validates the web app, CLI, Worker, docs, and action wrapper without publishing private scanner logic. Private scanner builds/tests run separately outside the public repository.
 - Never commit API keys, Stripe keys, webhook secrets, Firebase keys, Cloudflare tokens, A2SPA private keys, `.env*`, `.dev.vars`, or local Wrangler state.
 
 ## What it checks

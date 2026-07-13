@@ -7,11 +7,11 @@
     "dev": "npm run dev --workspace=apps/web",
     "build": "npm run build --workspace=apps/web",
     "export": "npm run export --workspace=apps/web",
-    "build:scanner": "npm run build --workspace=packages/scanner",
     "build:cli": "npm run build --workspace=packages/cli",
     "check:worker": "npm run typecheck --workspace=workers/api",
     "build:worker": "npm run build --workspace=workers/api",
-    "test:scanner": "npm run test --workspace=packages/scanner",
+    "private:build:scanner": "npm run build --workspace=packages/scanner",
+    "private:test:scanner": "npm run test --workspace=packages/scanner",
     "test:worker": "npm run test --workspace=workers/api",
     "lint": "npm run lint --workspace=apps/web"
   }

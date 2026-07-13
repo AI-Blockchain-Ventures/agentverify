@@ -1,4 +1,4 @@
-name: Public CI
+﻿name: Public CI
 
 on:
   push:

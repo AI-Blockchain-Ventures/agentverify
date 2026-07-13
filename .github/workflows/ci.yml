@@ -9,17 +9,34 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
-      - name: Create CI scanner stub
-        run: node scripts/create-ci-scanner-stub.mjs
-      - run: npm install
-      - run: npm run lint
-      - run: npm run build --workspace=apps/web
-      - run: npm run build --workspace=packages/cli
-      - run: npm test --workspace=packages/cli
-      - run: npm run build --workspace=workers/api
-      - run: npm test --workspace=workers/api
+          node-version: '24'
+          cache: 'npm'
+
+      - run: npm ci
+
+      - name: Lint web
+        run: npm run lint
+
+      - name: Build web
+        run: npm run build --workspace=apps/web
+
+      - name: Build CLI
+        run: npm run build --workspace=packages/cli
+
+      - name: Test CLI
+        run: npm test --workspace=packages/cli
+
+      - name: Typecheck Worker
+        run: npm run typecheck --workspace=workers/api
+
+      - name: Build Worker
+        run: npm run build --workspace=workers/api
+
+      - name: Test Worker
+        run: npm test --workspace=workers/api

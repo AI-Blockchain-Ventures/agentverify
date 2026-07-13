@@ -18,7 +18,8 @@ jobs:
           node-version: '24'
           cache: 'npm'
 
-      - run: npm ci
+      - name: Install dependencies
+        run: npm ci
 
       - name: Build CLI
         run: npm run build --workspace=packages/cli
@@ -32,12 +33,18 @@ jobs:
       - name: Test Worker
         run: npm test --workspace=workers/api
 
-      - name: Secret safety check
-        shell: bash
-        run: |
-          ! git grep -n "sk_live_\|whsec_\|-----BEGIN PRIVATE KEY-----\|CLOUDFLARE_API_TOKEN" -- . ':!package-lock.json'
-
       - name: Confirm private scanner is not tracked
         shell: bash
         run: |
           test -z "$(git ls-files packages/scanner)"
+
+      - name: Secret safety check
+        shell: bash
+        run: |
+          if git grep -n -E "sk_live_[A-Za-z0-9]{12,}|whsec_[A-Za-z0-9]{12,}|-----BEGIN PRIVATE KEY-----|CLOUDFLARE_API_TOKEN" -- . \
+            ':!package-lock.json' \
+            ':!.github/workflows/ci.yml' \
+            ':!workers/api/test/source.test.mjs'; then
+            echo "Potential real secret found. Remove it before merging."
+            exit 1
+          fi

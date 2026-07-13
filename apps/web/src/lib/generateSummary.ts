@@ -7,16 +7,19 @@ export function generateSummary(result: ScanResult): {
   action: string
 } {
   const { verdict, riskScore, findings, bom, metadata } = result
-  const agentName = bom.agentName ?? metadata.fileName ?? 'This agent'
-  const critical = findings.filter(f => f.severity === 'critical')
-  const high = findings.filter(f => f.severity === 'high')
-  const hasCredentials = findings.some(f => f.title.includes('credential') || f.title.includes('Hardcoded'))
-  const hasWildcard = findings.some(f => f.title.includes('Unrestricted') || f.title.includes('Over-permissioned'))
-  const missingHuman = findings.some(f => f.title.includes('human'))
-  const missingAudit = findings.some(f => f.title.includes('audit'))
-  const missingSignature = findings.some(f => f.title.includes('signature'))
+  const safeFindings = findings ?? []
+  const safeRiskScore = riskScore ?? 0
+  const safeVerdict = verdict ?? 'NOT VERIFIED'
+  const agentName = bom?.agentName ?? metadata?.fileName ?? 'This agent'
+  const critical = safeFindings.filter(f => f.severity === 'critical')
+  const high = safeFindings.filter(f => f.severity === 'high')
+  const hasCredentials = safeFindings.some(f => f.title.includes('credential') || f.title.includes('Hardcoded'))
+  const hasWildcard = safeFindings.some(f => f.title.includes('Unrestricted') || f.title.includes('Over-permissioned'))
+  const missingHuman = safeFindings.some(f => f.title.includes('human'))
+  const missingAudit = safeFindings.some(f => f.title.includes('audit'))
+  const missingSignature = safeFindings.some(f => f.title.includes('signature'))
 
-  if (verdict === 'VERIFIED') {
+  if (safeVerdict === 'VERIFIED') {
     return {
       headline: `${agentName} passed execution trust analysis.`,
       bullets: [
@@ -29,9 +32,9 @@ export function generateSummary(result: ScanResult): {
     }
   }
 
-  const headline = riskScore < 30
+  const headline = safeRiskScore < 30
     ? `${agentName} has critical security issues that must be resolved before deployment.`
-    : riskScore < 60
+    : safeRiskScore < 60
     ? `${agentName} has significant security gaps that increase deployment risk.`
     : `${agentName} has minor security improvements needed before production.`
 
@@ -58,7 +61,7 @@ export function generateSummary(result: ScanResult): {
 
   const action = critical.length > 0
     ? `Resolve ${critical.length} critical finding${critical.length !== 1 ? 's' : ''} before deployment. Contact aiblockchainventures.com for integration support.`
-    : `Address ${findings.length} finding${findings.length !== 1 ? 's' : ''} to improve your security posture.`
+    : `Address ${safeFindings.length} finding${safeFindings.length !== 1 ? 's' : ''} to improve your security posture.`
 
-  return { headline, bullets: bullets.length ? bullets : findings.slice(0, 3).map((f: Finding) => f.title), attackerView, action }
+  return { headline, bullets: bullets.length ? bullets : safeFindings.slice(0, 3).map((f: Finding) => f.title), attackerView, action }
 }

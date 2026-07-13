@@ -1,14 +1,18 @@
 {
   "name": "agentverify",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "private": true,
-  "workspaces": ["apps/*", "packages/*"],
+  "workspaces": ["apps/*", "packages/*", "workers/*"],
   "scripts": {
     "dev": "npm run dev --workspace=apps/web",
     "build": "npm run build --workspace=apps/web",
     "export": "npm run export --workspace=apps/web",
     "build:scanner": "npm run build --workspace=packages/scanner",
     "build:cli": "npm run build --workspace=packages/cli",
+    "check:worker": "npm run typecheck --workspace=workers/api",
+    "build:worker": "npm run build --workspace=workers/api",
+    "test:scanner": "npm run test --workspace=packages/scanner",
+    "test:worker": "npm run test --workspace=workers/api",
     "lint": "npm run lint --workspace=apps/web"
   }
 }

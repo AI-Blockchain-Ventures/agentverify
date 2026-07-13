@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "strict": true,
+    "noEmit": true,
+    "lib": ["ES2022", "WebWorker"],
+    "types": [],
+    "baseUrl": ".",
+    "paths": {
+      "@agentverify/scanner": ["../../packages/scanner/src/index.ts"]
+    }
+  },
+  "include": ["src/**/*.ts", "../../packages/scanner/src/**/*.ts"]
+}

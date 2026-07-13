@@ -5,8 +5,9 @@ import { join, relative, extname } from 'path'
 import { scan } from './sdk'
 import type { ScanResult } from './types'
 
-const VERSION = '1.2.0'
-const API_URL = 'https://agentverify-api.agentverify.workers.dev/v1/scan'
+const VERSION = '1.3.0'
+const API_URL = process.env.AGENTVERIFY_API_URL ?? 'https://agentverify-api.agentverify.workers.dev/v1/scan'
+const A2SPA_DOCS_URL = 'https://aimodularity.com/A2SPA/docs'
 
 // ANSI colors
 const c = {
@@ -52,6 +53,9 @@ function parseArgs(argv: string[]): {
   key: string
   file: string
   json: boolean
+  markdown: boolean
+  ci: boolean
+  allowNotAssessed: boolean
   help: boolean
   version: boolean
 } {
@@ -62,6 +66,9 @@ function parseArgs(argv: string[]): {
     key: '',
     file: '',
     json: false,
+    markdown: false,
+    ci: false,
+    allowNotAssessed: false,
     help: false,
     version: false,
   }
@@ -81,6 +88,9 @@ function parseArgs(argv: string[]): {
     if (arg === '--key' || arg === '-k') result.key = args[++i] ?? ''
     else if (arg === '--file' || arg === '-f') result.file = args[++i] ?? ''
     else if (arg === '--json') result.json = true
+    else if (arg === '--markdown') result.markdown = true
+    else if (arg === '--ci') result.ci = true
+    else if (arg === '--allow-not-assessed') result.allowNotAssessed = true
     else if (arg === '--help' || arg === '-h') result.help = true
     else if (arg === '--version' || arg === '-v') result.version = true
     else if (!arg.startsWith('-')) result.dir = arg
@@ -108,6 +118,10 @@ ${c.bold}Options:${c.reset}
   --key, -k     API key (or set AGENTVERIFY_API_KEY env var)
   --file, -f    Scan a single file instead of a directory
   --json        Output results as JSON
+  --markdown    Output a Markdown summary
+  --ci          CI mode: concise output and non-zero exit for NOT VERIFIED
+  --allow-not-assessed
+                In CI mode, do not fail only because content is NOT_ASSESSED
   --version, -v Print version
   --help, -h    Show this help message
 
@@ -124,20 +138,89 @@ ${c.bold}Examples:${c.reset}
   ${c.gray}# Output as JSON (useful for CI/CD)${c.reset}
   agentverify scan . --key av_your_key --json
 
+  ${c.gray}# Markdown summary for pull requests${c.reset}
+  agentverify scan . --key av_your_key --markdown
+
 ${c.bold}Get your API key:${c.reset}
   https://aimodularity.com/agentverify/dashboard
 
 ${c.bold}Docs:${c.reset}
   https://github.com/AI-Blockchain-Ventures/agentverify
+
+${c.bold}A2SPA docs:${c.reset}
+  ${A2SPA_DOCS_URL}
 `)
+}
+
+function getTopBlocker(result: ScanResult): string {
+  return result.reportInsights?.topBlocker ?? result.findings[0]?.title ?? 'No blocking finding detected'
+}
+
+function getFixFirst(result: ScanResult): string[] {
+  const fromInsights = result.reportInsights?.fixPriority?.filter(item => item.priority === 'fix_first').map(item => item.title) ?? []
+  const fallback = result.findings.slice(0, 3).map(item => item.title)
+  return (fromInsights.length ? fromInsights : fallback).slice(0, 3)
+}
+
+function getRelevantThreatCategories(result: ScanResult): string[] {
+  return (result.threatCategories ?? [])
+    .filter(item => item.status !== 'not_assessed')
+    .slice(0, 6)
+    .map(item => `${item.label} (${item.status.replace('_', ' ')})`)
+}
+
+function printDetailedSummary(result: ScanResult, fileName: string) {
+  const verified = result.verdict === 'VERIFIED'
+  const verdictColor = verified ? c.green : result.verdict === 'NOT_ASSESSED' ? c.yellow : c.red
+  write(`\n${c.bold}${c.cyan}Agent Verify${c.reset}`)
+  write(`${c.gray}${fileName}${c.reset}`)
+  write(`${c.bold}Score:${c.reset} ${result.riskScore}/100`)
+  write(`${c.bold}Verdict:${c.reset} ${verdictColor}${result.verdict === 'NOT_VERIFIED' ? 'NOT VERIFIED' : result.verdict.replace('_', ' ')}${c.reset}`)
+  write(`${c.bold}Risk level:${c.reset} ${result.riskLevel}`)
+  write(`${c.bold}Confidence:${c.reset} ${result.confidence}/100`)
+  write(`${c.bold}Top blocker:${c.reset} ${getTopBlocker(result)}`)
+  write(`\n${c.bold}Fix first:${c.reset}`)
+  const fixes = getFixFirst(result)
+  if (fixes.length) fixes.forEach((item, index) => write(`  ${index + 1}. ${item}`))
+  else write(`  No blocking fixes detected. Re-scan after any material change.`)
+  if (result.reportInsights?.nextAction) write(`\n${c.bold}Next action:${c.reset} ${result.reportInsights.nextAction}`)
+  const threats = getRelevantThreatCategories(result)
+  if (threats.length) {
+    write(`\n${c.bold}Threat categories:${c.reset}`)
+    threats.forEach(item => write(`  - ${item}`))
+  }
+  if (result.saved && result.reportId) write(`${c.bold}View report:${c.reset} https://aimodularity.com/agentverify/report/?id=${result.reportId}`)
+  write(`${c.bold}A2SPA docs:${c.reset} ${A2SPA_DOCS_URL}`)
+  write(`${c.gray}Re-scan:${c.reset} agentverify scan --file ${fileName} --key $AGENTVERIFY_API_KEY\n`)
+}
+
+function markdownSummary(results: Array<{ file: string; result: ScanResult | null; error: string | null }>, summary: { total: number; verified: number; notVerified: number; notAssessed: number; errors: number }): string {
+  const lines = ['# Agent Verify', '', `Files scanned: ${summary.total}`, `Verified: ${summary.verified}`, `Not verified: ${summary.notVerified}`, `Not assessed: ${summary.notAssessed}`, `Errors: ${summary.errors}`, '']
+  for (const item of results) {
+    if (!item.result) {
+      lines.push(`## ${item.file}`, '', `Error: ${item.error ?? 'Unknown error'}`, '')
+      continue
+    }
+    lines.push(`## ${item.file}`, '', `Score: ${item.result.riskScore}/100`, `Verdict: ${item.result.verdict === 'NOT_VERIFIED' ? 'NOT VERIFIED' : item.result.verdict.replace('_', ' ')}`, `Risk level: ${item.result.riskLevel}`, `Top blocker: ${getTopBlocker(item.result)}`, '')
+    const fixes = getFixFirst(item.result)
+    if (fixes.length) lines.push('Fix first:', ...fixes.map((fix, index) => `${index + 1}. ${fix}`), '')
+    const threats = getRelevantThreatCategories(item.result)
+    if (threats.length) lines.push('Threat categories:', ...threats.map(threat => `- ${threat}`), '')
+    if (item.result.reportId) lines.push(`Report: https://aimodularity.com/agentverify/report/?id=${item.result.reportId}`, '')
+  }
+  lines.push(`A2SPA docs: ${A2SPA_DOCS_URL}`)
+  return lines.join('\n')
 }
 
 function printVerdict(result: ScanResult, fileName: string) {
   const verified = result.verdict === 'VERIFIED'
-  const icon = verified ? `${c.green}✓${c.reset}` : `${c.red}✗${c.reset}`
+  const notAssessed = result.verdict === 'NOT_ASSESSED'
+  const icon = verified ? `${c.green}✓${c.reset}` : notAssessed ? `${c.yellow}⚠${c.reset}` : `${c.red}✗${c.reset}`
   const verdict = verified
     ? `${c.green}VERIFIED${c.reset}    `
-    : `${c.red}NOT VERIFIED${c.reset}`
+    : notAssessed
+      ? `${c.yellow}NOT ASSESSED${c.reset}`
+      : `${c.red}NOT VERIFIED${c.reset}`
   const score = verified
     ? `${c.green}${result.riskScore}/100${c.reset}`
     : result.riskScore >= 50
@@ -158,8 +241,9 @@ function printVerdict(result: ScanResult, fileName: string) {
 async function runScan(args: ReturnType<typeof parseArgs>) {
   if (!args.key) {
     console.error(`\n${c.red}Error:${c.reset} API key required\n`)
-    console.error(`  Set with --key av_your_key or AGENTVERIFY_API_KEY env var`)
-    console.error(`  Get your key at https://aimodularity.com/agentverify/dashboard\n`)
+    console.error(`  Set with --key av_your_key or AGENTVERIFY_API_KEY env var.`)
+    console.error(`  Get your key at https://aimodularity.com/agentverify/dashboard/`)
+    console.error(`  Example: AGENTVERIFY_API_KEY=av_your_key agentverify scan .\n`)
     process.exit(1)
   }
 
@@ -169,8 +253,10 @@ async function runScan(args: ReturnType<typeof parseArgs>) {
     files = [args.file]
   } else {
     const dir = args.dir
-    write(`\n${c.bold}Agent Verify${c.reset} ${c.gray}v${VERSION}${c.reset}`)
-    write(`${c.gray}Scanning ${dir}...${c.reset}\n`)
+    if (!args.markdown && !args.json) {
+      write(`\n${c.bold}Agent Verify${c.reset} ${c.gray}v${VERSION}${c.reset}`)
+      write(`${c.gray}Scanning ${dir}...${c.reset}\n`)
+    }
     files = collectFiles(dir)
     if (files.length === 0) {
       write(`${c.yellow}No agent files found in ${dir}${c.reset}`)
@@ -183,6 +269,7 @@ async function runScan(args: ReturnType<typeof parseArgs>) {
   const jsonResults: Array<{ file: string; result: ScanResult | null; error: string | null }> = []
   let verified = 0
   let notVerified = 0
+  let notAssessed = 0
   let errors = 0
 
   // Process with concurrency of 3
@@ -205,9 +292,13 @@ async function runScan(args: ReturnType<typeof parseArgs>) {
       const outcome = batchResults[j]
       if (outcome.status === 'fulfilled') {
         const { relPath, result } = outcome.value
-        if (!args.json) printVerdict(result, relPath)
+        if (!args.json && !args.markdown) {
+          if (args.file && !args.ci) printDetailedSummary(result, relPath)
+          else printVerdict(result, relPath)
+        }
         jsonResults.push({ file: relPath, result, error: null })
         if (result.verdict === 'VERIFIED') verified++
+        else if (result.verdict === 'NOT_ASSESSED') notAssessed++
         else notVerified++
       } else {
         const filePath = batch[j]
@@ -222,23 +313,48 @@ async function runScan(args: ReturnType<typeof parseArgs>) {
     }
   }
 
+  const summary = { total: files.length, verified, notVerified, notAssessed, errors }
+
   if (args.json) {
-    write(JSON.stringify({ results: jsonResults, summary: { total: files.length, verified, notVerified, errors } }, null, 2))
+    write(JSON.stringify({ results: jsonResults, summary }, null, 2))
+    if (errors > 0) process.exit(1)
+    if (args.ci) {
+      if (notVerified > 0) process.exit(1)
+      if (notAssessed > 0 && !args.allowNotAssessed) process.exit(2)
+    }
+    return
+  }
+
+  if (args.markdown) {
+    write(markdownSummary(jsonResults, summary))
+    if (errors > 0) process.exit(1)
+    if (args.ci) {
+      if (notVerified > 0) process.exit(1)
+      if (notAssessed > 0 && !args.allowNotAssessed) process.exit(2)
+    }
     return
   }
 
   // Summary
+  const savedReports = jsonResults.filter(item => item.result?.saved && item.result.reportId).length
   write(`\n${c.gray}${'─'.repeat(60)}${c.reset}`)
   write(`${c.bold}Agent Verify Scan Complete${c.reset}`)
   write(`${c.gray}Files scanned:${c.reset}   ${files.length}`)
   write(`${c.green}Verified:${c.reset}        ${verified}`)
   if (notVerified > 0) write(`${c.red}Not Verified:${c.reset}    ${notVerified}`)
+  if (notAssessed > 0) write(`${c.yellow}Not Assessed:${c.reset}    ${notAssessed}`)
   if (errors > 0) write(`${c.yellow}Errors:${c.reset}          ${errors}`)
   write(`${c.gray}${'─'.repeat(60)}${c.reset}`)
-  write(`\n${c.gray}View reports: https://aimodularity.com/agentverify/dashboard${c.reset}\n`)
+  if (savedReports > 0) write(`\n${c.gray}Saved CLI reports appear in your dashboard: https://aimodularity.com/agentverify/dashboard/${c.reset}`)
+  else write(`\n${c.gray}No dashboard report was saved. Check API key access and retry if you need dashboard sync.${c.reset}`)
+  write(`${c.gray}A2SPA docs: ${A2SPA_DOCS_URL}${c.reset}\n`)
 
-  // Exit with error code if any files failed verification
-  if (notVerified > 0) process.exit(1)
+  if (errors > 0) process.exit(1)
+
+  if (args.ci) {
+    if (notVerified > 0) process.exit(1)
+    if (notAssessed > 0 && !args.allowNotAssessed) process.exit(2)
+  }
 }
 
 async function main() {

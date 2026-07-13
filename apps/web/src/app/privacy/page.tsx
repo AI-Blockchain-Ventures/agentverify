@@ -40,8 +40,8 @@ hello@aiblockchainventures.com.`,
     title: 'Security',
     body: `All data is transmitted over HTTPS. Firebase Authentication 
 handles password hashing and storage. We do not have access to your 
-password. Your scan data is protected by Firebase security rules that 
-restrict access to your account only.`,
+password. Private dashboard reports are intended for the report owner, 
+and public report links should only be enabled when you are ready to share.`,
   },
   {
     title: 'Contact',

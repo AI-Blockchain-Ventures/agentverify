@@ -1,19 +1,33 @@
 # Never commit
 .env
+.env.*
 .env.local
+*.local
 apps/web/.env.local
 apps/web/.env
 apps/web/next-env.d.ts
 apps/web/.htaccess
+.dev.vars
+*.pem
+*.key
+*.p8
+*.p12
+stripe*.json
+stripe*.log
+.stripe/
 
 # Scanner — proprietary IP, keep private
 packages/scanner/
 
 # Build outputs
 .next/
+apps/web/.next/
+apps/web/out/
 out/
 dist/
 .wrangler/
+workers/api/.wrangler/
+coverage/
 
 # Dependencies
 node_modules/

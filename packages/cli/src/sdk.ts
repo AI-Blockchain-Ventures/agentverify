@@ -5,6 +5,58 @@ export type { ScanInput, ScanResult, ScanOptions, Finding } from './types'
 const DEFAULT_API_URL = 'https://agentverify-api.agentverify.workers.dev/v1/scan'
 const DEFAULT_TIMEOUT = 30000
 
+function normalizeVerdict(value: unknown): ScanResult['verdict'] {
+  if (value === 'VERIFIED') return 'VERIFIED'
+  if (value === 'NOT_ASSESSED' || value === 'NOT ASSESSED') return 'NOT_ASSESSED'
+  return 'NOT_VERIFIED'
+}
+
+function normalizeScanResult(data: Partial<ScanResult>): ScanResult {
+  const findings = Array.isArray(data.findings) ? data.findings : []
+  const riskScore = typeof data.riskScore === 'number' ? data.riskScore : 0
+  return {
+    ...data,
+    reportId: typeof data.reportId === 'string' ? data.reportId : '',
+    verdict: normalizeVerdict(data.verdict),
+    riskScore,
+    riskLevel: data.riskLevel ?? 'High Risk',
+    confidence: typeof data.confidence === 'number' ? data.confidence : riskScore > 0 ? 80 : 0,
+    optimizationScore: typeof data.optimizationScore === 'number' ? data.optimizationScore : 0,
+    reportInsights: data.reportInsights,
+    threatCategories: Array.isArray(data.threatCategories) ? data.threatCategories : [],
+    findings,
+    categoryScores: Array.isArray(data.categoryScores) ? data.categoryScores : [],
+    bom: data.bom ?? {
+      detectedLanguage: 'Unknown',
+      detectedFramework: null,
+      detectedPlatform: null,
+      agentName: null,
+      toolAccessLevel: 'Unknown',
+      credentialExposure: 'Not Detected',
+      memoryPersistence: 'Unknown',
+      auditLogging: 'Unknown',
+      humanGates: 'Unknown',
+      rateLimiting: 'Unknown',
+      promptInjectionSurface: 'Unknown',
+      delegationScope: 'Unknown',
+    },
+    metadata: data.metadata ?? {
+      schemaVersion: '1.3.0',
+      scannerVersion: 'unknown',
+      fileName: 'unknown',
+      fileSize: 0,
+      scannedAt: new Date().toISOString(),
+      detectedLanguage: 'Unknown',
+      detectedFramework: null,
+      selectedPlatform: null,
+      agentName: null,
+      scanDuration: 0,
+    },
+    saved: data.saved === true,
+    reportUrl: data.reportUrl ?? null,
+  } as ScanResult
+}
+
 /**
  * Scan an agent configuration for execution trust issues.
  *
@@ -16,7 +68,7 @@ const DEFAULT_TIMEOUT = 30000
  *   { apiKey: process.env.AGENTVERIFY_API_KEY }
  * )
  *
- * result.verdict    // 'VERIFIED' | 'NOT VERIFIED'
+ * result.verdict    // 'VERIFIED' | 'NOT_VERIFIED' | 'NOT_ASSESSED'
  * result.riskScore  // 0-100
  * result.findings   // Array of findings
  */
@@ -57,7 +109,7 @@ export async function scan(
 
     if (response.status === 401) {
       throw new Error(
-        'Invalid API key. Generate one at https://aimodularity.com/agentverify/dashboard'
+        'Invalid or unauthorized Agent Verify API key. Generate a valid key at https://aimodularity.com/agentverify/dashboard/'
       )
     }
 
@@ -70,8 +122,8 @@ export async function scan(
       throw new Error(`API error: ${response.status} ${response.statusText}`)
     }
 
-    const data = await response.json() as ScanResult
-    return data
+    const data = await response.json() as Partial<ScanResult>
+    return normalizeScanResult(data)
   } catch (err) {
     if (err instanceof Error && err.name === 'AbortError') {
       throw new Error(`Request timed out after ${timeout}ms`)

@@ -47,13 +47,13 @@ export function Settings() {
   }
 
   return (
-    <div className="mx-auto max-w-lg space-y-6">
+    <div className="mx-auto max-w-2xl space-y-5">
       <div
         style={{
           backgroundColor: 'var(--card)',
           border: '1px solid var(--border)',
         }}
-        className="rounded-xl p-6"
+        className="rounded-3xl p-6 shadow-xl shadow-black/5"
       >
         <h2 style={{ color: 'var(--text-primary)' }} className="mb-4 text-sm font-semibold uppercase tracking-wider">
           Appearance
@@ -64,7 +64,7 @@ export function Settings() {
               Theme
             </p>
             <p style={{ color: 'var(--text-muted)' }} className="text-xs mt-0.5">
-              Choose your preferred color scheme
+              Choose the workspace appearance that feels best.
             </p>
           </div>
           <div
@@ -80,7 +80,7 @@ export function Settings() {
               }}
               className="rounded-md px-4 py-1.5 text-xs font-medium transition-all"
             >
-              ☀ Light
+              Light
             </button>
             <button
               onClick={() => setMode('dark')}
@@ -91,13 +91,13 @@ export function Settings() {
               }}
               className="rounded-md px-4 py-1.5 text-xs font-medium transition-all"
             >
-              ● Dark
+              Dark
             </button>
           </div>
         </div>
       </div>
 
-      <section style={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)' }} className="rounded-xl p-6">
+      <section style={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)' }} className="rounded-3xl p-6 shadow-xl shadow-black/5">
         <h2 style={{ color: 'var(--text-primary)' }} className="text-lg font-semibold">Account</h2>
         <div className="mt-4 space-y-3 text-sm">
           <div>
@@ -114,9 +114,9 @@ export function Settings() {
         </button>
       </section>
 
-      <section style={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)' }} className="rounded-xl p-6">
-        <h2 style={{ color: 'var(--text-primary)' }} className="text-lg font-semibold">Danger Zone</h2>
-        <p style={{ color: 'var(--text-secondary)' }} className="mt-2 text-sm">Delete all saved reports from your dashboard.</p>
+      <section style={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)' }} className="rounded-3xl p-6 shadow-xl shadow-black/5">
+        <h2 style={{ color: 'var(--text-primary)' }} className="text-lg font-semibold">Report data</h2>
+        <p style={{ color: 'var(--text-secondary)' }} className="mt-2 text-sm">Delete saved dashboard and CLI reports from this workspace.</p>
         {showConfirm ? (
           <div className="mt-3 rounded-lg border border-[#E03E3E]/20 bg-[#E03E3E]/5 p-4">
             <p className="mb-3 text-sm text-[#E03E3E]">This will permanently delete all your scan reports. This cannot be undone.</p>
@@ -136,7 +136,7 @@ export function Settings() {
         )}
       </section>
 
-      <section style={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)' }} className="rounded-xl p-6">
+      <section style={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)' }} className="rounded-3xl p-6 shadow-xl shadow-black/5">
         <h2 style={{ color: 'var(--text-primary)' }} className="text-lg font-semibold">Legal</h2>
         <div className="mt-3 flex gap-4 text-sm">
           <Link href="/privacy" className="text-[#00C4CC] hover:underline">Privacy Policy</Link>
@@ -144,11 +144,11 @@ export function Settings() {
         </div>
       </section>
 
-      <section style={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)' }} className="rounded-xl p-6">
+      <section style={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)' }} className="rounded-3xl p-6 shadow-xl shadow-black/5">
         <h2 style={{ color: 'var(--text-primary)' }} className="text-lg font-semibold">About</h2>
         <div style={{ color: 'var(--text-muted)' }} className="mt-3 space-y-1 text-sm">
-          <p>Agent Verify v1.2.0</p>
-          <p>Execution Trust Analysis Platform</p>
+          <p>Agent Verify v1.3.0</p>
+          <p>AI agent security reports and execution-trust guidance</p>
           <p>Powered by A2SPA — AI Blockchain Ventures LLC</p>
           <a href="https://github.com/AI-Blockchain-Ventures/agentverify" target="_blank" rel="noreferrer" className="inline-block text-[#00C4CC] hover:underline">
             GitHub

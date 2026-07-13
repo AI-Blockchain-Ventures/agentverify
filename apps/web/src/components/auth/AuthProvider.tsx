@@ -11,7 +11,6 @@ import {
   signInWithPopup,
   signOut as firebaseSignOut,
 } from 'firebase/auth'
-import { useRouter } from 'next/navigation'
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 
 const getAuthError = (code: string): string => {
@@ -43,7 +42,6 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue | null>(null)
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const router = useRouter()
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
 
@@ -57,20 +55,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signIn = useCallback(async (email: string, password: string) => {
     await signInWithEmailAndPassword(auth, email, password)
     trackSignIn()
-    router.push('/dashboard')
-  }, [router])
+  }, [])
 
   const signUp = useCallback(async (email: string, password: string) => {
     await createUserWithEmailAndPassword(auth, email, password)
     trackSignUp()
-    router.push('/dashboard')
-  }, [router])
+  }, [])
 
   const signInWithGoogle = useCallback(async () => {
     try {
       await signInWithPopup(auth, new GoogleAuthProvider())
       trackSignIn()
-      router.push('/dashboard')
     } catch (err) {
       const e = err as { code?: string; message?: string }
       const msg = e.code ? getAuthError(e.code) : (e.message ?? 'Something went wrong. Please try again.')
@@ -79,7 +74,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Firebase Console > Authentication > Settings > Authorized domains
       throw new Error(msg)
     }
-  }, [router])
+  }, [])
 
   const value = useMemo<AuthContextValue>(() => ({
     user,

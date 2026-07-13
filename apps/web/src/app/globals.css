@@ -34,21 +34,21 @@
 
 /* LIGHT THEME */
 :root.light {
-  --bg: #e2e2e2;
-  --surface: #1d1d3a81;
-  --card: #c0c0c0;
-  --border: #757c8f;
-  --border-light: #cbd5e1;
-  --text-primary: #595d66;
-  --text-secondary: #595d66;
-  --text-muted: #5c5c5c;
-  --input-bg: #ffffff;
-  --input-border: #cfcfcf;
-  --input-text: #0f172a;
+  --bg: #EEF3F8;
+  --surface: #F8FAFC;
+  --card: #FFFFFF;
+  --border: #CAD5E2;
+  --border-light: #B8C5D4;
+  --text-primary: #111827;
+  --text-secondary: #334155;
+  --text-muted: #64748B;
+  --input-bg: #F8FAFC;
+  --input-border: #B8C5D4;
+  --input-text: #111827;
   --input-placeholder: #94a3b8;
-  --nav-bg: #0D0D1A;
-  --nav-border: #757c8f;
-  --sidebar-bg: #0D0D1A;
+  --nav-bg: rgba(255,255,255,0.94);
+  --nav-border: #CAD5E2;
+  --sidebar-bg: #F8FAFC;
 }
 
 @layer base {
@@ -62,6 +62,9 @@
     background-color: var(--bg);
     color: var(--text-primary);
     transition: background-color 0.2s, color 0.2s;
+    background-image:
+      radial-gradient(circle at top left, rgba(0,196,204,0.12), transparent 34rem),
+      radial-gradient(circle at top right, rgba(110,58,237,0.10), transparent 30rem);
   }
 
   ::selection { background: rgba(0,196,204,0.2); }

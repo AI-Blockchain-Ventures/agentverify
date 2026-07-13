@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useAuth } from './AuthProvider'
 import { Button } from '@/components/ui/Button'
 
@@ -34,6 +34,12 @@ export function AuthModal({ open, onClose, defaultMode = 'signIn' }: AuthModalPr
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    if (!open) return
+    setMode(defaultMode)
+    setError(null)
+  }, [defaultMode, open])
 
   if (!open) return null
 
@@ -71,14 +77,15 @@ export function AuthModal({ open, onClose, defaultMode = 'signIn' }: AuthModalPr
 
   return (
     <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/70 px-4 backdrop-blur-sm">
-      <div style={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)' }} className="mx-auto w-full max-w-sm rounded-2xl p-8">
-        <p style={{ color: 'var(--text-muted)' }} className="mb-6 text-xs tracking-widest">AGENT VERIFY</p>
-        <h2 style={{ color: 'var(--text-primary)' }} className="mb-6 text-2xl font-bold">{mode === 'signIn' ? 'Sign in' : 'Create account'}</h2>
+      <div style={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)' }} className="mx-auto w-full max-w-sm rounded-3xl p-7 shadow-2xl shadow-black/30 md:p-8">
+        <p style={{ color: 'var(--text-muted)' }} className="mb-3 text-xs font-semibold uppercase tracking-[0.24em]">Agent Verify</p>
+        <h2 style={{ color: 'var(--text-primary)' }} className="mb-2 text-2xl font-semibold tracking-tight">{mode === 'signIn' ? 'Welcome back' : 'Create your workspace'}</h2>
+        <p style={{ color: 'var(--text-muted)' }} className="mb-6 text-sm">{mode === 'signIn' ? 'Sign in to view reports and scan agents.' : 'Start with 10 free scans/month and private reports.'}</p>
         <form onSubmit={submit} className="space-y-3">
           <input style={{ backgroundColor: 'var(--input-bg)', border: '1px solid var(--input-border)', color: 'var(--input-text)' }} className="w-full rounded-lg px-4 py-3 text-sm outline-none focus:border-[#00C4CC]/50" type="email" value={email} onChange={event => setEmail(event.target.value)} placeholder="Email" required />
           <input style={{ backgroundColor: 'var(--input-bg)', border: '1px solid var(--input-border)', color: 'var(--input-text)' }} className="w-full rounded-lg px-4 py-3 text-sm outline-none focus:border-[#00C4CC]/50" type="password" value={password} onChange={event => setPassword(event.target.value)} placeholder="Password" required minLength={6} />
           {error && <p className="rounded-lg border border-[#EF4444]/20 bg-[#EF4444]/5 p-3 text-sm text-[#EF4444]">{error}</p>}
-          <Button type="submit" variant="primary" size="lg" className="w-full justify-center" disabled={loading}>{loading ? 'Working...' : mode === 'signIn' ? 'Sign In' : 'Create account'}</Button>
+          <Button type="submit" variant="primary" size="lg" className="w-full justify-center" disabled={loading}>{loading ? 'Working...' : mode === 'signIn' ? 'Sign in' : 'Create account'}</Button>
         </form>
         <button onClick={google} disabled={loading} style={{ backgroundColor: 'var(--input-bg)', border: '1px solid var(--border)', color: 'var(--text-primary)' }} className="mt-3 flex w-full items-center justify-center gap-2 rounded-lg py-3 text-sm transition-opacity hover:opacity-80 disabled:opacity-30">
           <svg viewBox="0 0 24 24" className="w-4 h-4" aria-hidden="true">
@@ -90,7 +97,7 @@ export function AuthModal({ open, onClose, defaultMode = 'signIn' }: AuthModalPr
           Continue with Google
         </button>
         <button style={{ color: 'var(--text-secondary)' }} className="mt-4 w-full text-center text-sm transition-opacity hover:opacity-70" onClick={() => setMode(mode === 'signIn' ? 'signUp' : 'signIn')}>
-          {mode === 'signIn' ? "Don't have one? Sign up" : 'Already have an account? Sign in'}
+          {mode === 'signIn' ? 'New to Agent Verify? Create account' : 'Already have an account? Sign in'}
         </button>
       </div>
     </div>

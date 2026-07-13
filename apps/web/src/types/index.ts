@@ -8,6 +8,8 @@ import type {
   RiskLevel,
   Category,
   Severity,
+  ThreatCategoryAssessment,
+  ThreatCategoryStatus,
 } from '@agentverify/scanner'
 
 export type {
@@ -20,6 +22,8 @@ export type {
   RiskLevel,
   Category,
   Severity,
+  ThreatCategoryAssessment,
+  ThreatCategoryStatus,
 }
 
 export type DashboardTab = 'scan' | 'reports' | 'api' | 'settings'

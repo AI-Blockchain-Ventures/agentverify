@@ -1,0 +1,75 @@
+name: Agent Verify
+description: Scan AI agents for execution-risk findings in pull requests.
+author: AI Blockchain Ventures LLC
+
+inputs:
+  path:
+    description: File or directory to scan.
+    required: false
+    default: ./agents
+  api-key:
+    description: Agent Verify API key. Pass from secrets.AGENTVERIFY_API_KEY.
+    required: true
+  format:
+    description: Output format for logs and optional artifact. Use text, markdown, or json.
+    required: false
+    default: text
+  fail-on-not-assessed:
+    description: Fail CI when submitted content cannot be assessed as an executable agent.
+    required: false
+    default: 'true'
+  upload-report-artifact:
+    description: Upload the CLI output as a workflow artifact.
+    required: false
+    default: 'false'
+
+outputs:
+  output-file:
+    description: Path to the Agent Verify CLI output file.
+    value: ${{ steps.scan.outputs.output-file }}
+
+runs:
+  using: composite
+  steps:
+    - name: Run Agent Verify
+      id: scan
+      shell: bash
+      env:
+        AGENTVERIFY_API_KEY: ${{ inputs.api-key }}
+      run: |
+        set +e
+        format="${{ inputs.format }}"
+        scan_path="${{ inputs.path }}"
+        extra_args=""
+
+        if [ "${{ inputs.fail-on-not-assessed }}" = "false" ]; then
+          extra_args="$extra_args --allow-not-assessed"
+        fi
+
+        case "$format" in
+          markdown)
+            output_file="agentverify-summary.md"
+            npx --yes agentverify scan "$scan_path" --ci --markdown $extra_args | tee "$output_file"
+            status=${PIPESTATUS[0]}
+            ;;
+          json)
+            output_file="agentverify-results.json"
+            npx --yes agentverify scan "$scan_path" --ci --json $extra_args | tee "$output_file"
+            status=${PIPESTATUS[0]}
+            ;;
+          text|*)
+            output_file="agentverify-results.txt"
+            npx --yes agentverify scan "$scan_path" --ci $extra_args | tee "$output_file"
+            status=${PIPESTATUS[0]}
+            ;;
+        esac
+
+        echo "output-file=$output_file" >> "$GITHUB_OUTPUT"
+        exit "$status"
+
+    - name: Upload Agent Verify output
+      if: ${{ always() && inputs.upload-report-artifact == 'true' }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: agentverify-results
+        path: ${{ steps.scan.outputs.output-file }}

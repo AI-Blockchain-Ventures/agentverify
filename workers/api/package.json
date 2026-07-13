@@ -2,7 +2,17 @@
   "name": "@agentverify/worker",
   "private": true,
   "scripts": {
+    "typecheck": "tsc --noEmit",
+    "build": "npm run typecheck && tsup src/worker.ts src/scanResponse.ts src/billing.ts --format esm --out-dir dist --clean",
+    "test": "node test/source.test.mjs",
     "dev": "wrangler dev",
     "deploy": "wrangler deploy --config wrangler.toml"
+  },
+  "dependencies": {
+    "@agentverify/scanner": "1.3.0"
+  },
+  "devDependencies": {
+    "tsup": "^8.0.0",
+    "typescript": "^5.0.0"
   }
 }

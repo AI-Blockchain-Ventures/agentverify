@@ -1,4 +1,4 @@
-import type { Finding, RiskLevel, ScanResult, Severity, StoredReport, Verdict } from '@/types'
+import type { Finding, RiskLevel, ScanResult, Severity, StoredReport } from '@/types'
 import { db } from './firebase'
 import {
   collection,
@@ -34,12 +34,18 @@ const sanitize = (obj: Record<string, unknown>): Record<string, unknown> =>
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value)
 
+const normalizeVerdict = (value: unknown): StoredReport['verdict'] => {
+  if (value === 'VERIFIED') return 'VERIFIED'
+  return 'NOT VERIFIED' as StoredReport['verdict']
+}
+
 const normalizeFindings = (raw: unknown): Finding[] => {
   if (!Array.isArray(raw)) return []
   return raw.map((f, i) => {
     if (typeof f === 'string') {
       return {
         id: String(i),
+        code: `LEGACY_FINDING_${i}`,
         title: f,
         category: 'B' as const,
         severity: 'medium' as const,
@@ -52,6 +58,7 @@ const normalizeFindings = (raw: unknown): Finding[] => {
     const finding = isRecord(f) ? f : {}
     return {
       id: typeof finding.id === 'string' ? finding.id : String(i),
+      code: typeof finding.code === 'string' ? finding.code : `LEGACY_FINDING_${i}`,
       title: typeof finding.title === 'string' ? finding.title : '',
       category: (finding.category ?? 'B') as 'A' | 'B',
       severity: (finding.severity ?? 'medium') as Severity,
@@ -67,7 +74,7 @@ const normalizeFindings = (raw: unknown): Finding[] => {
 
 export const normalize = (doc: DocumentData, id: string): StoredReport => ({
   reportId: doc.reportId ?? id,
-  verdict: doc.verdict ?? doc.result?.verdict ?? ('NOT VERIFIED' as Verdict),
+  verdict: normalizeVerdict(doc.verdict ?? doc.result?.verdict),
   riskScore: typeof doc.riskScore === 'number' ? doc.riskScore : doc.result?.riskScore ?? 0,
   riskLevel: doc.riskLevel ?? doc.result?.riskLevel ?? ('High Risk' as RiskLevel),
   fileName: doc.fileName ?? doc.agentName ?? doc.metadata?.fileName ?? doc.result?.metadata?.fileName ?? 'Agent Config',
@@ -78,9 +85,9 @@ export const normalize = (doc: DocumentData, id: string): StoredReport => ({
   agentName: doc.agentName ?? doc.result?.bom?.agentName ?? null,
   uid: typeof doc.uid === 'string' ? doc.uid : typeof doc.userId === 'string' ? doc.userId : undefined,
   userId: typeof doc.userId === 'string' ? doc.userId : undefined,
-  isPrivate: doc.isPrivate === true,
+  isPrivate: doc.isPublic !== true,
   isPublic: doc.isPublic === true,
-  password: typeof doc.password === 'string' ? doc.password : null,
+  password: null,
   _source: doc._source === 'cli' || doc._source === 'user' || doc._source === 'public' ? doc._source : undefined,
   createdAt: doc.createdAt ?? doc.result?.metadata?.scannedAt ?? undefined,
 })
@@ -100,6 +107,7 @@ export async function saveReport(uid: string, result: ScanResult): Promise<void>
     verdict: result.verdict,
     riskScore: result.riskScore,
     riskLevel: result.riskLevel,
+    confidence: result.confidence,
     fileName: result.metadata.fileName,
     agentName: result.bom.agentName ?? null,
     platform: result.metadata.selectedPlatform ?? null,
@@ -117,10 +125,10 @@ export async function saveReport(uid: string, result: ScanResult): Promise<void>
     })),
     scannedAt: result.metadata.scannedAt ?? new Date().toISOString(),
     source: 'dashboard',
-    isPrivate: true,
     isPublic: false,
-    password: null,
     categoryScores: result.categoryScores,
+    reportInsights: result.reportInsights ?? null,
+    threatCategories: result.threatCategories ?? [],
     bom: {
       detectedLanguage: result.bom.detectedLanguage,
       detectedFramework: result.bom.detectedFramework ?? null,
@@ -140,22 +148,6 @@ export async function saveReport(uid: string, result: ScanResult): Promise<void>
   await setDoc(doc(db, 'reports', result.reportId), reportData)
 }
 
-export async function savePublicReport(result: ScanResult): Promise<void> {
-  const reportUrl = `https://aimodularity.com/agentverify/report/?id=${result.reportId}`
-  const payload = sanitize({
-    reportId: result.reportId,
-    reportUrl,
-    source: 'public',
-    createdAt: result.metadata.scannedAt,
-    createdAtServer: serverTimestamp(),
-    result: {
-      ...result,
-      findings: result.findings.map(finding => ({ ...finding, evidence: finding.evidence ? '[redacted]' : null })),
-    },
-  })
-  await setDoc(doc(db, 'publicReports', result.reportId), payload)
-}
-
 export async function getReports(uid: string): Promise<StoredReport[]> {
   const ownSnap = await getDocs(collection(db, 'users', uid, 'reports'))
   const cliSnap = await getDocs(query(collection(db, 'cliReports'), where('uid', '==', uid)))
@@ -168,16 +160,18 @@ export async function getReports(uid: string): Promise<StoredReport[]> {
 }
 
 export async function getReport(reportId: string, uid?: string): Promise<StoredReport | null> {
+  const canonical = await getDoc(doc(db, 'reports', reportId))
+  if (canonical.exists()) return normalize(canonical.data(), canonical.id)
+
   if (uid) {
     const own = await getDoc(doc(db, 'users', uid, 'reports', reportId))
     if (own.exists()) return normalize(own.data(), own.id)
   }
 
-  const cli = await getDoc(doc(db, 'cliReports', reportId))
-  if (cli.exists()) return normalize(cli.data(), cli.id)
-
-  const pub = await getDoc(doc(db, 'publicReports', reportId))
-  if (pub.exists()) return normalize(pub.data(), pub.id)
+  if (uid) {
+    const cli = await getDoc(doc(db, 'cliReports', reportId))
+    if (cli.exists()) return normalize(cli.data(), cli.id)
+  }
 
   return null
 }

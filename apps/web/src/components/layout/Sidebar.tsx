@@ -1,6 +1,7 @@
 'use client'
 
 import type { DashboardTab } from '@/types'
+import Image from 'next/image'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { assetUrl } from '@/lib/assets'
 
@@ -36,12 +37,11 @@ export function Sidebar({
         className="px-4 py-3"
       >
         <div className="flex items-center gap-2">
-          <img
-            src={assetUrl('/logo.png')}
-            alt="Agent Verify"
-            className="w-34 object-contain"
-            style={{ mixBlendMode: 'screen' }}
-          />
+          <Image src={assetUrl('/agentverify-icon.png')} alt="Agent Verify" width={34} height={34} className="h-8 w-8 rounded-xl object-contain" />
+          <div className="leading-tight">
+            <p style={{ color: 'var(--text-primary)' }} className="text-sm font-bold tracking-tight">Agent Verify</p>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#00C4CC]">v1.3</p>
+          </div>
         </div>
       </div>
 
@@ -58,7 +58,7 @@ export function Sidebar({
                 color: isActive ? 'var(--text-primary)' : 'var(--text-muted)',
                 borderLeft: isActive ? '2px solid #00C4CC' : '2px solid transparent',
               }}
-              className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-xs font-medium transition-all hover:opacity-80"
+              className="flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-xs font-semibold transition-all hover:opacity-80"
             >
               <span className="text-base">{tab.icon}</span>
               <span>{tab.label}</span>
@@ -68,7 +68,7 @@ export function Sidebar({
                 </span>
               )}
               {tab.id === 'reports' && reportBadge && reportBadge > 0 ? (
-                <span className="ml-auto flex h-5 w-5 items-center justify-center rounded-full bg-[#E03E3E] text-xs font-bold text-white">
+                <span className="ml-auto rounded-full bg-[#E03E3E] px-2 py-0.5 text-[11px] font-bold text-white">
                   {reportBadge > 9 ? '9+' : reportBadge}
                 </span>
               ) : null}

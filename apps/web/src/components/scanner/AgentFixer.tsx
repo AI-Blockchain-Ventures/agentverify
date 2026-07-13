@@ -91,6 +91,14 @@ export function AgentFixer({ result, originalContent }: AgentFixerProps) {
 
   return (
     <div className="space-y-4">
+      <div style={{ borderBottom: '1px solid var(--border)' }} className="mb-6 pb-4">
+        <h3 style={{ color: 'var(--text-primary)' }} className="mb-1 font-semibold">
+          Agent Fixer
+        </h3>
+        <p style={{ color: 'var(--text-secondary)' }} className="text-sm">
+          Here are the specific changes needed to secure this agent. Each fix addresses a finding from the scan above.
+        </p>
+      </div>
       <div className="grid gap-4 md:grid-cols-2">
         <div style={{ backgroundColor: 'var(--bg)', border: '1px solid var(--border)' }} className="rounded-xl">
           <div style={{ borderBottom: '1px solid var(--border)' }} className="flex items-center justify-between px-4 py-3">

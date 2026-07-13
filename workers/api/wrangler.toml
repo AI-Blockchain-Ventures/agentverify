@@ -4,3 +4,12 @@ compatibility_date = "2025-05-19"
 
 [vars]
 FIREBASE_PROJECT_ID = "agentverify-26e26"
+STRIPE_PRO_PRICE_ID = "price_1Tqc85RqPRlpuX8nAWvN5Jk5"
+BILLING_SUCCESS_URL = "https://aimodularity.com/agentverify/dashboard/?billing=success"
+BILLING_CANCEL_URL = "https://aimodularity.com/agentverify/pricing/?billing=cancel"
+BILLING_ENABLED = "true"
+
+[[d1_databases]]
+binding = "BILLING_DB"
+database_name = "agentverify-billing-test"
+database_id = "203d9a61-55f4-4b3e-88d9-097ee97c6f53"

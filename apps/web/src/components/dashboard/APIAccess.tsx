@@ -79,10 +79,11 @@ export function APIAccess() {
   }
 
   return (
-    <div className="mx-auto max-w-lg space-y-6">
-      <section style={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)' }} className="rounded-xl p-6">
-        <h2 style={{ color: 'var(--text-primary)' }} className="font-semibold">Your API Key</h2>
-        <p style={{ color: 'var(--text-muted)' }} className="mb-4 mt-1 text-xs">You&apos;ll need this to run scans.</p>
+    <div className="mx-auto max-w-2xl space-y-5">
+      <section style={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)' }} className="rounded-3xl p-6 shadow-xl shadow-black/5">
+        <p className="mb-2 text-xs font-semibold uppercase tracking-[0.22em] text-[#00C4CC]">CLI access</p>
+        <h2 style={{ color: 'var(--text-primary)' }} className="font-semibold">API key</h2>
+        <p style={{ color: 'var(--text-muted)' }} className="mb-4 mt-1 text-xs">Use this key to connect CLI scans to your Reports tab.</p>
 
         {keyLoading ? (
           <div style={{ backgroundColor: 'var(--input-bg)' }} className="h-10 animate-pulse rounded-lg" />
@@ -103,30 +104,30 @@ export function APIAccess() {
                 {keyCopied ? '✓ Copied' : 'Copy'}
               </button>
             </div>
-            <p style={{ color: 'var(--text-muted)' }} className="mt-2 text-xs">Never share this key or commit it to version control</p>
+            <p style={{ color: 'var(--text-muted)' }} className="mt-2 text-xs">Never share this key or commit it to version control.</p>
             <button
               onClick={generateKey}
               style={{ color: 'var(--text-muted)' }}
               className="mt-2 inline-block cursor-pointer text-xs transition-colors hover:opacity-70"
             >
-              Regenerate
+              Regenerate key
             </button>
           </>
         ) : (
           <button
             onClick={generateKey}
-            className="w-full rounded-lg bg-[#06B6D4] py-3 font-semibold text-[#080B14] transition-colors hover:bg-[#22D3EE]"
+            className="w-full rounded-2xl bg-[#06B6D4] py-3 font-semibold text-[#080B14] transition-colors hover:bg-[#22D3EE]"
           >
-            Generate API Key
+            Generate API key
           </button>
         )}
 
         {keyError && <p className="mt-2 text-xs text-[#EF4444]">{keyError}</p>}
       </section>
 
-      <section style={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)' }} className="rounded-xl p-6">
+      <section style={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)' }} className="rounded-3xl p-6 shadow-xl shadow-black/5">
         <h2 style={{ color: 'var(--text-primary)' }} className="font-semibold">Scan your project</h2>
-        <p style={{ color: 'var(--text-muted)' }} className="mb-5 mt-1 text-xs">Install once, scan any project from your terminal.</p>
+        <p style={{ color: 'var(--text-muted)' }} className="mb-5 mt-1 text-xs">Install once, then create security reports from your terminal.</p>
 
         <p style={{ color: 'var(--text-muted)' }} className="mb-2 text-xs font-medium uppercase tracking-wider">Install</p>
         <div className="relative">
@@ -153,8 +154,17 @@ export function APIAccess() {
         </div>
 
         <p style={{ color: 'var(--text-muted)' }} className="mt-3 text-xs">
-          Scans every agent file in your project. Results save to your Reports tab automatically.
+          CLI results save to your Reports tab automatically. Do not place API keys or production secrets in source code.
         </p>
+      </section>
+
+      <section style={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)' }} className="rounded-3xl p-6 shadow-xl shadow-black/5">
+        <p className="mb-2 text-xs font-semibold uppercase tracking-[0.22em] text-[#00C4CC]">Developer CI</p>
+        <h2 style={{ color: 'var(--text-primary)' }} className="font-semibold">GitHub pull request scans</h2>
+        <p style={{ color: 'var(--text-muted)' }} className="mt-1 text-xs leading-relaxed">Run Agent Verify in GitHub pull requests with the CLI and `--ci`. Production API enforcement must be deployed before broad rollout.</p>
+        <a href="https://github.com/AI-Blockchain-Ventures/agentverify/blob/main/docs/github-action.md" target="_blank" rel="noreferrer" className="mt-4 inline-flex rounded-2xl border border-[#00C4CC]/30 px-4 py-2 text-xs font-semibold text-[#00C4CC] transition-opacity hover:opacity-80">
+          View CI docs
+        </a>
       </section>
 
       <p style={{ color: 'var(--text-muted)' }} className="text-center text-xs">

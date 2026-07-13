@@ -1,25 +1,33 @@
 'use client'
 
 import { useEffect, useState, Suspense } from 'react'
+import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { doc, getDoc } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { ReportView } from '@/components/report/ReportView'
+import { canUseProFeature } from '@/lib/billing'
+import { useBillingStatusState } from '@/lib/useBillingStatus'
 import type { CategoryScore, Finding, RuntimeBOM as RuntimeBOMType } from '@/types'
+
+const normalizeVerdict = (value: unknown): 'VERIFIED' | 'NOT VERIFIED' => {
+  if (value === 'VERIFIED') return 'VERIFIED'
+  return 'NOT VERIFIED'
+}
 
 function ReportPageInner() {
   const searchParams = useSearchParams()
   const reportId = searchParams.get('id')
   const { user, loading: authLoading } = useAuth()
+  const billing = useBillingStatusState(user)
+  const billingStatus = billing.status
 
   const [report, setReport] = useState<Record<string, unknown> | null>(null)
   const [loading, setLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
-  const [passwordVerified, setPasswordVerified] = useState(false)
-  const [enteredPassword, setEnteredPassword] = useState('')
-  const [passwordError, setPasswordError] = useState(false)
   const [linkCopied, setLinkCopied] = useState(false)
+  const [upgradePrompt, setUpgradePrompt] = useState<string | null>(null)
 
   useEffect(() => {
     if (!reportId || authLoading) return
@@ -40,7 +48,19 @@ function ReportPageInner() {
         console.error('reports fetch error:', e)
       }
 
-      if (!data) {
+      if (!data && user) {
+        try {
+          const ownDoc = await getDoc(doc(db, 'users', user.uid, 'reports', reportId))
+          if (ownDoc.exists()) {
+            data = ownDoc.data()
+            source = 'userReports'
+          }
+        } catch (e) {
+          console.error('user report fetch error:', e)
+        }
+      }
+
+      if (!data && user) {
         try {
           const cliDoc = await getDoc(doc(db, 'cliReports', reportId))
           if (cliDoc.exists()) {
@@ -66,6 +86,10 @@ function ReportPageInner() {
     void load()
   }, [reportId, user, authLoading])
 
+  useEffect(() => {
+    if (billingStatus.plan === 'pro' && billingStatus.status === 'active') setUpgradePrompt(null)
+  }, [billingStatus.plan, billingStatus.status])
+
   const isOwner = !!(user && report && (
     user.uid === report.uid ||
     user.uid === report.userId
@@ -73,6 +97,11 @@ function ReportPageInner() {
 
   const copyLink = () => {
     if (!report) return
+    if (!canUseProFeature(billingStatus, 'reportSharing')) {
+      const message = 'Report sharing is included in Pro. Request Pro access to enable public links and stakeholder sharing.'
+      setUpgradePrompt(message)
+      return
+    }
     const url = `https://aimodularity.com/agentverify/report/?id=${report.reportId}`
     navigator.clipboard.writeText(url)
     setLinkCopied(true)
@@ -81,6 +110,11 @@ function ReportPageInner() {
 
   const emailReport = () => {
     if (!report) return
+    if (!canUseProFeature(billingStatus, 'reportSharing')) {
+      const message = 'Report sharing is included in Pro. Request Pro access to share reports by email.'
+      setUpgradePrompt(message)
+      return
+    }
     const subject = `Agent Verify Report — ${report.fileName} — ${report.verdict}`
     const body = `Agent Verify Execution Trust Report\n\nFile: ${report.fileName}\nVerdict: ${report.verdict}\nScore: ${report.riskScore}/100\n\nView full report: https://aimodularity.com/agentverify/report/?id=${report.reportId}\n\nPowered by Agent Verify`
     window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
@@ -88,6 +122,11 @@ function ReportPageInner() {
 
   const downloadPDF = async () => {
     if (!report) return
+    if (!canUseProFeature(billingStatus, 'pdfExport')) {
+      const message = 'PDF export is a Pro feature. Request Pro access to download report evidence as PDF.'
+      setUpgradePrompt(message)
+      return
+    }
     const reportData = report
     const getText = (value: unknown, fallback = '') => typeof value === 'string' || typeof value === 'number' ? String(value) : fallback
     const { jsPDF } = await import('jspdf')
@@ -166,7 +205,7 @@ function ReportPageInner() {
     const getNum = (v: unknown, fb = 0): number => typeof v === 'number' ? v : fb
     const getArr = (v: unknown): unknown[] => Array.isArray(v) ? v : []
 
-    const verdict = getStr(r.verdict, 'NOT VERIFIED') as 'VERIFIED' | 'NOT VERIFIED'
+    const verdict = normalizeVerdict(r.verdict)
     const riskScore = getNum(r.riskScore, 0)
     const riskLevel = getStr(r.riskLevel, 'High Risk') as 'Low Risk' | 'Moderate Risk' | 'High Risk'
     const fileName = getStr(r.fileName, 'Agent Config')
@@ -184,7 +223,7 @@ function ReportPageInner() {
       <>
       <div
         style={{ borderBottom: '1px solid var(--border)' }}
-        className="no-print mx-auto mb-6 flex max-w-3xl items-center justify-between px-6 pb-4 pt-6"
+        className="no-print mx-auto mb-6 flex max-w-3xl flex-col gap-3 px-4 pb-4 pt-5 sm:flex-row sm:items-center sm:justify-between md:px-6"
       >
         <button
           onClick={() => window.history.back()}
@@ -194,14 +233,14 @@ function ReportPageInner() {
           ← Back
         </button>
 
-        <div className="flex items-center gap-2">
+        <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:justify-end">
           {isOwner && (
             <span
               style={{
                 color: readyReport.isPublic ? '#00B37E' : 'var(--text-muted)',
                 border: '1px solid var(--border)',
               }}
-              className="rounded-lg px-3 py-1.5 text-xs font-medium"
+              className="rounded-xl px-3 py-1.5 text-xs font-medium"
             >
               {readyReport.isPublic ? '🌐 Public' : '🔒 Private'}
             </span>
@@ -209,16 +248,16 @@ function ReportPageInner() {
           <button
             onClick={downloadPDF}
             style={{ border: '1px solid var(--border)', color: 'var(--text-muted)' }}
-            className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs transition-opacity hover:opacity-70"
+            className="flex flex-1 items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-xs transition-opacity hover:opacity-70 sm:flex-none sm:py-1.5"
           >
-            ↓ Download PDF
+            Download PDF
           </button>
           <button
             onClick={emailReport}
             style={{ border: '1px solid var(--border)', color: 'var(--text-muted)' }}
-            className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs transition-opacity hover:opacity-70"
+            className="flex flex-1 items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-xs transition-opacity hover:opacity-70 sm:flex-none sm:py-1.5"
           >
-            ✉ Email
+            Email
           </button>
           <button
             onClick={copyLink}
@@ -227,13 +266,25 @@ function ReportPageInner() {
               color: linkCopied ? '#060A0F' : 'var(--text-muted)',
               border: '1px solid var(--border)',
             }}
-            className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-all"
+            className="flex flex-1 items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-xs font-medium transition-all sm:flex-none sm:py-1.5"
           >
-            {linkCopied ? '✓ Copied' : '↗ Copy Link'}
+            {linkCopied ? 'Copied' : 'Copy link'}
           </button>
         </div>
       </div>
+      {upgradePrompt && (
+        <div className="no-print mx-auto mb-6 max-w-3xl px-6">
+          <div className="flex flex-col gap-3 rounded-2xl border border-[#00C4CC]/30 bg-[#00C4CC]/10 p-4 md:flex-row md:items-center md:justify-between">
+            <p style={{ color: 'var(--text-primary)' }} className="text-sm">{upgradePrompt}</p>
+            <div className="flex flex-wrap gap-2">
+              <button onClick={billing.refresh} disabled={billing.loading} className="rounded-lg border border-[var(--border)] px-3 py-2 text-xs font-semibold text-[var(--text-primary)] disabled:opacity-60">{billing.loading ? 'Refreshing...' : 'Refresh billing'}</button>
+              <Link href="/pricing" className="rounded-lg bg-[#00C4CC] px-3 py-2 text-center text-xs font-semibold text-[#060A0F]">Compare plans</Link>
+            </div>
+          </div>
+        </div>
+      )}
         <ReportView
+          report={readyReport}
           verdict={verdict}
           riskScore={riskScore}
           riskLevel={riskLevel}
@@ -248,24 +299,22 @@ function ReportPageInner() {
           reportUrl={reportUrl}
           user={user}
           isOwner={owner}
+          onReportUpdate={(updates) => setReport(prev => prev ? { ...prev, ...updates } : prev)}
+          onUpgradePrompt={(message) => setUpgradePrompt(message)}
+          billingStatus={billingStatus}
         />
       </>
     )
   }
 
-  const checkPassword = () => {
-    if (enteredPassword === report?.password) {
-      setPasswordVerified(true)
-      setPasswordError(false)
-    } else {
-      setPasswordError(true)
-    }
-  }
-
   if (authLoading || loading) {
     return (
-      <div style={{ backgroundColor: 'var(--bg)' }} className="flex min-h-screen items-center justify-center">
-        <div style={{ color: 'var(--text-muted)' }} className="text-sm">Loading report...</div>
+      <div style={{ backgroundColor: 'var(--bg)' }} className="flex min-h-screen items-center justify-center px-6">
+        <div style={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)' }} className="w-full max-w-sm rounded-3xl p-8 text-center shadow-2xl shadow-black/5">
+          <div style={{ borderColor: 'var(--border)', borderTopColor: '#06B6D4' }} className="mx-auto mb-4 h-6 w-6 animate-spin rounded-full border-2" />
+          <p style={{ color: 'var(--text-primary)' }} className="text-sm font-semibold">Loading security report</p>
+          <p style={{ color: 'var(--text-muted)' }} className="mt-1 text-xs">Checking report visibility and details.</p>
+        </div>
       </div>
     )
   }
@@ -273,9 +322,11 @@ function ReportPageInner() {
   if (notFound || !report) {
     return (
       <div style={{ backgroundColor: 'var(--bg)' }} className="flex min-h-screen items-center justify-center px-6">
-        <div className="text-center">
-          <p style={{ color: 'var(--text-primary)' }} className="text-lg font-semibold">Report not found</p>
-          <p style={{ color: 'var(--text-muted)' }} className="mt-1 text-sm">This report may have been deleted or the link is incorrect.</p>
+        <div style={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)' }} className="max-w-md rounded-3xl p-8 text-center shadow-2xl shadow-black/5">
+          <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#E07B39]/10 text-lg font-semibold text-[#E07B39]">?</div>
+          <p style={{ color: 'var(--text-primary)' }} className="text-xl font-semibold">Report not found</p>
+          <p style={{ color: 'var(--text-muted)' }} className="mt-2 text-sm">This security report may have been deleted, kept private, or opened with an incorrect link.</p>
+          <Link href="/dashboard" className="mt-6 inline-flex rounded-2xl bg-[#00C4CC] px-5 py-3 text-sm font-semibold text-[#060A0F]">Back to dashboard</Link>
         </div>
       </div>
     )
@@ -289,46 +340,16 @@ function ReportPageInner() {
     return renderReportView(false)
   }
 
-  if (report.password) {
-    if (passwordVerified) {
-      return renderReportView(false)
-    }
-    return (
-      <div style={{ backgroundColor: 'var(--bg)' }} className="flex min-h-screen items-center justify-center px-6">
-        <div style={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)' }} className="w-full max-w-sm rounded-2xl p-8 text-center">
-          <div className="mb-4 text-4xl">🔒</div>
-          <h2 style={{ color: 'var(--text-primary)' }} className="mb-1 text-lg font-bold">Password required</h2>
-          <p style={{ color: 'var(--text-muted)' }} className="mb-6 text-sm">This report is password protected</p>
-          <input
-            type="password"
-            value={enteredPassword}
-            onChange={e => setEnteredPassword(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && checkPassword()}
-            placeholder="Enter password"
-            autoFocus
-            style={{
-              backgroundColor: 'var(--input-bg)',
-              border: passwordError ? '1px solid #E03E3E' : '1px solid var(--input-border)',
-              color: 'var(--text-primary)',
-            }}
-            className="mb-3 w-full rounded-lg px-4 py-3 text-center text-sm outline-none"
-          />
-          {passwordError && <p className="mb-3 text-xs text-[#E03E3E]">Incorrect password</p>}
-          <button onClick={checkPassword} className="w-full rounded-lg bg-[#00C4CC] py-3 font-semibold text-[#060A0F] hover:bg-[#00D9E0]">
-            View Report
-          </button>
-        </div>
-      </div>
-    )
-  }
-
   return (
     <div style={{ backgroundColor: 'var(--bg)' }} className="flex min-h-screen items-center justify-center px-6">
-      <div className="max-w-sm text-center">
-        <div className="mb-4 text-4xl">🔒</div>
-        <p style={{ color: 'var(--text-primary)' }} className="text-lg font-semibold">This report is private</p>
+      <div style={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)' }} className="max-w-md rounded-2xl p-8 text-center shadow-2xl shadow-black/10">
+        <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#06B6D4]/10 text-2xl">🔒</div>
+        <p style={{ color: 'var(--text-primary)' }} className="text-xl font-semibold">This report is private</p>
         <p style={{ color: 'var(--text-muted)' }} className="mt-1 text-sm">
-          {user ? 'You do not have access to this report.' : 'Sign in with the report owner account to view it, or ask them to share a public link.'}
+          {user ? 'You do not have access to this report. Ask the owner to make it public.' : 'Ask the owner to enable public sharing, or sign in with the owner account.'}
+        </p>
+        <p style={{ color: 'var(--text-muted)' }} className="mt-5 rounded-xl border border-[var(--border)] px-4 py-3 text-xs">
+          Public reports use the canonical URL format: https://aimodularity.com/agentverify/report/?id=REPORT_ID
         </p>
       </div>
     </div>

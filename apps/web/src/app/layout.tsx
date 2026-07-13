@@ -61,8 +61,8 @@ export default function RootLayout({
             `,
           }}
         />
-        <link rel="shortcut icon" href="/agentverify-icon.png" />
-        <link rel="apple-touch-icon" href="/agentverify-icon.png" />
+        <link rel="shortcut icon" href="/agentverify/agentverify-icon.png" />
+        <link rel="apple-touch-icon" href="/agentverify/agentverify-icon.png" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
 
 

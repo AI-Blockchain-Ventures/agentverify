@@ -11,8 +11,8 @@ If you do not agree, do not use the service.`,
     body: `Agent Verify analyzes AI agent configurations for security 
 issues. Our analysis is deterministic and based on static analysis 
 of the configuration you submit. Results are informational — they 
-identify potential security issues but do not guarantee that an agent 
-is fully secure or insecure.`,
+identify potential security issues but do not guarantee complete 
+security coverage or prove that every possible risk has been found.`,
   },
   {
     title: 'Free use',

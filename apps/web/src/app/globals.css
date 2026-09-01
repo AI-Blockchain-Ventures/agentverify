@@ -1,12 +1,15 @@
 @import "tailwindcss";
 
 @theme {
-  --color-cyan: #00C4CC;
-  --color-cyan-light: #00D9E0;
-  --color-purple: #6E3AED;
-  --color-green: #00B37E;
-  --color-red: #E03E3E;
-  --color-orange: #E07B39;
+  /* Utility classes (text-red, bg-green/10, border-cyan/20, ...) resolve through the
+     runtime --accent-*-text variables defined per-theme below, so text-red etc. is
+     automatically WCAG-AA-safe in both light and dark mode without per-usage changes. */
+  --color-cyan: var(--accent-cyan-text);
+  --color-cyan-light: #06B6D4;
+  --color-purple: var(--accent-purple-text);
+  --color-green: var(--accent-green-text);
+  --color-red: var(--accent-red-text);
+  --color-orange: var(--accent-orange-text);
   --color-soft: #8896A8;
   --color-muted: #3D5166;
   --font-sans: Inter, system-ui, sans-serif;
@@ -22,14 +25,32 @@
   --border-light: #1F2D40;
   --text-primary: #E8EDF2;
   --text-secondary: #8896A8;
-  --text-muted: #3D5166;
+  --text-muted: #7C8CA3;
   --input-bg: #080B14;
   --input-border: #1A2535;
   --input-text: #94A3B8;
-  --input-placeholder: #3D5166;
+  --input-placeholder: #7C8CA3;
   --nav-bg: rgba(6, 10, 15, 0.9);
   --nav-border: #1A2535;
   --sidebar-bg: #060A0F;
+
+  /* Accent colors when used as TEXT (labels, badges, code, links) — WCAG AA (4.5:1)
+     against --card/--surface/--bg. These are accessible variants of the same brand hues,
+     not new colors: backgrounds/borders/buttons keep the original --color-* brand values
+     from the @theme block above; only foreground text uses these. See
+     apps/web/src/app/globals.css for the contrast math this was derived from. */
+  --accent-red-text: #F16565;
+  --accent-orange-text: #E07B39;
+  --accent-green-text: #00B37E;
+  --accent-cyan-text: #06B6D4;
+  --accent-purple-text: #9D7BEE;
+  /* Text drawn on a solid brand-accent-colored surface (buttons, filled badges). */
+  --on-accent-text: #FFFFFF;
+  /* Large decorative text (e.g. giant step numbers) — WCAG's 3:1 large-text threshold,
+     not 4.5:1, since these are ≥24px. Kept visually subtle/secondary, just no longer
+     invisible-by-contrast-failure. */
+  --decorative-text: #52738F;
+  --demo-banner-text: var(--accent-purple-text);
 }
 
 /* LIGHT THEME */
@@ -41,14 +62,25 @@
   --border-light: #B8C5D4;
   --text-primary: #111827;
   --text-secondary: #334155;
-  --text-muted: #64748B;
+  --text-muted: #475569;
   --input-bg: #F8FAFC;
   --input-border: #B8C5D4;
   --input-text: #111827;
-  --input-placeholder: #94a3b8;
+  --input-placeholder: #64748B;
   --nav-bg: rgba(255,255,255,0.94);
   --nav-border: #CAD5E2;
   --sidebar-bg: #F8FAFC;
+
+  --accent-red-text: #B91C1C;
+  --accent-orange-text: #9A3412;
+  --accent-green-text: #047857;
+  --accent-cyan-text: #0E7490;
+  --accent-purple-text: #7C3AED;
+  --on-accent-text: #FFFFFF;
+  --decorative-text: #7C93AD;
+  /* Needs more margin than --accent-purple-text: this pairs specifically against the demo
+     report banner's translucent purple tint background, not a solid surface. */
+  --demo-banner-text: #5B21B6;
 }
 
 @layer base {
@@ -63,11 +95,11 @@
     color: var(--text-primary);
     transition: background-color 0.2s, color 0.2s;
     background-image:
-      radial-gradient(circle at top left, rgba(0,196,204,0.12), transparent 34rem),
+      radial-gradient(circle at top left, rgba(6,182,212,0.12), transparent 34rem),
       radial-gradient(circle at top right, rgba(110,58,237,0.10), transparent 30rem);
   }
 
-  ::selection { background: rgba(0,196,204,0.2); }
+  ::selection { background: rgba(6,182,212,0.2); }
   ::-webkit-scrollbar { width: 4px; }
   ::-webkit-scrollbar-track { background: var(--bg); }
   ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
@@ -77,4 +109,61 @@
   .no-print { display: none !important; }
   * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
   @page { margin: 1cm; size: A4; }
+}
+
+/* ---------------------------------------------------------------------------
+ * Motion system — plain CSS, no animation library. GPU-friendly (opacity +
+ * transform only, never layout-affecting properties), and every keyframe
+ * below is neutralized under prefers-reduced-motion so orientation/hierarchy/
+ * feedback still exist (state still changes instantly), just without motion.
+ * ------------------------------------------------------------------------- */
+@keyframes av-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes av-rise-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes av-scale-in {
+  from { opacity: 0; transform: scale(0.97); }
+  to { opacity: 1; transform: scale(1); }
+}
+@keyframes av-slide-in-right {
+  from { opacity: 0; transform: translateX(12px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.av-animate-fade { animation: av-fade-in 0.22s ease-out both; }
+.av-animate-rise { animation: av-rise-in 0.28s cubic-bezier(0.16, 1, 0.3, 1) both; }
+.av-animate-scale { animation: av-scale-in 0.2s cubic-bezier(0.16, 1, 0.3, 1) both; }
+.av-animate-slide { animation: av-slide-in-right 0.24s cubic-bezier(0.16, 1, 0.3, 1) both; }
+
+/* Staggered list/card entrance — apply .av-stagger to a container and each direct
+   child gets a slightly later start, capped so a long list doesn't feel sluggish. */
+.av-stagger > * { animation: av-rise-in 0.28s cubic-bezier(0.16, 1, 0.3, 1) both; }
+.av-stagger > *:nth-child(1) { animation-delay: 0ms; }
+.av-stagger > *:nth-child(2) { animation-delay: 30ms; }
+.av-stagger > *:nth-child(3) { animation-delay: 60ms; }
+.av-stagger > *:nth-child(4) { animation-delay: 90ms; }
+.av-stagger > *:nth-child(5) { animation-delay: 120ms; }
+.av-stagger > *:nth-child(n+6) { animation-delay: 150ms; }
+
+.av-transition { transition: opacity 0.18s ease, transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease; }
+.av-press:active { transform: scale(0.97); }
+.av-hover-lift { transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.18s ease; }
+.av-hover-lift:hover { transform: translateY(-1px); }
+
+@media (prefers-reduced-motion: reduce) {
+  .av-animate-fade, .av-animate-rise, .av-animate-scale, .av-animate-slide,
+  .av-stagger > * {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+  .av-transition, .av-hover-lift, .av-press:active, .av-hover-lift:hover {
+    transition: none !important;
+    transform: none !important;
+  }
+  html { scroll-behavior: auto; }
 }

@@ -19,7 +19,7 @@
 
 ---
 
-## ✅ v1.2.0 — Make It Sticky (Shipped)
+## ✅ v1.2.0 — Make It Sticky
 
 **Agent Fixer**
 - After every scan, show a corrected version of the agent code
@@ -76,33 +76,31 @@
 
 ---
 
-## 💰 v1.3.0 — Make It a Team Tool (Month 3)
+## ✅ v1.4.0 — Billing, Organizations, and Verified Entitlement (Shipped)
 
-**Pricing Tiers**
-- Free: 10 scans/month, basic findings
-- Pro ($49/mo): unlimited scans, agent fixer, compliance mapping, PDF export
-- Enterprise: contact us, white label, SLA, dedicated support
+**Billing**
+- Free and Pro plans on real Stripe Checkout/Billing Portal, server-enforced entitlement and
+  scan quota shared across dashboard, CLI, and API (see [Pricing](https://aimodularity.com/agentverify/pricing/)
+  for current plans and limits — this roadmap does not duplicate pricing as a source of truth)
 
-**Team Workspaces**
-- Multiple users on one account
-- Shared report history
-- Assign fixes to team members
-- Team API keys with usage tracking
+**Organizations**
+- Multi-user workspaces with role-based access control (Owner/Admin/Member/Viewer)
+- Per-organization API keys, webhooks, and an audit log of security-relevant actions
 
 **GitHub Action**
 - `agentverify scan` runs on every PR
 - Blocks merge if NOT VERIFIED
-- Posts results as PR comment
+- Posts results as a PR comment
 - Badge in README shows live score
 
-**API Rate Tiers**
-- Free: 100 scans/month
-- Pro: unlimited
-- Enterprise: dedicated endpoint
+**Verification**
+- Signed attestations (ECDSA P-256) over scan results, independently verifiable with no shared secret
+- Policy profiles (standard / high-security / financial-agent / production-infrastructure) evaluated
+  in addition to the base verdict
 
 ---
 
-## 🏢 v2.0.0 — Enterprise (Month 4-6)
+## v2.0.0 — Enterprise
 
 **Enterprise Dashboard**
 - Scan 100+ agents at once
@@ -121,12 +119,9 @@
 - Jira integration — create tickets from findings
 - CI/CD: GitHub Actions, GitLab CI, Jenkins
 
-**Advanced Intelligence** *(Closed Source)*
-- Execution Trust Rating™ — industry benchmark score
-- Financial autonomy scoring
-- Historical risk analytics
-- Benchmark datasets
-- Enterprise optimization engine
+**Advanced Risk Intelligence** *(proprietary, enterprise tier)*
+- Deeper, benchmark-informed risk scoring for regulated and high-stakes deployments
+- Historical trend analytics across an organization's scan history
 
 ---
 
@@ -148,5 +143,5 @@ Core intelligence (scoring engine, execution trust methodology, A2SPA protocol) 
 
 ---
 
-*Last updated: June 2026*
+*Last updated: September 2026*
 *AI Blockchain Ventures LLC — hello@aiblockchainventures.com*

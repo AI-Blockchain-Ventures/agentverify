@@ -9,7 +9,8 @@ export function Footer() {
           <div style={{ color: 'var(--text-muted)' }} className="mt-1 text-sm">Security reports for AI agents</div>
         </div>
         <nav style={{ color: 'var(--text-secondary)' }} className="flex flex-wrap items-center justify-center gap-5 text-sm">
-          <Link className="transition-opacity hover:opacity-70" href="/agentspoofed">Agent Spoofed</Link>
+          <Link className="transition-opacity hover:opacity-70" href="/agentspoofed">Live Demo</Link>
+          <Link className="transition-opacity hover:opacity-70" href="/docs">Docs</Link>
           <Link className="transition-opacity hover:opacity-70" href="/pricing">Pricing</Link>
           <Link className="transition-opacity hover:opacity-70" href="/privacy">Privacy</Link>
           <Link className="transition-opacity hover:opacity-70" href="/terms">Terms</Link>

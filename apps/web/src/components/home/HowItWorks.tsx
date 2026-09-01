@@ -16,7 +16,7 @@ export function HowItWorks() {
         <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-4">
           {steps.map(([num, title, desc]) => (
             <div key={num} style={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)' }} className="rounded-3xl p-5 shadow-xl shadow-black/5 transition-transform hover:-translate-y-0.5 md:p-6">
-              <div style={{ color: 'var(--border-light)' }} className="text-5xl font-bold leading-none">{num}</div>
+              <div style={{ color: 'var(--decorative-text)' }} className="text-5xl font-bold leading-none">{num}</div>
               <h3 style={{ color: 'var(--text-primary)' }} className="mb-2 mt-4 font-semibold">{title}</h3>
               <p style={{ color: 'var(--text-secondary)' }} className="text-sm leading-relaxed">{desc}</p>
             </div>

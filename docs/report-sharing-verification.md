@@ -1,8 +1,9 @@
 # Report Sharing Verification Checklist
 
-Canonical sharing state for v1.3.0 product scope: `reports/{REPORT_ID}.isPublic`.
+Canonical sharing state: `reports/{REPORT_ID}.isPublic`.
 
-Password sharing is not part of this release.
+Password-protected sharing is not implemented — see "Current UI Behavior" in
+[billing-setup.md](./billing-setup.md).
 
 ## 1. Private Report As Owner
 

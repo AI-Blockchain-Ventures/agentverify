@@ -2,6 +2,7 @@
 .env
 .env.*
 .env.local
+scripts/.review-manifest.json
 *.local
 apps/web/.env.local
 apps/web/.env
@@ -22,9 +23,12 @@ packages/scanner/
 # Build outputs
 .next/
 apps/web/.next/
+apps/web/.next-e2e/
+apps/web/.next-perf/
 apps/web/out/
 out/
 dist/
+*.tsbuildinfo
 .wrangler/
 workers/api/.wrangler/
 coverage/
@@ -39,14 +43,29 @@ Thumbs.db
 # Logs
 *.log
 
+# Temp / scratch / local emulator state
+*.tmp
+*.bak
+*.orig
+*.pid
+*.sqlite
+*.sqlite3
+.wrangler/state/
+
 # Test files
 test-agents/
+apps/web/playwright-report/
+apps/web/test-results/
+firestore-debug.log
+firebase-debug.log
+ui-debug.log
 
 # npm token - never commit
 .npmrc
 
+# Local Claude Code / agent tooling state — never commit
+.claude/
 
-apps/web/src/app/agentspoofed/
-apps/web/src/components/spoof/
+
 apps/web/src/lib/spoofFirebase.ts
-spoof/
+/spoof/

@@ -44,7 +44,7 @@ export function CategorySection() {
         <div style={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)' }} className="rounded-3xl p-5 shadow-xl shadow-black/5 md:p-8">
           <div className="mb-6 flex items-center gap-3">
             <span className="h-2 w-2 rounded-full bg-red" />
-              <span className="rounded-full border border-[#EF4444]/20 bg-[#EF4444]/20 px-2.5 py-0.5 text-xs font-medium text-[#EF4444]">Threat classes</span>
+              <span className="rounded-full border border-[#EF4444]/20 bg-[#EF4444]/20 px-2.5 py-0.5 text-xs font-medium text-[color:var(--accent-red-text)]">Threat classes</span>
               <div>
                 <h3 style={{ color: 'var(--text-primary)' }} className="font-semibold">Agent attack patterns</h3>
                 <p style={{ color: 'var(--text-muted)' }} className="mt-0.5 text-xs">How agent behavior becomes business risk</p>
@@ -69,7 +69,7 @@ export function CategorySection() {
         A2SPA guidance appears when execution-related findings need signed intent, replay protection, fail-closed behavior, or audit receipts.
       </p>
       <div className="mt-4 text-center">
-        <a href="https://aimodularity.com/A2SPA/docs" target="_blank" rel="noreferrer" className="inline-flex rounded-2xl border border-[#00C4CC]/30 px-4 py-2 text-sm font-semibold text-[#00C4CC] transition-opacity hover:opacity-80">
+        <a href="https://aimodularity.com/A2SPA/docs" target="_blank" rel="noreferrer" className="inline-flex rounded-2xl border border-[#7C3AED]/30 px-4 py-2 text-sm font-semibold text-[color:var(--accent-purple-text)] transition-opacity hover:opacity-80">
           Read A2SPA docs
         </a>
       </div>

@@ -2,13 +2,15 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Navbar } from '@/components/layout/Navbar'
-import { Footer } from '@/components/layout/Footer'
 import { Hero } from '@/components/home/Hero'
+import { TrustSignals } from '@/components/home/TrustSignals'
+import { PublicScanDemo } from '@/components/home/PublicScanDemo'
 import { ProblemSection } from '@/components/home/ProblemSection'
+import { WhyAgentVerify } from '@/components/home/WhyAgentVerify'
 import { CategorySection } from '@/components/home/CategorySection'
 import { HowItWorks } from '@/components/home/HowItWorks'
 import { WhatYouGet } from '@/components/home/WhatYouGet'
+import { SecurityControls } from '@/components/home/SecurityControls'
 import { SharingSection } from '@/components/home/SharingSection'
 import { UseCases } from '@/components/home/UseCases'
 import { CTASection } from '@/components/home/CTASection'
@@ -36,16 +38,18 @@ export default function Home() {
 
   return (
     <main>
-      <Navbar openAuth={openAuth} />
       <Hero openAuth={openAuth} />
+      <TrustSignals />
+      <PublicScanDemo />
       <ProblemSection />
+      <WhyAgentVerify />
       <CategorySection />
       <HowItWorks />
       <WhatYouGet />
+      <SecurityControls />
       <SharingSection />
       <UseCases />
       <CTASection />
-      <Footer />
       <AuthModal open={authModal.open} defaultMode={authModal.mode} onClose={() => setAuthModal(prev => ({ ...prev, open: false }))} />
     </main>
   )

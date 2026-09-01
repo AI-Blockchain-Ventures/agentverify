@@ -26,6 +26,11 @@ const isExport = process.env.NEXT_EXPORT === 'true'
 
 const nextConfig = {
   ...(isExport ? { output: 'export' } : {}),
+  // Lets a separate build (e2e/CI) use its own output directory instead of the default `.next` —
+  // so `npm run test:e2e`'s own `next build && next start` never collides with a concurrently
+  // running `next dev` (from `npm run review`) writing to the same `.next` folder. See
+  // playwright.config.ts, which sets NEXT_DIST_DIR for exactly this reason.
+  distDir: process.env.NEXT_DIST_DIR || '.next',
   basePath: '/agentverify',
   trailingSlash: true,
   images: { unoptimized: true },

@@ -15,7 +15,7 @@ export function UseCases() {
       <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
         {cases.map(([label, title, desc]) => (
           <div key={title} style={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)' }} className="cursor-default rounded-3xl p-5 shadow-xl shadow-black/5 transition-all hover:opacity-90 md:p-6">
-            <div className="mb-3 inline-flex rounded-full bg-[#00C4CC]/10 px-2.5 py-1 text-xs font-semibold text-[#00C4CC]">{label}</div>
+            <div className="mb-3 inline-flex rounded-full bg-[#7C3AED]/10 px-2.5 py-1 text-xs font-semibold text-[color:var(--accent-purple-text)]">{label}</div>
             <h3 style={{ color: 'var(--text-primary)' }} className="mb-1 font-semibold">{title}</h3>
             <p style={{ color: 'var(--text-secondary)' }} className="text-sm">{desc}</p>
           </div>

@@ -1,128 +1,130 @@
 'use client'
 
-import type { DashboardTab } from '@/types'
+import Link from 'next/link'
 import Image from 'next/image'
+import type { DashboardTab } from '@/types'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { assetUrl } from '@/lib/assets'
 
-const tabs: Array<{ id: DashboardTab; label: string; icon: string }> = [
-  { id: 'scan', label: 'Scan', icon: '⌕' },
-  { id: 'reports', label: 'Reports', icon: '≡' },
-  { id: 'api', label: 'API', icon: '◈' },
-  { id: 'settings', label: 'Settings', icon: '⚙' },
+interface NavItem {
+  id: DashboardTab
+  label: string
+  icon: string
+}
+
+interface NavSection {
+  label: string
+  items: NavItem[]
+}
+
+const SECTIONS: NavSection[] = [
+  { label: 'Overview', items: [
+    { id: 'overview', label: 'Dashboard', icon: '◧' },
+    { id: 'agents', label: 'Agents', icon: '▤' },
+  ] },
+  { label: 'Verify', items: [
+    { id: 'scan', label: 'Scan', icon: '⌕' },
+    { id: 'reports', label: 'Reports', icon: '≡' },
+    { id: 'checks', label: 'Verification Checks', icon: '✓' },
+    { id: 'policies', label: 'Policies', icon: '▣' },
+  ] },
+  { label: 'Platform', items: [
+    { id: 'workspace', label: 'Workspace', icon: '▣' },
+    { id: 'integrations', label: 'Integrations', icon: '⇄' },
+    { id: 'api', label: 'API / CLI', icon: '◈' },
+  ] },
 ]
 
 export function Sidebar({
   active,
   onChange,
   reportBadge,
+  planLabel,
 }: {
   active: DashboardTab
   onChange: (tab: DashboardTab) => void
   reportBadge?: number
+  planLabel: string
 }) {
   const { user, signOut } = useAuth()
 
   return (
     <aside
-      style={{
-        backgroundColor: 'var(--sidebar-bg)',
-        borderRight: '1px solid var(--border)',
-      }}
-      className="fixed left-0 top-0 flex h-screen w-52 flex-col"
+      style={{ backgroundColor: 'var(--sidebar-bg)', borderRight: '1px solid var(--border)' }}
+      className="fixed left-0 top-0 flex h-screen w-60 flex-col"
     >
-      {/* Logo */}
-      <div
-        style={{ borderBottom: '1px solid var(--border)' }}
-        className="px-4 py-3"
-      >
-        <div className="flex items-center gap-2">
-          <Image src={assetUrl('/agentverify-icon.png')} alt="Agent Verify" width={34} height={34} className="h-8 w-8 rounded-xl object-contain" />
-          <div className="leading-tight">
-            <p style={{ color: 'var(--text-primary)' }} className="text-sm font-bold tracking-tight">Agent Verify</p>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#00C4CC]">v1.3</p>
+      <Link href="/" style={{ borderBottom: '1px solid var(--border)' }} className="flex items-center gap-2 px-4 py-3.5 transition-opacity hover:opacity-80">
+        <Image src={assetUrl('/agentverify-icon.png')} alt="Agent Verify" width={34} height={34} className="h-8 w-8 rounded-xl object-contain" />
+        <div className="leading-tight">
+          <p style={{ color: 'var(--text-primary)' }} className="text-sm font-bold tracking-tight">Agent Verify</p>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[color:var(--accent-purple-text)]">v1.4 · {planLabel}</p>
+        </div>
+      </Link>
+
+      <nav className="flex-1 space-y-4 overflow-y-auto px-2 py-4">
+        {SECTIONS.map(section => (
+          <div key={section.label}>
+            <p style={{ color: 'var(--text-muted)' }} className="mb-1.5 px-3 text-[10px] font-semibold uppercase tracking-[0.14em]">{section.label}</p>
+            <div className="space-y-0.5">
+              {section.items.map(item => {
+                const isActive = active === item.id
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => onChange(item.id)}
+                    aria-current={isActive ? 'page' : undefined}
+                    style={{
+                      backgroundColor: isActive ? 'var(--surface)' : 'transparent',
+                      color: isActive ? 'var(--text-primary)' : 'var(--text-muted)',
+                      borderLeft: isActive ? '2px solid #7C3AED' : '2px solid transparent',
+                    }}
+                    className="av-transition flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-xs font-semibold hover:opacity-90"
+                  >
+                    <span className="w-4 text-center text-sm" aria-hidden="true">{item.icon}</span>
+                    <span>{item.label}</span>
+                    {item.id === 'reports' && reportBadge && reportBadge > 0 ? (
+                      <span className="ml-auto rounded-full bg-[#E03E3E] px-2 py-0.5 text-[11px] font-bold text-white">
+                        {reportBadge > 9 ? '9+' : reportBadge}
+                      </span>
+                    ) : null}
+                  </button>
+                )
+              })}
+            </div>
           </div>
-        </div>
-      </div>
-
-      {/* Nav */}
-      <nav className="flex-1 space-y-0.5 px-2 py-4">
-        {tabs.map(tab => {
-          const isActive = active === tab.id
-          return (
-            <button
-              key={tab.id}
-              onClick={() => onChange(tab.id)}
-              style={{
-                backgroundColor: isActive ? 'var(--surface)' : 'transparent',
-                color: isActive ? 'var(--text-primary)' : 'var(--text-muted)',
-                borderLeft: isActive ? '2px solid #00C4CC' : '2px solid transparent',
-              }}
-              className="flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-xs font-semibold transition-all hover:opacity-80"
-            >
-              <span className="text-base">{tab.icon}</span>
-              <span>{tab.label}</span>
-              {tab.id === 'api' && (
-                <span className="ml-auto rounded border border-[#00C4CC]/20 bg-[#00C4CC]/10 px-1.5 py-0.5 text-xs text-[#00C4CC]">
-                  New
-                </span>
-              )}
-              {tab.id === 'reports' && reportBadge && reportBadge > 0 ? (
-                <span className="ml-auto rounded-full bg-[#E03E3E] px-2 py-0.5 text-[11px] font-bold text-white">
-                  {reportBadge > 9 ? '9+' : reportBadge}
-                </span>
-              ) : null}
-            </button>
-          )
-        })}
-
-        <div
-          style={{ borderTop: '1px solid var(--border)' }}
-          className="mt-3 px-1 pt-3"
-        >
-          <p
-            style={{ color: 'var(--text-muted)' }}
-            className="mb-2 px-2 text-xs uppercase tracking-wider"
-          >
-            Resources
-          </p>
-          <a
-            href="https://github.com/AI-Blockchain-Ventures/agentverify"
-            target="_blank"
-            rel="noreferrer"
-            style={{ color: 'var(--text-muted)' }}
-            className="flex items-center gap-2 rounded px-2 py-1.5 text-xs transition-colors hover:text-[#00C4CC]"
-          >
-            ↗ GitHub
-          </a>
-          <a
-            href="mailto:hello@aiblockchainventures.com"
-            style={{ color: 'var(--text-muted)' }}
-            className="flex items-center gap-2 rounded px-2 py-1.5 text-xs transition-colors hover:text-[#00C4CC]"
-          >
-            ✉ Support
-          </a>
-        </div>
+        ))}
       </nav>
 
-      {/* Bottom */}
-      <div
-        style={{ borderTop: '1px solid var(--border)' }}
-        className="px-4 py-4"
-      >
-        <div
-          style={{ color: 'var(--text-muted)' }}
-          className="mb-3 truncate text-xs"
-        >
-          {user?.email ?? ''}
-        </div>
+      <div style={{ borderTop: '1px solid var(--border)' }} className="space-y-0.5 px-2 py-3">
+        <Link href="/docs" style={{ color: 'var(--text-muted)' }} className="av-transition flex items-center gap-3 rounded-2xl px-3 py-2.5 text-xs font-semibold hover:bg-[var(--surface)] hover:text-[var(--text-primary)]">
+          <span className="w-4 text-center text-sm" aria-hidden="true">▥</span>
+          <span>Docs</span>
+        </Link>
+        <Link href="/pricing" style={{ color: 'var(--text-muted)' }} className="av-transition flex items-center gap-3 rounded-2xl px-3 py-2.5 text-xs font-semibold hover:bg-[var(--surface)] hover:text-[var(--text-primary)]">
+          <span className="w-4 text-center text-sm" aria-hidden="true">◆</span>
+          <span>Billing / Plan</span>
+        </Link>
         <button
-          onClick={signOut}
-          style={{ color: 'var(--text-muted)' }}
-          className="cursor-pointer text-xs transition-colors hover:text-[#E03E3E]"
+          onClick={() => onChange('settings')}
+          aria-current={active === 'settings' ? 'page' : undefined}
+          style={{
+            backgroundColor: active === 'settings' ? 'var(--surface)' : 'transparent',
+            color: active === 'settings' ? 'var(--text-primary)' : 'var(--text-muted)',
+          }}
+          className="av-transition flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-xs font-semibold hover:opacity-90"
         >
-          Sign out
+          <span className="w-4 text-center text-sm" aria-hidden="true">⚙</span>
+          <span>Settings</span>
         </button>
+      </div>
+
+      <div style={{ borderTop: '1px solid var(--border)' }} className="px-4 py-3.5">
+        <div style={{ color: 'var(--text-muted)' }} className="mb-2 truncate text-xs">{user?.email ?? ''}</div>
+        <div className="flex items-center justify-between text-xs">
+          <a href="https://github.com/AI-Blockchain-Ventures/agentverify" target="_blank" rel="noreferrer" style={{ color: 'var(--text-muted)' }} className="transition-colors hover:text-[color:var(--accent-purple-text)]">GitHub</a>
+          <a href="mailto:hello@aiblockchainventures.com" style={{ color: 'var(--text-muted)' }} className="transition-colors hover:text-[color:var(--accent-purple-text)]">Support</a>
+          <button onClick={signOut} style={{ color: 'var(--text-muted)' }} className="cursor-pointer transition-colors hover:text-[color:var(--accent-red-text)]">Sign out</button>
+        </div>
       </div>
     </aside>
   )

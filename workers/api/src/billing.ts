@@ -1,3 +1,5 @@
+import { verifyFirebaseIdToken, type FirebaseServiceAccountEnv } from './firebaseAuth'
+
 export type Plan = 'free' | 'pro'
 
 interface D1Result<T = unknown> {
@@ -17,7 +19,7 @@ interface D1Database {
   batch?<T = unknown>(statements: D1PreparedStatement[]): Promise<Array<D1Result<T>>>
 }
 
-export interface BillingEnv {
+export interface BillingEnv extends FirebaseServiceAccountEnv {
   BILLING_ENABLED?: string
   STRIPE_SECRET_KEY?: string
   STRIPE_WEBHOOK_SECRET?: string
@@ -25,13 +27,7 @@ export interface BillingEnv {
   STRIPE_PORTAL_CONFIGURATION_ID?: string
   BILLING_SUCCESS_URL?: string
   BILLING_CANCEL_URL?: string
-  FIREBASE_PROJECT_ID?: string
   BILLING_DB?: D1Database
-}
-
-interface FirebaseUser {
-  uid: string
-  email?: string
 }
 
 interface SubscriptionState {
@@ -72,11 +68,28 @@ export const billingJson = (body: unknown, status = 200): Response =>
   new Response(JSON.stringify(body), { status, headers: corsHeaders })
 
 const textEncoder = new TextEncoder()
-type FirebaseJwk = JsonWebKey & { kid?: string }
 
 const isEnabled = (env: BillingEnv): boolean => env.BILLING_ENABLED === 'true'
 
 const hasD1 = (env: BillingEnv): boolean => !!env.BILLING_DB
+
+// Same emulator-detection convention as firebaseAuth.ts's isAuthEmulated — true only under
+// `npm run review` (see scripts/review.mjs's --var FIREBASE_AUTH_EMULATOR_HOST). Lets the 503
+// responses below tell a reviewer "this is local review, not a real outage" instead of the
+// generic message a real production misconfiguration would show.
+const isReviewEnvironment = (env: BillingEnv): boolean => !!env.FIREBASE_AUTH_EMULATOR_HOST
+
+const notConfiguredResponse = (env: BillingEnv, what: 'checkout' | 'billing portal'): Response =>
+  billingJson(
+    isReviewEnvironment(env)
+      ? { error: `LOCAL REVIEW: ${what === 'checkout' ? 'Billing checkout' : 'The billing portal'} requires Stripe test configuration. See "Local Review Billing" in docs/billing-setup.md.`, reviewMode: true }
+      : { error: `Billing is not configured` },
+    503
+  )
+
+// Single source of truth for scan quotas on the Worker side (mirrors apps/web/src/lib/pricing.ts,
+// which is canonical for the pricing page — the two can't share a module across deployables).
+export const SCAN_QUOTA_BY_PLAN: Record<Plan, number> = { free: 10, pro: 100 }
 
 const hasCheckoutConfig = (env: BillingEnv): boolean =>
   isEnabled(env) && !!env.STRIPE_SECRET_KEY && !!env.STRIPE_PRO_PRICE_ID && !!env.BILLING_SUCCESS_URL && !!env.BILLING_CANCEL_URL && !!env.FIREBASE_PROJECT_ID && hasD1(env)
@@ -88,79 +101,32 @@ export const isPlanCheckoutAvailable = (plan: string): boolean => plan === 'pro'
 
 const unixToIso = (value: number | null | undefined): string | null => typeof value === 'number' && value > 0 ? new Date(value * 1000).toISOString() : null
 
-const safeStatus = (state?: Partial<SubscriptionState> | null) => {
+const planFromState = (state?: Partial<SubscriptionState> | null): Plan => {
   const active = state?.plan === 'pro' && (state.status === 'active' || state.status === 'trialing')
-  const plan: Plan = active ? 'pro' : 'free'
+  return active ? 'pro' : 'free'
+}
+
+const safeStatus = (state?: Partial<SubscriptionState> | null) => {
+  const plan = planFromState(state)
   return {
     plan,
     status: state?.status ?? 'free',
-    scanQuota: plan === 'pro' ? 100 : 10,
+    scanQuota: SCAN_QUOTA_BY_PLAN[plan],
     features: {
       fullRemediation: plan === 'pro',
       correctedSnippets: plan === 'pro',
       a2spaGuidance: plan === 'pro',
       pdfExport: plan === 'pro',
-      reportSharing: plan === 'pro',
     },
     currentPeriodEnd: unixToIso(state?.currentPeriodEnd ?? null),
     cancelAtPeriodEnd: state?.cancelAtPeriodEnd === true,
   }
 }
 
-const base64UrlToBytes = (value: string): Uint8Array => {
-  const base64 = value.replace(/-/g, '+').replace(/_/g, '/') + '='.repeat((4 - value.length % 4) % 4)
-  const binary = atob(base64)
-  const bytes = new Uint8Array(binary.length)
-  for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i)
-  return bytes
-}
-
-const toArrayBuffer = (bytes: Uint8Array): ArrayBuffer => {
-  const buffer = new ArrayBuffer(bytes.byteLength)
-  new Uint8Array(buffer).set(bytes)
-  return buffer
-}
-
-const parseJwt = (token: string): { header: Record<string, unknown>; payload: Record<string, unknown>; signed: string; signature: Uint8Array } | null => {
-  const parts = token.split('.')
-  if (parts.length !== 3) return null
-  try {
-    return {
-      header: JSON.parse(new TextDecoder().decode(base64UrlToBytes(parts[0]))) as Record<string, unknown>,
-      payload: JSON.parse(new TextDecoder().decode(base64UrlToBytes(parts[1]))) as Record<string, unknown>,
-      signed: `${parts[0]}.${parts[1]}`,
-      signature: base64UrlToBytes(parts[2]),
-    }
-  } catch {
-    return null
-  }
-}
-
-async function verifyFirebaseUser(request: Request, env: BillingEnv): Promise<FirebaseUser | null> {
+/** Thin wrapper around the shared verifyFirebaseIdToken — extracts the Bearer token from this request's Authorization header first. */
+async function verifyFirebaseUser(request: Request, env: BillingEnv): Promise<{ uid: string; email?: string } | null> {
   const token = request.headers.get('Authorization')?.replace(/^Bearer\s+/i, '').trim()
-  if (!token || !env.FIREBASE_PROJECT_ID) return null
-
-  const parsed = parseJwt(token)
-  if (!parsed) return null
-
-  const kid = typeof parsed.header.kid === 'string' ? parsed.header.kid : ''
-  const issuer = `https://securetoken.google.com/${env.FIREBASE_PROJECT_ID}`
-  const now = Math.floor(Date.now() / 1000)
-  if (parsed.payload.aud !== env.FIREBASE_PROJECT_ID || parsed.payload.iss !== issuer || typeof parsed.payload.sub !== 'string' || typeof parsed.payload.exp !== 'number' || parsed.payload.exp <= now) {
-    return null
-  }
-
-  const certs = await fetch('https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com')
-  if (!certs.ok) return null
-  const jwks = await certs.json() as { keys?: FirebaseJwk[] }
-  const jwk = jwks.keys?.find(key => key.kid === kid)
-  if (!jwk) return null
-
-  const key = await crypto.subtle.importKey('jwk', jwk, { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' }, false, ['verify'])
-  const valid = await crypto.subtle.verify('RSASSA-PKCS1-v1_5', key, toArrayBuffer(parsed.signature), textEncoder.encode(parsed.signed))
-  if (!valid) return null
-
-  return { uid: parsed.payload.sub, email: typeof parsed.payload.email === 'string' ? parsed.payload.email : undefined }
+  return verifyFirebaseIdToken(token, env)
 }
 
 const rowToState = (row: SubscriptionRow | null): SubscriptionState | null => row ? {
@@ -180,6 +146,37 @@ async function loadSubscription(env: BillingEnv, uid: string): Promise<Subscript
   if (!env.BILLING_DB) return null
   const row = await env.BILLING_DB.prepare('SELECT * FROM subscriptions WHERE uid = ?').bind(uid).first<SubscriptionRow>()
   return rowToState(row)
+}
+
+export interface ScanQuotaCheck {
+  allowed: boolean
+  plan: Plan
+  used: number
+  limit: number
+  month: string
+}
+
+const currentUsageMonth = (): string => new Date().toISOString().slice(0, 7) // YYYY-MM
+
+/**
+ * Checks whether `uid` still has scan quota left for the current calendar month.
+ * Fails open (allowed: true) when D1 isn't bound so a misconfigured environment degrades
+ * to "unlimited" rather than locking every scan out — same fallback posture as the rest
+ * of billing.ts (see loadSubscription/handleStatus).
+ */
+export async function checkScanQuota(env: BillingEnv, uid: string): Promise<ScanQuotaCheck> {
+  const month = currentUsageMonth()
+  if (!env.BILLING_DB) {
+    return { allowed: true, plan: 'free', used: 0, limit: SCAN_QUOTA_BY_PLAN.free, month }
+  }
+  const [state, usageRow] = await Promise.all([
+    loadSubscription(env, uid),
+    env.BILLING_DB.prepare('SELECT scan_count FROM usage_monthly WHERE uid = ? AND month = ?').bind(uid, month).first<{ scan_count: number }>(),
+  ])
+  const plan = planFromState(state)
+  const limit = SCAN_QUOTA_BY_PLAN[plan]
+  const used = usageRow?.scan_count ?? 0
+  return { allowed: used < limit, plan, used, limit, month }
 }
 
 async function saveSubscription(env: BillingEnv, uid: string, state: SubscriptionState): Promise<'saved' | 'stale' | 'failed'> {
@@ -264,7 +261,7 @@ const stripeGet = async (env: BillingEnv, path: string) =>
   })
 
 export async function handleCheckout(request: Request, env: BillingEnv): Promise<Response> {
-  if (!hasCheckoutConfig(env)) return billingJson({ error: 'Billing is not configured' }, 503)
+  if (!hasCheckoutConfig(env)) return notConfiguredResponse(env, 'checkout')
   const user = await verifyFirebaseUser(request, env)
   if (!user) return billingJson({ error: 'Authentication required' }, 401)
 
@@ -277,6 +274,31 @@ export async function handleCheckout(request: Request, env: BillingEnv): Promise
   }
   if (!isPlanCheckoutAvailable(requestedPlan)) return billingJson({ error: 'Checkout is unavailable for this plan' }, 400)
 
+  // Loaded once, used for two things below: (1) the duplicate-subscription guard, (2) reusing the
+  // existing Stripe customer instead of minting a new one on repeat checkouts.
+  const existingState = await loadSubscription(env, user.uid)
+
+  // The UI already hides "Start Pro Checkout" once a user is active/trialing Pro, but that's a
+  // presentation detail, not a security boundary — a stale tab, a replayed request, or someone
+  // calling this endpoint directly must not be able to create a second, concurrent Stripe
+  // subscription for a uid that already has one. Route straight to that subscription's management
+  // portal instead (same {url} response shape the checkout caller already expects, so no special
+  // frontend handling is required), falling back to a plain rejection if the portal itself isn't
+  // configured.
+  if (existingState?.stripeCustomerId && existingState.plan === 'pro' && (existingState.status === 'active' || existingState.status === 'trialing')) {
+    if (env.STRIPE_PORTAL_CONFIGURATION_ID && env.BILLING_CANCEL_URL) {
+      const portalBody = new URLSearchParams({
+        customer: existingState.stripeCustomerId,
+        return_url: env.BILLING_CANCEL_URL,
+        configuration: env.STRIPE_PORTAL_CONFIGURATION_ID,
+      })
+      const portalRes = await stripeRequest(env, '/v1/billing_portal/sessions', portalBody)
+      const portalData = await portalRes.json() as { url?: string }
+      if (portalRes.ok && portalData.url) return billingJson({ url: portalData.url, alreadySubscribed: true })
+    }
+    return billingJson({ error: 'You already have an active Pro subscription.', alreadySubscribed: true }, 409)
+  }
+
   const body = new URLSearchParams({
     mode: 'subscription',
     success_url: env.BILLING_SUCCESS_URL!,
@@ -287,7 +309,16 @@ export async function handleCheckout(request: Request, env: BillingEnv): Promise
     'metadata[uid]': user.uid,
     'subscription_data[metadata][uid]': user.uid,
   })
-  if (user.email) body.set('customer_email', user.email)
+  // Reuse the Stripe customer already on file for this uid (e.g. a prior canceled/abandoned
+  // subscription) instead of always minting a new one. Without this, every repeat checkout
+  // created a brand-new Stripe Customer object — orphaning the old one and, in the case of two
+  // checkouts completed close together, risking two simultaneously-active subscriptions for the
+  // same uid while D1 (one row per uid) only ever tracks the most recently-processed one.
+  if (existingState?.stripeCustomerId) {
+    body.set('customer', existingState.stripeCustomerId)
+  } else if (user.email) {
+    body.set('customer_email', user.email)
+  }
 
   const stripeRes = await stripeRequest(env, '/v1/checkout/sessions', body)
   const data = await stripeRes.json() as { url?: string }
@@ -297,7 +328,7 @@ export async function handleCheckout(request: Request, env: BillingEnv): Promise
 
 export async function handlePortal(request: Request, env: BillingEnv): Promise<Response> {
   if (!isEnabled(env) || !env.STRIPE_SECRET_KEY || !env.STRIPE_PORTAL_CONFIGURATION_ID || !env.BILLING_CANCEL_URL || !env.FIREBASE_PROJECT_ID || !hasD1(env)) {
-    return billingJson({ error: 'Billing portal is not configured' }, 503)
+    return notConfiguredResponse(env, 'billing portal')
   }
   const user = await verifyFirebaseUser(request, env)
   if (!user) return billingJson({ error: 'Authentication required' }, 401)
@@ -317,8 +348,18 @@ export async function handlePortal(request: Request, env: BillingEnv): Promise<R
 
 export async function handleStatus(request: Request, env: BillingEnv): Promise<Response> {
   const user = await verifyFirebaseUser(request, env)
-  if (!user || !env.BILLING_DB) return billingJson(safeStatus(null))
-  return billingJson(safeStatus(await loadSubscription(env, user.uid)))
+  if (!user) {
+    console.warn('Billing status fallback: Firebase user verification returned null')
+  }
+  if (!env.BILLING_DB) {
+    console.warn('Billing status fallback: BILLING_DB is not bound')
+  }
+  if (!user || !env.BILLING_DB) return billingJson({ ...safeStatus(null), used: 0 })
+  const [state, quota] = await Promise.all([loadSubscription(env, user.uid), checkScanQuota(env, user.uid)])
+  // `used` reflects the SAME usage_monthly ledger checkScanQuota enforces against on every real
+  // scan (web, CLI, and API alike) — this is real remaining-quota display, not a separate,
+  // driftable counter.
+  return billingJson({ ...safeStatus(state), used: quota.used })
 }
 
 const parseStripeSignature = (header: string): { timestamp: string; signatures: string[] } => {

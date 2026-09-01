@@ -26,7 +26,7 @@ export const plans: Plan[] = [
     description: 'Validate early agent configs and catch obvious deployment risks.',
     limits: '10 scans/month',
     features: ['10 scans/month', 'Basic findings', 'Verdict and risk score', 'Private report history'],
-    unavailable: ['Full remediation guidance', 'Corrected code snippets', 'A2SPA implementation guidance', 'PDF export', 'Shareable reports'],
+    unavailable: ['Full remediation guidance', 'Corrected code snippets', 'A2SPA implementation guidance', 'PDF export'],
     cta: 'Start free',
   },
   {
@@ -36,7 +36,7 @@ export const plans: Plan[] = [
     period: '/month',
     description: 'For builders who need remediation-ready reports and stakeholder-ready exports.',
     limits: '100 scans/month',
-    features: ['100 scans/month', 'Full remediation guidance', 'Corrected code snippets', 'A2SPA implementation guidance', 'PDF export', 'Shareable reports'],
+    features: ['100 scans/month', 'Full remediation guidance', 'Corrected code snippets', 'A2SPA implementation guidance', 'PDF export'],
     cta: 'Upgrade to Pro',
     highlighted: true,
   },

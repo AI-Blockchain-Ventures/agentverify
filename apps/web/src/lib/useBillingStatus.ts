@@ -26,7 +26,10 @@ export function useBillingStatusState(user: User | null) {
         const res = await fetch(`${getApiBaseUrl()}${billingRoutes.status}`, { headers })
         if (!res.ok) throw new Error('billing status unavailable')
         const data = await res.json() as BillingStatus
-        if (!cancelled) setStatus(data.plan === 'pro' ? data : freeBillingStatus)
+        // Trust the real response for BOTH plans now — it carries real per-user `used`, which
+        // varies even on the free plan and previously got discarded here in favor of the static
+        // freeBillingStatus default. Only a malformed/unexpected shape falls back to the default.
+        if (!cancelled) setStatus(data.plan === 'pro' || data.plan === 'free' ? data : freeBillingStatus)
       } catch {
         if (!cancelled) {
           setStatus(freeBillingStatus)

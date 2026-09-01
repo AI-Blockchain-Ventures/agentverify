@@ -1,6 +1,43 @@
 # Billing Setup
 
-Agent Verify v1.3 pricing UI is ready for Free, Pro, Team, and Enterprise packaging. Live Stripe billing is enabled for Pro checkout through the Worker billing API and D1-backed subscription state.
+## Local Review Billing (`npm run review`)
+
+`npm run review` never configures Stripe — there is no real or fake Stripe account behind the
+local Worker by default. `handleCheckout`/`handlePortal` in `workers/api/src/billing.ts` fail
+closed with `503` when Stripe config is missing, same as they would in a misconfigured
+production deploy — but the local Worker also detects it's running under `npm run review`
+(via the same `FIREBASE_AUTH_EMULATOR_HOST` flag `firebaseAuth.ts` uses) and returns a message
+prefixed `LOCAL REVIEW:` instead of the generic "Billing is not configured" a real outage would
+show, so a reviewer clicking "Start Pro Checkout" or "Manage billing" sees an honest explanation,
+not something that reads like the app is broken.
+
+**To actually exercise checkout/webhook/portal locally against real Stripe TEST mode:**
+
+1. Get a Stripe **test-mode** secret key, and create a test-mode Product/Price for Pro.
+2. Add to `workers/api/.dev.vars` (this file is gitignored, never committed):
+   ```
+   STRIPE_SECRET_KEY=sk_test_...
+   STRIPE_PRO_PRICE_ID=price_...
+   STRIPE_WEBHOOK_SECRET=whsec_...          # from `stripe listen`, see below
+   STRIPE_PORTAL_CONFIGURATION_ID=bpc_...    # only if testing the portal
+   ```
+   `.dev.vars` is read at `wrangler dev` startup, not hot-reloaded — restart `npm run review`
+   after editing it.
+3. `BILLING_SUCCESS_URL`/`BILLING_CANCEL_URL`/`BILLING_ENABLED`/`STRIPE_PRO_PRICE_ID` in
+   `wrangler.toml`'s `[vars]` point at production; override them locally the same way
+   `scripts/review.mjs` overrides `FIREBASE_PROJECT_ID`, or temporarily edit them to
+   `http://localhost:3000/agentverify/...` per the "Temporary localhost redirect values" section
+   below, and revert before any production-facing work.
+4. Forward webhooks with the Stripe CLI: `stripe listen --forward-to localhost:8787/v1/billing/webhook`
+   — this prints the `whsec_...` to put in `.dev.vars`.
+5. Run a real test-mode checkout through the UI with a Stripe test card (e.g. `4242 4242 4242 4242`).
+
+Never put a **live**-mode key in `.dev.vars`. Remove real Stripe test values from `.dev.vars`
+before handing off the environment — the honest LOCAL REVIEW message is the better default for
+anyone who doesn't need real Stripe test-mode checkout to verify the rest of the app.
+
+
+Agent Verify's pricing UI covers Free, Pro, Team, and Enterprise packaging. Live Stripe billing is enabled for Pro checkout through the Worker billing API and D1-backed subscription state, with monthly scan quota enforced server-side across the dashboard, CLI, and API.
 
 ## Current Product Packaging
 
@@ -14,13 +51,17 @@ Agent Verify v1.3 pricing UI is ready for Free, Pro, Team, and Enterprise packag
 - `/pricing` shows final packaging and routes Pro to the Worker checkout route for logged-in users.
 - Team has no checkout path and is marked Coming soon.
 - Enterprise always uses a contact CTA.
-- Upgrade prompts appear after local Free scan usage, when exporting PDF, when sharing a report, and near remediation content.
+- Upgrade prompts appear once the real server-tracked Free scan quota is used up, when exporting PDF, when sharing a report, and near remediation content.
 - These prompts are product guidance only. They are not security or billing enforcement.
 - Password-protected sharing is deferred unless the Worker enforces password verification before report content is delivered.
 
 ## Public Configuration
 
-- `NEXT_PUBLIC_BILLING_CHECKOUT_ENABLED`: set to `true` only when secure backend checkout and entitlement handling are deployed.
+Pro checkout has no frontend rollout flag — it is unconditionally live, backed by the real,
+quota-enforced Worker checkout route (`workers/api/src/billing.ts`'s `handleCheckout`). An earlier
+`NEXT_PUBLIC_BILLING_CHECKOUT_ENABLED` env var existed for this purpose before checkout was
+production-ready; it was removed once checkout shipped for real rather than left as unused
+configuration.
 
 The public `workers/api/wrangler.toml` may contain only non-secret configuration such as `FIREBASE_PROJECT_ID`, `STRIPE_PRO_PRICE_ID`, billing redirect URLs, `BILLING_ENABLED`, and D1 database name/id.
 
@@ -36,7 +77,9 @@ Worker routes implemented for live Pro billing:
 - `POST /v1/billing/portal`: creates a Stripe Billing Portal session for active customers.
 - `POST /v1/billing/webhook`: verifies Stripe webhook signatures and updates subscription state.
 - `GET /v1/billing/status`: returns the authenticated user's current safe plan, quota, feature flags, and subscription status. Unauthenticated or unknown users receive Free.
-- `POST /v1/scan`: executes CLI/API scans after API-key validation and saves CLI reports when report persistence succeeds. Dashboard browser scans are not yet server-metered.
+- `POST /v1/scan`: executes CLI, API, **and dashboard** scans behind a single authenticated route (`authenticateRequest` accepts either an `av_...` API key or a Firebase ID token), and records the result against D1 `usage_monthly` before returning it. The dashboard's `ScannerPanel` calls this route with the signed-in user's Firebase ID token — it never runs the scanner locally in the browser. All three surfaces share one server-owned monthly quota per uid; there is no client-only or local-storage-based scan counter anywhere in the product.
+- `POST /v1/demo/scan`: unauthenticated, aggressively rate-limited (5/IP/hour), size-capped public demo scan — no persistence, no quota interaction. Backs both the homepage's Live Demo widget and the spoofed-agent walkthrough page.
+- `POST /v1/verify-fix`: authenticated, ownership-checked re-scan of a proposed fix for one finding on a report the caller owns. Rate-limited independently of the monthly scan quota (30/uid/hour) and deliberately never increments `usage_monthly` — it verifies a remediation, it is not a second free scanning API.
 
 Authentication requirements:
 
@@ -175,18 +218,17 @@ Monthly usage row:
 
 Entitlement behavior:
 
-- Free quota: 10 scans/month product guidance until dashboard scan issuance is server-metered.
-- Pro quota: 100 scans/month product guidance until dashboard scan issuance is server-metered.
-- PDF export and public report sharing should require Pro once enforcement exists.
-- Full remediation and corrected snippets should require Pro once scan generation is server-side.
+- Free quota: 10 scans/month, enforced server-side. Every scan (dashboard, CLI, and API) runs through `POST /v1/scan`, which checks and increments D1 `usage_monthly` for the caller's uid before returning a result — the 11th scan in a calendar month returns `429` regardless of which surface it comes from.
+- Pro quota: 100 scans/month, enforced the same way.
+- A user cannot bypass the monthly quota by clearing localStorage, using a different browser, or opening an incognito window — nothing about the quota lives client-side. There is exactly one `usage_monthly` row per `(uid, month)`, shared across dashboard/CLI/API.
+- PDF export and public report sharing are still UI-gated only (see "Files that still need server-side gating" below) — a Free user's client hides these controls, but the underlying scan result data returned by `/v1/scan` is not itself redacted by plan. Do not treat this as a hard security boundary the way the scan quota is.
+- Full remediation guidance and corrected snippets are likewise UI-gated only, not withheld from the API response by plan.
 - Team and Enterprise entitlements must not be inferred until those products are actually implemented.
 
-Current scan-enforcement limitation:
+Files that still need server-side gating (accurate as of 1.4.0 — not deferred indefinitely, just not yet done):
 
-- Dashboard scanning currently runs in the browser, so a 10-scan Free quota cannot be fully tamper-resistant in this step.
-- The UI tracks local scan usage honestly and labels it as local/product guidance, not backend enforcement.
-- The minimum backend change required for real quota enforcement is to move dashboard scan execution or scan-result issuance behind an authenticated Worker route such as `POST /v1/scan`, then increment D1 `usage_monthly` only after a server-authorized scan.
-- Until that change is complete, Pro-only outputs are gated in UI and backend billing status where possible, but scan count is not a hard security boundary.
+- PDF export (`apps/web/src/app/report/page.tsx`) and public report sharing (`apps/web/src/components/report/ReportView.tsx`) currently rely on the client checking `billing.status.features`, not on the Worker withholding anything. A user who calls the API directly can already see full-remediation content in the raw scan response regardless of plan.
+- Closing this gap would mean either redacting `findings[].remediation`/similar fields server-side in `/v1/scan`'s response based on the caller's plan, or moving PDF generation itself server-side and checking entitlement before generating.
 
 ## Stripe Live Product Setup
 
@@ -259,24 +301,22 @@ Cancellation and failed-payment behavior:
 - If a subscription is deleted or unpaid after grace, downgrade to Free and apply Free quota.
 - Renewal should reset monthly usage using the app's monthly usage key, not a browser-local counter.
 
-## Files For Next Implementation Step
+## Where This Is Implemented
 
-- `workers/api/src/worker.ts`: add authenticated billing and scan routes.
-- `workers/api/src/billing.ts`: Stripe checkout, portal, webhook, and subscription mapping.
+- `workers/api/src/worker.ts`: authenticated billing and scan routes, including `/v1/scan`'s dual API-key/Firebase-token auth (`authz.ts`) shared by dashboard, CLI, and API callers.
+- `workers/api/src/billing.ts`: Stripe checkout, portal, webhook, subscription mapping, quota checks (`checkScanQuota`/`recordMonthlyUsage`) against D1 `usage_monthly`, and the duplicate-active-subscription guard on checkout.
 - `workers/api/src/firebaseAuth.ts`: Firebase ID-token verification for Worker routes.
-- `workers/api/src/entitlements.ts`: future plan, quota, and feature checks.
-- `apps/web/src/lib/billing.ts`: call backend billing routes for live Pro checkout.
-- `apps/web/src/lib/pricing.ts`: keep plan limits as the single UI source of truth.
-- `apps/web/src/components/scanner/ScannerPanel.tsx`: replace local usage prompt with server usage state.
-- `apps/web/src/app/report/page.tsx`: gate PDF export by server entitlement.
-- `apps/web/src/components/report/ReportView.tsx`: gate public sharing by server entitlement.
+- `apps/web/src/lib/billing.ts`: calls the backend billing routes for checkout/portal/status, and `summarizeBillingState()` — the single shared interpretation of plan/status/cancelAtPeriodEnd/currentPeriodEnd that Pricing, Settings, and the dashboard sidebar all render from, so none of them can drift into showing a different plan state for the same user.
+- `apps/web/src/lib/pricing.ts`: plan limits, the single UI source of truth mirrored by `SCAN_QUOTA_BY_PLAN` in `billing.ts`.
+- `apps/web/src/components/scanner/ScannerPanel.tsx`: calls `POST /v1/scan` with the signed-in user's Firebase ID token — no local scan execution, no local usage counter.
+- `apps/web/src/app/report/page.tsx` / `apps/web/src/components/report/ReportView.tsx`: gate PDF export and public sharing in the UI only — see "Files that still need server-side gating" above for what's not yet closed.
 
 ## Local Test Plan Without Live Stripe Secrets
 
 - Unit-test entitlement checks for Free, Pro, expired, canceled, and past-due states.
 - Mock Stripe Checkout Session creation and verify only Pro can create checkout.
 - Mock webhook payloads and verify signature failures are rejected.
-- Mock monthly usage rows and verify quota exhaustion blocks dashboard scans after server-side dashboard scan issuance is implemented.
+- Mock monthly usage rows and verify quota exhaustion blocks scans on all three surfaces (dashboard, CLI, API) — done, see `workers/api/test/source.test.mjs`'s shared-ledger tests.
 - Verify Team and Enterprise never create checkout sessions.
 - Verify UI handles checkout unavailable states without exposing secret configuration.
 - Verify unauthenticated checkout returns `401` when billing is configured.
@@ -295,10 +335,10 @@ Cancellation and failed-payment behavior:
 - Confirm successful renewal preserves Pro and updates period dates.
 - Confirm cancellation keeps Pro through the paid period, then downgrades.
 - Confirm failed payment changes entitlement according to the selected grace-period policy.
-- Confirm dashboard scan quota enforcement after server-side dashboard scan issuance is implemented.
+- Confirm an already-active/trialing Pro user calling `/v1/billing/checkout` directly is routed to the billing portal (or safely rejected) rather than creating a second concurrent subscription.
 
 ## Notification Scope
 
 - The broad in-app notification center is deferred for launch.
-- Browser push, service workers, push tokens, and permission prompts are not part of v1.3.0.
+- Browser push, service workers, push tokens, and permission prompts are not part of 1.4.0.
 - The dashboard keeps only report activity indicators: Reports tab/sidebar/bottom-nav badges and a new-report banner in the Reports view.

@@ -1,0 +1,22 @@
+# Copy this file to .dev.vars (already gitignored) and fill in real local values, or run:
+#   node workers/api/scripts/generate-dev-signing-key.mjs
+# to generate a throwaway DEV-ONLY attestation signing key automatically.
+#
+# NEVER put real values in THIS file — it is the committed template. Real values only ever go in
+# your own local .dev.vars, which .gitignore excludes by name.
+
+# DEV ONLY. Never a production signing key. Generated locally, never committed.
+ATTESTATION_SIGNING_PRIVATE_KEY_JWK={"kty":"EC","crv":"P-256","x":"...","y":"...","d":"...","key_ops":["sign"]}
+ATTESTATION_ISSUER=agentverify-dev
+
+# Stripe TEST-mode configuration — required only to exercise real checkout/webhook/portal locally.
+# See "Local Review Billing" in docs/billing-setup.md for the full walkthrough. Use TEST-mode
+# values ONLY (sk_test_..., whsec_..., a test-mode price/portal configuration id) — never a live
+# key here. Leave these unset to keep npm run review's honest "LOCAL REVIEW: billing needs Stripe
+# test configuration" message instead.
+STRIPE_SECRET_KEY=
+STRIPE_PRO_PRICE_ID=
+STRIPE_WEBHOOK_SECRET=
+STRIPE_PORTAL_CONFIGURATION_ID=
+BILLING_SUCCESS_URL=
+BILLING_CANCEL_URL=

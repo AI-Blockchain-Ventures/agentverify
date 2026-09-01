@@ -6,12 +6,39 @@ import { collection, deleteDoc, doc, getDocs, query, where } from 'firebase/fire
 import { useAuth } from '@/components/auth/AuthProvider'
 import { db } from '@/lib/firebase'
 import { useTheme } from '@/lib/useTheme'
+import { useBillingStatusState } from '@/lib/useBillingStatus'
+import { openBillingPortal, summarizeBillingState } from '@/lib/billing'
+import type { DashboardTab } from '@/types'
 
-export function Settings() {
+/** Settings deliberately stays lean — Workspace/Billing/API-CLI/Integrations already have their
+ * own dedicated destinations with the full real experience; duplicating that here would just be
+ * two places that can drift out of sync. This page owns only what's genuinely personal (theme,
+ * account, local report data) and links out to everything else. */
+export function Settings({ onNavigate }: { onNavigate?: (tab: DashboardTab) => void }) {
   const { user, signOut } = useAuth()
   const { theme, setMode } = useTheme()
+  const billing = useBillingStatusState(user)
+  const billingState = summarizeBillingState(billing.status)
+  const billingStateLabel = billingState.isActivePro
+    ? billingState.isCanceling
+      ? billingState.periodEndDate
+        ? `PRO — CANCELS ${billingState.periodEndDate.toUpperCase()}`
+        : 'PRO — CANCELING'
+      : 'PRO — ACTIVE'
+    : 'FREE'
+  const [portalBusy, setPortalBusy] = useState(false)
+  const [portalMessage, setPortalMessage] = useState<{ text: string; reviewMode?: boolean } | null>(null)
   const [deleting, setDeleting] = useState(false)
   const [showConfirm, setShowConfirm] = useState(false)
+
+  const manageBilling = async () => {
+    if (!user) return
+    setPortalBusy(true)
+    setPortalMessage(null)
+    const result = await openBillingPortal(() => user.getIdToken())
+    if (!result.ok) setPortalMessage({ text: result.message, reviewMode: result.reviewMode })
+    setPortalBusy(false)
+  }
   const memberSince = user?.metadata.creationTime
     ? new Date(user.metadata.creationTime).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
     : 'Unknown'
@@ -109,9 +136,61 @@ export function Settings() {
             <p style={{ color: 'var(--text-primary)' }} className="mt-1">{memberSince}</p>
           </div>
         </div>
-        <button onClick={signOut} className="mt-5 rounded-lg border border-[#E03E3E]/20 bg-[#E03E3E]/5 px-4 py-2 text-sm font-semibold text-[#E03E3E] transition-colors hover:bg-[#E03E3E]/10">
+        <button onClick={signOut} className="mt-5 rounded-lg border border-[#E03E3E]/20 bg-[#E03E3E]/5 px-4 py-2 text-sm font-semibold text-[color:var(--accent-red-text)] transition-colors hover:bg-[#E03E3E]/10">
           Sign out
         </button>
+      </section>
+
+      <section style={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)' }} className="rounded-3xl p-6 shadow-xl shadow-black/5">
+        <h2 style={{ color: 'var(--text-primary)' }} className="text-lg font-semibold">Workspace &amp; billing</h2>
+        <p style={{ color: 'var(--text-secondary)' }} className="mt-1 text-sm">Members, roles, activity, keys, and integrations each have their own full page — settings here doesn&apos;t duplicate them.</p>
+        <div className="mt-4 grid gap-2 sm:grid-cols-2">
+          {([
+            { tab: 'workspace' as const, label: 'Workspace', desc: 'Members, roles, audit log, webhooks' },
+            { tab: 'api' as const, label: 'API / CLI', desc: 'Keys for scripts and CI' },
+            { tab: 'integrations' as const, label: 'Integrations', desc: 'GitHub Actions, REST API' },
+          ]).map(item => (
+            <button
+              key={item.tab}
+              onClick={() => onNavigate?.(item.tab)}
+              style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}
+              className="av-press rounded-2xl p-3.5 text-left transition-opacity hover:opacity-85"
+            >
+              <p style={{ color: 'var(--text-primary)' }} className="text-sm font-semibold">{item.label} →</p>
+              <p style={{ color: 'var(--text-muted)' }} className="mt-0.5 text-xs">{item.desc}</p>
+            </button>
+          ))}
+          <Link
+            href="/pricing"
+            style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}
+            className="av-press rounded-2xl p-3.5 text-left transition-opacity hover:opacity-85"
+          >
+            <p style={{ color: 'var(--text-primary)' }} className="text-sm font-semibold">Billing / Plan →</p>
+            <p style={{ color: 'var(--text-muted)' }} className="mt-0.5 text-xs font-semibold tracking-wide">{billing.loading ? 'Loading plan…' : billingStateLabel}</p>
+          </Link>
+        </div>
+        {!billing.loading && billingState.isActivePro && (
+          <div style={{ borderTop: '1px solid var(--border)' }} className="mt-4 flex flex-wrap items-center justify-between gap-2 pt-4">
+            <div>
+              <p style={{ color: 'var(--text-primary)' }} className="text-sm font-medium">Manage your subscription</p>
+              <p style={{ color: 'var(--text-muted)' }} className="mt-0.5 text-xs">
+                {billingState.isCanceling
+                  ? billingState.periodEndDate
+                    ? `Your Pro plan remains active until ${billingState.periodEndDate}. Update payment method or resume — through Stripe's secure billing portal.`
+                    : "Your Pro plan is canceling at the end of the current billing period. Update payment method or resume — through Stripe's secure billing portal."
+                  : "Update payment method, view invoices, or cancel — through Stripe's secure billing portal."}
+              </p>
+            </div>
+            <button onClick={manageBilling} disabled={portalBusy} className="av-press shrink-0 rounded-xl border px-4 py-2 text-xs font-semibold disabled:opacity-50" style={{ borderColor: 'var(--border)', color: 'var(--text-primary)', backgroundColor: 'var(--surface)' }}>
+              {portalBusy ? 'Opening…' : 'Manage billing →'}
+            </button>
+          </div>
+        )}
+        {portalMessage && (
+          <p className="mt-3 text-xs" style={{ color: portalMessage.reviewMode ? 'var(--text-muted)' : 'var(--accent-orange-text)' }}>
+            {portalMessage.text}
+          </p>
+        )}
       </section>
 
       <section style={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)' }} className="rounded-3xl p-6 shadow-xl shadow-black/5">
@@ -119,7 +198,7 @@ export function Settings() {
         <p style={{ color: 'var(--text-secondary)' }} className="mt-2 text-sm">Delete saved dashboard and CLI reports from this workspace.</p>
         {showConfirm ? (
           <div className="mt-3 rounded-lg border border-[#E03E3E]/20 bg-[#E03E3E]/5 p-4">
-            <p className="mb-3 text-sm text-[#E03E3E]">This will permanently delete all your scan reports. This cannot be undone.</p>
+            <p className="mb-3 text-sm text-[color:var(--accent-red-text)]">This will permanently delete all your scan reports. This cannot be undone.</p>
             <div className="flex gap-2">
               <button onClick={deleteAllReports} disabled={deleting} style={{ color: '#ffffff' }} className="rounded-lg bg-[#E03E3E] px-4 py-2 text-xs font-semibold hover:opacity-90 disabled:opacity-50">
                 {deleting ? 'Deleting...' : 'Yes, delete all'}
@@ -130,7 +209,7 @@ export function Settings() {
             </div>
           </div>
         ) : (
-          <button onClick={() => setShowConfirm(true)} className="mt-4 rounded-lg border border-[#E03E3E]/30 px-4 py-2 text-xs text-[#E03E3E] transition-colors hover:bg-[#E03E3E]/5">
+          <button onClick={() => setShowConfirm(true)} className="mt-4 rounded-lg border border-[#E03E3E]/30 px-4 py-2 text-xs text-[color:var(--accent-red-text)] transition-colors hover:bg-[#E03E3E]/5">
             Delete all reports
           </button>
         )}
@@ -139,18 +218,18 @@ export function Settings() {
       <section style={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)' }} className="rounded-3xl p-6 shadow-xl shadow-black/5">
         <h2 style={{ color: 'var(--text-primary)' }} className="text-lg font-semibold">Legal</h2>
         <div className="mt-3 flex gap-4 text-sm">
-          <Link href="/privacy" className="text-[#00C4CC] hover:underline">Privacy Policy</Link>
-          <Link href="/terms" className="text-[#00C4CC] hover:underline">Terms of Use</Link>
+          <Link href="/privacy" className="text-[color:var(--accent-purple-text)] hover:underline">Privacy Policy</Link>
+          <Link href="/terms" className="text-[color:var(--accent-purple-text)] hover:underline">Terms of Use</Link>
         </div>
       </section>
 
       <section style={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)' }} className="rounded-3xl p-6 shadow-xl shadow-black/5">
         <h2 style={{ color: 'var(--text-primary)' }} className="text-lg font-semibold">About</h2>
         <div style={{ color: 'var(--text-muted)' }} className="mt-3 space-y-1 text-sm">
-          <p>Agent Verify v1.3.0</p>
+          <p>Agent Verify v1.4.0</p>
           <p>AI agent security reports and execution-trust guidance</p>
           <p>Powered by A2SPA — AI Blockchain Ventures LLC</p>
-          <a href="https://github.com/AI-Blockchain-Ventures/agentverify" target="_blank" rel="noreferrer" className="inline-block text-[#00C4CC] hover:underline">
+          <a href="https://github.com/AI-Blockchain-Ventures/agentverify" target="_blank" rel="noreferrer" className="inline-block text-[color:var(--accent-purple-text)] hover:underline">
             GitHub
           </a>
         </div>

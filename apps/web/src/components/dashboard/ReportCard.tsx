@@ -29,7 +29,7 @@ export function ReportCard({ report }: { report: StoredReport }) {
           <p style={{ color: 'var(--text-muted)' }} className="mt-0.5 text-xs">{source === 'cli' ? 'CLI scan' : 'Dashboard scan'} · {formattedDate || 'Recently scanned'}</p>
         </div>
         <div className="shrink-0 text-right">
-          <p className={`text-sm font-bold ${verified ? 'text-[#00B37E]' : riskScore >= 50 ? 'text-[#E07B39]' : 'text-[#E03E3E]'}`}>{riskScore}</p>
+          <p className={`text-sm font-bold ${verified ? 'text-[color:var(--accent-green-text)]' : riskScore >= 50 ? 'text-[color:var(--accent-orange-text)]' : 'text-[color:var(--accent-red-text)]'}`}>{riskScore}</p>
           <p style={{ color: 'var(--text-muted)' }} className="text-xs">/100</p>
         </div>
         <div className="hidden w-16 shrink-0 text-right sm:block">

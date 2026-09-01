@@ -17,8 +17,8 @@ const labels: Array<[keyof RuntimeBOMType, string]> = [
 
 const valueClass = (value: string | null) => {
   if (!value || value === 'Unknown' || value === 'null') return 'text-[var(--text-muted)]'
-  if (['Detected', 'Absent', 'Unbounded', 'Unrestricted', 'Unscoped'].includes(value)) return 'text-[#EF4444]'
-  if (['Present', 'Restricted', 'Scoped', 'Not Detected', 'Bounded'].includes(value)) return 'text-[#10B981]'
+  if (['Detected', 'Absent', 'Unbounded', 'Unrestricted', 'Unscoped'].includes(value)) return 'text-[color:var(--accent-red-text)]'
+  if (['Present', 'Restricted', 'Scoped', 'Not Detected', 'Bounded'].includes(value)) return 'text-[color:var(--accent-green-text)]'
   return 'text-[var(--text-secondary)]'
 }
 
@@ -26,7 +26,7 @@ export function RuntimeBOM({ bom }: { bom: RuntimeBOMType }) {
   return (
     <div style={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)' }} className="mb-6 rounded-xl p-6">
       <div className="mb-1 flex items-center gap-2">
-        <span className="text-[#06B6D4]">≡</span>
+        <span className="text-[color:var(--accent-cyan-text)]">≡</span>
         <h3 style={{ color: 'var(--text-primary)' }} className="font-semibold">Runtime Bill of Materials</h3>
       </div>
       <p style={{ color: 'var(--text-muted)' }} className="mb-5 text-xs">Complete inventory of this agent&apos;s execution identity</p>

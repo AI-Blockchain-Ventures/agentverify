@@ -9,13 +9,17 @@ const variants: Record<Variant, string> = {
   'cat-b': 'bg-orange/5 text-orange border border-orange/10',
   cli: 'bg-blue/10 text-blue border border-blue/20',
   warning: 'bg-orange/10 text-orange border border-orange/20',
-  muted: 'bg-gray-900 text-gray-500 border border-gray-800',
+  // Was hardcoded gray-900/500/800 — always rendered dark regardless of site theme.
+  muted: '',
 }
 
 interface BadgeProps extends HTMLAttributes<HTMLSpanElement> {
   variant?: Variant
 }
 
-export function Badge({ variant = 'muted', className = '', ...props }: BadgeProps) {
-  return <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${variants[variant]} ${className}`} {...props} />
+export function Badge({ variant = 'muted', className = '', style, ...props }: BadgeProps) {
+  const mutedStyle = variant === 'muted'
+    ? { backgroundColor: 'var(--surface)', color: 'var(--text-secondary)', border: '1px solid var(--border)', ...style }
+    : style
+  return <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${variants[variant]} ${className}`} style={mutedStyle} {...props} />
 }

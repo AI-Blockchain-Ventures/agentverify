@@ -9,6 +9,7 @@ import { useAuth } from '@/components/auth/AuthProvider'
 import { ReportView } from '@/components/report/ReportView'
 import { canUseProFeature } from '@/lib/billing'
 import { useBillingStatusState } from '@/lib/useBillingStatus'
+import { copyToClipboard } from '@/lib/clipboard'
 import type { CategoryScore, Finding, RuntimeBOM as RuntimeBOMType } from '@/types'
 
 const normalizeVerdict = (value: unknown): 'VERIFIED' | 'NOT VERIFIED' => {
@@ -95,26 +96,17 @@ function ReportPageInner() {
     user.uid === report.userId
   ))
 
-  const copyLink = () => {
+  const copyLink = async () => {
     if (!report) return
-    if (!canUseProFeature(billingStatus, 'reportSharing')) {
-      const message = 'Report sharing is included in Pro. Request Pro access to enable public links and stakeholder sharing.'
-      setUpgradePrompt(message)
-      return
-    }
     const url = `https://aimodularity.com/agentverify/report/?id=${report.reportId}`
-    navigator.clipboard.writeText(url)
-    setLinkCopied(true)
-    setTimeout(() => setLinkCopied(false), 2000)
+    if (await copyToClipboard(url)) {
+      setLinkCopied(true)
+      setTimeout(() => setLinkCopied(false), 2000)
+    }
   }
 
   const emailReport = () => {
     if (!report) return
-    if (!canUseProFeature(billingStatus, 'reportSharing')) {
-      const message = 'Report sharing is included in Pro. Request Pro access to share reports by email.'
-      setUpgradePrompt(message)
-      return
-    }
     const subject = `Agent Verify Report — ${report.fileName} — ${report.verdict}`
     const body = `Agent Verify Execution Trust Report\n\nFile: ${report.fileName}\nVerdict: ${report.verdict}\nScore: ${report.riskScore}/100\n\nView full report: https://aimodularity.com/agentverify/report/?id=${report.reportId}\n\nPowered by Agent Verify`
     window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
@@ -262,7 +254,7 @@ function ReportPageInner() {
           <button
             onClick={copyLink}
             style={{
-              backgroundColor: linkCopied ? '#00C4CC' : 'var(--card)',
+              backgroundColor: linkCopied ? '#06B6D4' : 'var(--card)',
               color: linkCopied ? '#060A0F' : 'var(--text-muted)',
               border: '1px solid var(--border)',
             }}
@@ -274,11 +266,11 @@ function ReportPageInner() {
       </div>
       {upgradePrompt && (
         <div className="no-print mx-auto mb-6 max-w-3xl px-6">
-          <div className="flex flex-col gap-3 rounded-2xl border border-[#00C4CC]/30 bg-[#00C4CC]/10 p-4 md:flex-row md:items-center md:justify-between">
+          <div className="flex flex-col gap-3 rounded-2xl border border-[#06B6D4]/30 bg-[#06B6D4]/10 p-4 md:flex-row md:items-center md:justify-between">
             <p style={{ color: 'var(--text-primary)' }} className="text-sm">{upgradePrompt}</p>
             <div className="flex flex-wrap gap-2">
               <button onClick={billing.refresh} disabled={billing.loading} className="rounded-lg border border-[var(--border)] px-3 py-2 text-xs font-semibold text-[var(--text-primary)] disabled:opacity-60">{billing.loading ? 'Refreshing...' : 'Refresh billing'}</button>
-              <Link href="/pricing" className="rounded-lg bg-[#00C4CC] px-3 py-2 text-center text-xs font-semibold text-[#060A0F]">Compare plans</Link>
+              <Link href="/pricing" className="rounded-lg bg-[#06B6D4] px-3 py-2 text-center text-xs font-semibold text-[#060A0F]">Compare plans</Link>
             </div>
           </div>
         </div>
@@ -300,7 +292,6 @@ function ReportPageInner() {
           user={user}
           isOwner={owner}
           onReportUpdate={(updates) => setReport(prev => prev ? { ...prev, ...updates } : prev)}
-          onUpgradePrompt={(message) => setUpgradePrompt(message)}
           billingStatus={billingStatus}
         />
       </>
@@ -323,10 +314,10 @@ function ReportPageInner() {
     return (
       <div style={{ backgroundColor: 'var(--bg)' }} className="flex min-h-screen items-center justify-center px-6">
         <div style={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)' }} className="max-w-md rounded-3xl p-8 text-center shadow-2xl shadow-black/5">
-          <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#E07B39]/10 text-lg font-semibold text-[#E07B39]">?</div>
+          <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#E07B39]/10 text-lg font-semibold text-[color:var(--accent-orange-text)]">?</div>
           <p style={{ color: 'var(--text-primary)' }} className="text-xl font-semibold">Report not found</p>
           <p style={{ color: 'var(--text-muted)' }} className="mt-2 text-sm">This security report may have been deleted, kept private, or opened with an incorrect link.</p>
-          <Link href="/dashboard" className="mt-6 inline-flex rounded-2xl bg-[#00C4CC] px-5 py-3 text-sm font-semibold text-[#060A0F]">Back to dashboard</Link>
+          <Link href="/dashboard" className="mt-6 inline-flex rounded-2xl bg-[#06B6D4] px-5 py-3 text-sm font-semibold text-[#060A0F]">Back to dashboard</Link>
         </div>
       </div>
     )

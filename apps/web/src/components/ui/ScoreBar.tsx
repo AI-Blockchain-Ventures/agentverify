@@ -13,7 +13,7 @@ interface ScoreBarProps {
 export function ScoreBar({ score, maxScore, label, category, showLabel = true }: ScoreBarProps) {
   const [width, setWidth] = useState(0)
   const pct = maxScore === 0 ? 0 : Math.max(0, Math.min(100, (score / maxScore) * 100))
-  const fill = category === 'A' ? 'bg-red' : category === 'B' ? 'bg-orange' : 'bg-blue'
+  const fill = category === 'A' ? 'bg-red' : category === 'B' ? 'bg-orange' : 'bg-[color:var(--accent-cyan-text)]'
   const scoreColor = pct >= 80 ? 'text-green' : pct >= 50 ? 'text-orange' : 'text-red'
 
   useEffect(() => setWidth(pct), [pct])
@@ -22,11 +22,11 @@ export function ScoreBar({ score, maxScore, label, category, showLabel = true }:
     <div>
       {showLabel && (
         <div className="mb-2 flex flex-col gap-1 text-sm sm:flex-row sm:justify-between">
-          <span className="text-gray-400">{label}</span>
+          <span style={{ color: 'var(--text-muted)' }}>{label}</span>
           <span className={scoreColor}>{score}/{maxScore}</span>
         </div>
       )}
-      <div className="h-1.5 overflow-hidden rounded-full bg-gray-800">
+      <div style={{ backgroundColor: 'var(--border)' }} className="h-1.5 overflow-hidden rounded-full">
         <div className={`h-full rounded-full transition-all duration-700 ease-out ${fill}`} style={{ width: `${width}%` }} />
       </div>
     </div>

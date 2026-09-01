@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import type { Finding } from '@/types'
+import { copyToClipboard } from '@/lib/clipboard'
 
 const severityColors: Record<string, string> = {
   critical: 'bg-[#EF4444]',
@@ -22,6 +23,12 @@ const severityExplanation: Record<string, string> = {
   high: 'Prioritize soon. This can allow broad access, unsafe actions, or missing controls in important workflows.',
   medium: 'Plan a fix. This weakens safety or auditability and can become serious when combined with other issues.',
   low: 'Review when practical. This is lower risk but still worth improving for a stronger security posture.',
+}
+
+const evidenceTypeLabel: Record<string, string> = {
+  definite: 'Definite — a concrete pattern was matched',
+  heuristic: 'Heuristic — inferred from context; could be a false positive/negative',
+  informational: 'Informational — a neutral observation, not itself a defect',
 }
 
 const getProtocolGuidance = (title: string): string => {
@@ -103,10 +110,11 @@ if not verified:
   maxAgeSeconds: 300
   failClosed: true`
 
-  const copy = (text: string, key: string) => {
-    navigator.clipboard.writeText(text)
-    setCopied(key)
-    setTimeout(() => setCopied(null), 2000)
+  const copy = async (text: string, key: string) => {
+    if (await copyToClipboard(text)) {
+      setCopied(key)
+      setTimeout(() => setCopied(null), 2000)
+    }
   }
 
   return (
@@ -147,40 +155,50 @@ if not verified:
             <span style={{ color: 'var(--text-muted)' }} className="text-xs font-semibold uppercase tracking-wider">Severity explained</span>
             <p style={{ color: 'var(--text-secondary)' }} className="mt-1 text-xs">{severityExplanation[finding.severity] ?? severityExplanation.medium}</p>
           </div>
+          {finding.capabilityImpact && (
+            <div style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }} className="rounded-lg p-3">
+              <span style={{ color: 'var(--text-muted)' }} className="text-xs font-semibold uppercase tracking-wider">What an agent could do because of this</span>
+              <p style={{ color: 'var(--text-secondary)' }} className="mt-1 text-xs">{finding.capabilityImpact}</p>
+            </div>
+          )}
           {finding.evidence && (
             <div>
-              <span style={{ color: 'var(--text-muted)' }} className="text-xs font-semibold uppercase tracking-wider">Evidence</span>
-              <pre style={{ backgroundColor: 'var(--input-bg)', border: '1px solid var(--border)' }} className="mt-1 overflow-x-auto rounded-lg px-3 py-2 font-mono text-xs text-[#06B6D4]">
+              <div className="flex items-center justify-between gap-2">
+                <span style={{ color: 'var(--text-muted)' }} className="text-xs font-semibold uppercase tracking-wider">Evidence{finding.line ? ` — line ${finding.line}` : ''}</span>
+                {finding.evidenceType && <span style={{ color: 'var(--text-muted)' }} className="text-[10px] font-medium uppercase tracking-wider" title={evidenceTypeLabel[finding.evidenceType]}>{finding.evidenceType}</span>}
+              </div>
+              <pre tabIndex={0} role="region" aria-label="Finding evidence" style={{ backgroundColor: 'var(--input-bg)', border: '1px solid var(--border)' }} className="mt-1 overflow-x-auto rounded-lg px-3 py-2 font-mono text-xs text-[color:var(--accent-cyan-text)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#06B6D4]">
                 {finding.evidence}
               </pre>
+              {finding.evidenceType && <p style={{ color: 'var(--text-muted)' }} className="mt-1 text-[11px]">{evidenceTypeLabel[finding.evidenceType]}</p>}
             </div>
           )}
           {showFullRemediation ? (
             <div>
-              <span className="text-xs font-semibold uppercase tracking-wider text-[#10B981]">How to fix it</span>
+              <span className="text-xs font-semibold uppercase tracking-wider text-[color:var(--accent-green-text)]">How to fix it</span>
               <p style={{ color: 'var(--text-secondary)' }} className="mt-1">{finding.recommendedFix}</p>
             </div>
           ) : (
-            <div className="rounded-lg border border-[#00C4CC]/30 bg-[#00C4CC]/10 p-3">
+            <div className="rounded-lg border border-[#7C3AED]/30 bg-[#7C3AED]/10 p-3">
               <p style={{ color: 'var(--text-primary)' }} className="text-xs font-semibold">Full remediation requires Pro</p>
-              <p style={{ color: 'var(--text-secondary)' }} className="mt-1 text-xs">Free reports show basic finding context. Pro unlocks corrected snippets, A2SPA guidance, PDF export, and shareable reports.</p>
+              <p style={{ color: 'var(--text-secondary)' }} className="mt-1 text-xs">Free reports show basic finding context. Pro unlocks corrected snippets, A2SPA guidance, and PDF export.</p>
             </div>
           )}
           {showCorrectedSnippets && fixSnippet && (
             <div className="mt-3">
               <div className="mb-1.5 flex items-center justify-between gap-3">
-                <span className="text-xs font-semibold uppercase tracking-wider text-[#00B37E]">Corrected code or config</span>
+                <span className="text-xs font-semibold uppercase tracking-wider text-[color:var(--accent-green-text)]">Corrected code or config</span>
                 <button onClick={() => copy(fixSnippet, 'fix')} style={{ border: '1px solid var(--border)', color: 'var(--text-muted)' }} className="rounded px-2 py-1 text-xs hover:opacity-70">
                   {copied === 'fix' ? 'Copied' : 'Copy'}
                 </button>
               </div>
-              <pre className="overflow-x-auto rounded-lg border border-[#00B37E]/20 bg-[#00B37E]/5 px-4 py-3 font-mono text-xs leading-relaxed text-[#00B37E]">
+              <pre tabIndex={0} role="region" aria-label="Corrected code or config" className="overflow-x-auto rounded-lg border border-[#00B37E]/20 bg-[#00B37E]/5 px-4 py-3 font-mono text-xs leading-relaxed text-[color:var(--accent-green-text)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#06B6D4]">
                 {fixSnippet}
               </pre>
             </div>
           )}
           {!showCorrectedSnippets && fixSnippet && (
-            <div className="rounded-lg border border-[#00C4CC]/30 bg-[#00C4CC]/10 p-3">
+            <div className="rounded-lg border border-[#7C3AED]/30 bg-[#7C3AED]/10 p-3">
               <p style={{ color: 'var(--text-primary)' }} className="text-xs font-semibold">Corrected snippets require Pro</p>
               <p style={{ color: 'var(--text-secondary)' }} className="mt-1 text-xs">Upgrade to view copy-ready code and configuration fixes.</p>
             </div>
@@ -197,10 +215,10 @@ if not verified:
                 A2SPA helps prove that an execution request came from a trusted caller and was not replayed or modified before an agent runs a tool, payment, deployment, or data mutation. {getProtocolGuidance(finding.title)}
               </p>
               <div
-                style={{ border: '1px solid #00C4CC', backgroundColor: 'rgba(0,196,204,0.05)' }}
+                style={{ border: '1px solid #7C3AED', backgroundColor: 'rgba(6,182,212,0.05)' }}
                 className="rounded-lg p-3"
               >
-                <p className="mb-1 text-xs font-semibold text-[#00C4CC]">
+                <p className="mb-1 text-xs font-semibold text-[color:var(--accent-purple-text)]">
                   Safe implementation pattern
                 </p>
                 <ol style={{ color: 'var(--text-secondary)' }} className="mb-3 list-decimal space-y-1 pl-4 text-xs">
@@ -216,28 +234,28 @@ if not verified:
                     {copied === 'a2spa' ? 'Copied' : 'Copy'}
                   </button>
                 </div>
-                <pre className="overflow-x-auto rounded-lg bg-[#050A12] p-3 font-mono text-[11px] leading-relaxed text-[#A7F3D0]">{a2spaSnippet}</pre>
+                <pre tabIndex={0} role="region" aria-label="A2SPA TypeScript example" className="overflow-x-auto rounded-lg bg-[#050A12] p-3 font-mono text-[11px] leading-relaxed text-[#A7F3D0] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#06B6D4]">{a2spaSnippet}</pre>
                 <div className="mb-2 mt-3 flex items-center justify-between gap-3">
                   <span style={{ color: 'var(--text-muted)' }} className="text-xs font-semibold uppercase tracking-wider">Python example</span>
                   <button onClick={() => copy(a2spaPythonSnippet, 'a2spa-python')} style={{ border: '1px solid var(--border)', color: 'var(--text-muted)' }} className="rounded px-2 py-1 text-xs hover:opacity-70">
                     {copied === 'a2spa-python' ? 'Copied' : 'Copy'}
                   </button>
                 </div>
-                <pre className="overflow-x-auto rounded-lg bg-[#050A12] p-3 font-mono text-[11px] leading-relaxed text-[#A7F3D0]">{a2spaPythonSnippet}</pre>
+                <pre tabIndex={0} role="region" aria-label="A2SPA Python example" className="overflow-x-auto rounded-lg bg-[#050A12] p-3 font-mono text-[11px] leading-relaxed text-[#A7F3D0] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#06B6D4]">{a2spaPythonSnippet}</pre>
                 <div className="mb-2 mt-3 flex items-center justify-between gap-3">
                   <span style={{ color: 'var(--text-muted)' }} className="text-xs font-semibold uppercase tracking-wider">Config example</span>
                   <button onClick={() => copy(a2spaConfigSnippet, 'a2spa-config')} style={{ border: '1px solid var(--border)', color: 'var(--text-muted)' }} className="rounded px-2 py-1 text-xs hover:opacity-70">
                     {copied === 'a2spa-config' ? 'Copied' : 'Copy'}
                   </button>
                 </div>
-                <pre className="overflow-x-auto rounded-lg bg-[#050A12] p-3 font-mono text-[11px] leading-relaxed text-[#A7F3D0]">{a2spaConfigSnippet}</pre>
-                <p className="mt-3 text-xs font-semibold text-[#E07B39]">Never paste a production private key into Agent Verify, source code, or a public repository. Store it in an environment variable or a secret manager.</p>
+                <pre tabIndex={0} role="region" aria-label="A2SPA config example" className="overflow-x-auto rounded-lg bg-[#050A12] p-3 font-mono text-[11px] leading-relaxed text-[#A7F3D0] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#06B6D4]">{a2spaConfigSnippet}</pre>
+                <p className="mt-3 text-xs font-semibold text-[color:var(--accent-orange-text)]">Never paste a production private key into Agent Verify, source code, or a public repository. Store it in an environment variable or a secret manager.</p>
                 <p style={{ color: 'var(--text-muted)' }} className="mt-2 text-xs">Agent Verify will only treat an agent as A2SPA-protected when the scanned code shows verifiable implementation evidence.</p>
               </div>
             </div>
           )}
           {!showA2spaGuidance && isA && (
-            <div className="rounded-lg border border-[#00C4CC]/30 bg-[#00C4CC]/10 p-3">
+            <div className="rounded-lg border border-[#7C3AED]/30 bg-[#7C3AED]/10 p-3">
               <p style={{ color: 'var(--text-primary)' }} className="text-xs font-semibold">A2SPA guidance requires Pro</p>
               <p style={{ color: 'var(--text-secondary)' }} className="mt-1 text-xs">Upgrade to view implementation patterns for signed, replay-resistant agent execution.</p>
             </div>
@@ -251,7 +269,7 @@ if not verified:
               <span style={{ color: 'var(--text-muted)' }} className="text-xs font-semibold uppercase tracking-wider">Compliance</span>
               <div className="mt-2 flex flex-wrap gap-1.5">
                 {finding.compliance?.owasp?.map(tag => (
-                  <span key={tag} className="rounded border border-[#E07B39]/20 bg-[#E07B39]/5 px-2 py-0.5 text-xs text-[#E07B39]">OWASP {tag}</span>
+                  <span key={tag} className="rounded border border-[#E07B39]/20 bg-[#E07B39]/5 px-2 py-0.5 text-xs text-[color:var(--accent-orange-text)]">OWASP {tag}</span>
                 ))}
                 {finding.compliance?.nist?.map(tag => (
                   <span key={tag} style={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)', color: 'var(--text-muted)' }} className="rounded px-2 py-0.5 text-xs">NIST {tag}</span>

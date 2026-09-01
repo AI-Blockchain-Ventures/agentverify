@@ -1,3 +1,4 @@
+import type { ArtifactFingerprint } from '@agentverify/scanner'
 import type { Finding, RiskLevel, ScanResult, Severity, StoredReport } from '@/types'
 import { db } from './firebase'
 import {
@@ -34,6 +35,24 @@ const sanitize = (obj: Record<string, unknown>): Record<string, unknown> =>
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value)
 
+// CLI/Worker-saved reports store nested structures (capabilities, MCP exposures, category
+// breakdowns, etc.) as JSON strings in Firestore (see workers/api/src/worker.ts), while
+// browser-saved reports store them as native arrays/objects. Every field read below must go
+// through this first, or CLI-sourced report data is silently dropped instead of parsed.
+const parseJsonField = (value: unknown): unknown => {
+  if (typeof value !== 'string' || !value.trim()) return value
+  try {
+    return JSON.parse(value) as unknown
+  } catch {
+    return value
+  }
+}
+
+const asArray = (value: unknown): unknown[] => {
+  const parsed = parseJsonField(value)
+  return Array.isArray(parsed) ? parsed : []
+}
+
 const normalizeVerdict = (value: unknown): StoredReport['verdict'] => {
   if (value === 'VERIFIED') return 'VERIFIED'
   return 'NOT VERIFIED' as StoredReport['verdict']
@@ -68,6 +87,11 @@ const normalizeFindings = (raw: unknown): Finding[] => {
       evidence: typeof finding.evidence === 'string' ? finding.evidence : undefined,
       quickFix: typeof finding.quickFix === 'string' ? finding.quickFix : undefined,
       compliance: isRecord(finding.compliance) ? finding.compliance as Finding['compliance'] : undefined,
+      line: typeof finding.line === 'number' ? finding.line : undefined,
+      evidenceType: finding.evidenceType === 'definite' || finding.evidenceType === 'heuristic' || finding.evidenceType === 'informational' ? finding.evidenceType : undefined,
+      securityCategory: typeof finding.securityCategory === 'string' ? finding.securityCategory as Finding['securityCategory'] : undefined,
+      capabilityImpact: typeof finding.capabilityImpact === 'string' ? finding.capabilityImpact : undefined,
+      fixCode: typeof finding.fixCode === 'string' ? finding.fixCode : undefined,
     }
   })
 }
@@ -90,6 +114,19 @@ export const normalize = (doc: DocumentData, id: string): StoredReport => ({
   password: null,
   _source: doc._source === 'cli' || doc._source === 'user' || doc._source === 'public' ? doc._source : undefined,
   createdAt: doc.createdAt ?? doc.result?.metadata?.scannedAt ?? undefined,
+  capabilities: asArray(doc.capabilities ?? doc.result?.capabilities) as StoredReport['capabilities'],
+  mcpExposures: asArray(doc.mcpExposures ?? doc.result?.mcpExposures) as StoredReport['mcpExposures'],
+  securityCategories: asArray(doc.securityCategories ?? doc.result?.securityCategories) as StoredReport['securityCategories'],
+  capabilityChains: asArray(doc.capabilityChains ?? doc.result?.capabilityChains) as StoredReport['capabilityChains'],
+  a2spaStatus: (doc.a2spaStatus ?? doc.result?.a2spaStatus) as StoredReport['a2spaStatus'] ?? undefined,
+  securityControlsDetected: asArray(doc.securityControlsDetected ?? doc.result?.securityControlsDetected) as StoredReport['securityControlsDetected'],
+  notDetermined: asArray(doc.notDetermined ?? doc.result?.notDetermined) as string[],
+  categoryScores: asArray(doc.categoryScores ?? doc.result?.categoryScores) as StoredReport['categoryScores'],
+  scannerVersion: typeof doc.scannerVersion === 'string' && doc.scannerVersion ? doc.scannerVersion : typeof doc.result?.metadata?.scannerVersion === 'string' ? doc.result.metadata.scannerVersion : null,
+  bom: (isRecord(parseJsonField(doc.bom)) ? parseJsonField(doc.bom) : isRecord(parseJsonField(doc.result?.bom)) ? parseJsonField(doc.result?.bom) : null) as StoredReport['bom'],
+  artifactHash: typeof doc.artifactHash === 'string' && doc.artifactHash ? doc.artifactHash : null,
+  artifactHashAlgorithm: typeof doc.artifactHashAlgorithm === 'string' && doc.artifactHashAlgorithm ? doc.artifactHashAlgorithm : null,
+  artifactFingerprintVersion: typeof doc.artifactFingerprintVersion === 'string' && doc.artifactFingerprintVersion ? doc.artifactFingerprintVersion : null,
 })
 
 export const sortReports = (reports: StoredReport[]): StoredReport[] =>
@@ -99,9 +136,12 @@ export const sortReports = (reports: StoredReport[]): StoredReport[] =>
     return dateB - dateA
   })
 
-export async function saveReport(uid: string, result: ScanResult): Promise<void> {
+export async function saveReport(uid: string, result: ScanResult, artifactFingerprint?: ArtifactFingerprint): Promise<void> {
   const reportData = sanitize({
     reportId: result.reportId,
+    artifactHash: artifactFingerprint?.artifactHash ?? null,
+    artifactHashAlgorithm: artifactFingerprint?.artifactHashAlgorithm ?? null,
+    artifactFingerprintVersion: artifactFingerprint?.artifactFingerprintVersion ?? null,
     uid,
     userId: uid,
     verdict: result.verdict,
@@ -111,8 +151,10 @@ export async function saveReport(uid: string, result: ScanResult): Promise<void>
     fileName: result.metadata.fileName,
     agentName: result.bom.agentName ?? null,
     platform: result.metadata.selectedPlatform ?? null,
+    scannerVersion: result.metadata.scannerVersion ?? null,
     findings: result.findings.map(f => ({
       id: f.id,
+      code: f.code,
       title: f.title,
       category: f.category,
       severity: f.severity,
@@ -121,12 +163,24 @@ export async function saveReport(uid: string, result: ScanResult): Promise<void>
       recommendedFix: f.recommendedFix,
       evidence: f.evidence ?? null,
       quickFix: f.quickFix ?? null,
+      fixCode: f.fixCode ?? null,
       compliance: f.compliance ?? null,
+      line: f.line ?? null,
+      evidenceType: f.evidenceType ?? null,
+      securityCategory: f.securityCategory ?? null,
+      capabilityImpact: f.capabilityImpact ?? null,
     })),
     scannedAt: result.metadata.scannedAt ?? new Date().toISOString(),
     source: 'dashboard',
     isPublic: false,
     categoryScores: result.categoryScores,
+    securityCategories: result.securityCategories ?? [],
+    capabilities: result.capabilities ?? [],
+    mcpExposures: result.mcpExposures ?? [],
+    capabilityChains: result.capabilityChains ?? [],
+    a2spaStatus: result.a2spaStatus ?? null,
+    securityControlsDetected: result.securityControlsDetected ?? [],
+    notDetermined: result.notDetermined ?? [],
     reportInsights: result.reportInsights ?? null,
     threatCategories: result.threatCategories ?? [],
     bom: {

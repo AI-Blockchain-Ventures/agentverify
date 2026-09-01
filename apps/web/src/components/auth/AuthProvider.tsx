@@ -7,6 +7,7 @@ import {
   User,
   createUserWithEmailAndPassword,
   onAuthStateChanged,
+  sendPasswordResetEmail,
   signInWithEmailAndPassword,
   signInWithPopup,
   signOut as firebaseSignOut,
@@ -37,6 +38,7 @@ interface AuthContextValue {
   signUp: (email: string, password: string) => Promise<void>
   signOut: () => Promise<void>
   signInWithGoogle: () => Promise<void>
+  resetPassword: (email: string) => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
@@ -76,6 +78,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [])
 
+  // Password reset must not reveal whether an email address has an account (account
+  // enumeration). Firebase throws auth/user-not-found when it doesn't — we swallow that
+  // specific case so the UI can show the same "check your inbox" message either way.
+  // Any other failure (invalid email format, rate limiting, network) still surfaces.
+  const resetPassword = useCallback(async (email: string) => {
+    try {
+      await sendPasswordResetEmail(auth, email)
+    } catch (err) {
+      const e = err as { code?: string }
+      if (e.code === 'auth/user-not-found') return
+      throw err
+    }
+  }, [])
+
   const value = useMemo<AuthContextValue>(() => ({
     user,
     loading,
@@ -83,7 +99,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     signUp,
     signOut: () => firebaseSignOut(auth),
     signInWithGoogle,
-  }), [user, loading, signIn, signUp, signInWithGoogle])
+    resetPassword,
+  }), [user, loading, signIn, signUp, signInWithGoogle, resetPassword])
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

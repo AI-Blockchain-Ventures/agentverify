@@ -3,22 +3,44 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     match /users/{userId}/reports/{reportId} {
-      allow read: if true;
-      allow create: if (request.auth != null && request.auth.uid == userId)
-        || reportId.matches('CLI\\-.*');
-      allow update: if request.auth != null && request.auth.uid == userId;
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow create: if request.auth != null && request.auth.uid == userId &&
+        request.resource.data.uid == userId;
+      allow update: if request.auth != null && request.auth.uid == userId &&
+        request.resource.data.verdict == resource.data.verdict &&
+        request.resource.data.riskScore == resource.data.riskScore &&
+        request.resource.data.findings == resource.data.findings;
       allow delete: if request.auth != null && request.auth.uid == userId;
     }
 
     match /reports/{reportId} {
-      allow read: if true;
-      allow create: if request.auth != null;
+      allow read: if resource.data.isPublic == true ||
+        (request.auth != null &&
+          (request.auth.uid == resource.data.uid ||
+           request.auth.uid == resource.data.userId));
+
+      // uid/userId must match the caller so a report can never be created (or later read
+      // as "owned") under someone else's identity. Verdict is restricted to the values the
+      // scanner actually produces, and — once created — verdict/riskScore/findings are
+      // immutable from the client. Only bookkeeping fields (e.g. isPublic) can change after
+      // creation, so a signed-in user cannot rewrite their own report into a fake VERIFIED
+      // result after the fact. This is a client-authored document, not server-attested
+      // evidence — see docs/v1.3-scanner-contract.md.
+      allow create: if request.auth != null &&
+        request.resource.data.uid == request.auth.uid &&
+        request.resource.data.userId == request.auth.uid &&
+        request.resource.data.verdict in ['VERIFIED', 'NOT_VERIFIED', 'NOT_ASSESSED'];
+
       allow update: if request.auth != null &&
-        (request.auth.uid == resource.data.uid ||
-         request.auth.uid == resource.data.userId);
+        (request.auth.uid == resource.data.uid || request.auth.uid == resource.data.userId) &&
+        request.resource.data.uid == resource.data.uid &&
+        request.resource.data.userId == resource.data.userId &&
+        request.resource.data.verdict == resource.data.verdict &&
+        request.resource.data.riskScore == resource.data.riskScore &&
+        request.resource.data.findings == resource.data.findings;
+
       allow delete: if request.auth != null &&
-        (request.auth.uid == resource.data.uid ||
-         request.auth.uid == resource.data.userId);
+        (request.auth.uid == resource.data.uid || request.auth.uid == resource.data.userId);
     }
 
     match /users/{userId}/apiKeys/{doc} {
@@ -34,14 +56,64 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
+    // Document ID is the literal API key. `get` (fetch-by-known-key) stays open so the
+    // Worker and CLI can validate a presented key. `list` is explicitly denied — without
+    // this split, any client could run an unfiltered collection query and enumerate every
+    // user's live API key and uid mapping in one call.
     match /apiKeyIndex/{apiKey} {
-      allow read: if true;
-      allow write: if request.auth != null;
+      allow get: if true;
+      allow list: if false;
+      allow write: if request.auth != null && request.resource.data.uid == request.auth.uid;
+    }
+
+    // Organizations / RBAC / Audit Log — mutations happen ONLY through the Worker API (using a
+    // service-account token that bypasses these rules entirely; see
+    // workers/api/src/organizations.ts and rbac.ts for the actual enforcement of who can do
+    // what). These rules exist as defense in depth for DIRECT CLIENT READS ONLY: a signed-in
+    // Firebase Auth user can read an organization/its members/its audit log ONLY if their own
+    // uid already has a membership document under that exact organization — never by any other
+    // relationship, and never for an organization they don't belong to. All writes are denied
+    // from the client outright, full stop, for every one of these collections.
+    match /organizations/{orgId} {
+      allow get: if request.auth != null &&
+        exists(/databases/$(database)/documents/organizations/$(orgId)/members/$(request.auth.uid));
+      allow list: if false;
+      allow write: if false;
+    }
+
+    match /organizations/{orgId}/members/{memberUid} {
+      allow get: if request.auth != null &&
+        (request.auth.uid == memberUid ||
+         exists(/databases/$(database)/documents/organizations/$(orgId)/members/$(request.auth.uid)));
+      allow list: if request.auth != null &&
+        exists(/databases/$(database)/documents/organizations/$(orgId)/members/$(request.auth.uid));
+      allow write: if false;
+    }
+
+    match /organizations/{orgId}/auditEvents/{eventId} {
+      allow read: if request.auth != null &&
+        exists(/databases/$(database)/documents/organizations/$(orgId)/members/$(request.auth.uid));
+      allow write: if false;
+    }
+
+    // Webhook configs hold a signing secret — never client-readable at all (unlike members/audit
+    // events, which members can at least read), and never client-writable. The Worker returns
+    // the secret once, over an authenticated API response, at creation time only; nothing here
+    // ever re-exposes it.
+    match /organizations/{orgId}/webhooks/{webhookId} {
+      allow read, write: if false;
     }
 
     match /cliReports/{reportId} {
-      allow read: if true;
-      allow write: if true;
+      allow read: if resource.data.isPublic == true ||
+        (request.auth != null && request.auth.uid == resource.data.uid);
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.uid;
+      allow update: if request.auth != null && request.auth.uid == resource.data.uid &&
+        request.resource.data.uid == resource.data.uid &&
+        request.resource.data.verdict == resource.data.verdict &&
+        request.resource.data.riskScore == resource.data.riskScore &&
+        request.resource.data.findings == resource.data.findings;
+      allow delete: if request.auth != null && request.auth.uid == resource.data.uid;
     }
   }
 }

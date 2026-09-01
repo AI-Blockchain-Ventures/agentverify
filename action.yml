@@ -22,11 +22,32 @@ inputs:
     description: Upload the CLI output as a workflow artifact.
     required: false
     default: 'false'
+  policy:
+    description: >-
+      Evaluate a built-in policy profile against the scan (e.g. standard, high-security,
+      financial-agent, production-infrastructure) in addition to the scanner's own verdict.
+      Leave empty to skip policy evaluation.
+    required: false
+    default: ''
+  comment-on-pr:
+    description: >-
+      Post (and update in place on later commits) a single Agent Verify summary comment on the
+      triggering pull request. Requires `permissions: pull-requests: write` on the job, and only
+      does anything when the workflow run is actually triggered by a pull_request event.
+    required: false
+    default: 'false'
+  github-token:
+    description: Token used to post/update the PR comment when comment-on-pr is true. Defaults to the workflow's own GITHUB_TOKEN.
+    required: false
+    default: ${{ github.token }}
 
 outputs:
   output-file:
     description: Path to the Agent Verify CLI output file.
     value: ${{ steps.scan.outputs.output-file }}
+  summary-file:
+    description: Path to the machine-readable JSON summary (results + counts) Agent Verify wrote for this run.
+    value: ${{ steps.scan.outputs.summary-file }}
 
 runs:
   using: composite
@@ -40,11 +61,22 @@ runs:
         set +e
         format="${{ inputs.format }}"
         scan_path="${{ inputs.path }}"
+        policy="${{ inputs.policy }}"
         extra_args=""
 
         if [ "${{ inputs.fail-on-not-assessed }}" = "false" ]; then
           extra_args="$extra_args --allow-not-assessed"
         fi
+        if [ -n "$policy" ]; then
+          extra_args="$extra_args --policy $policy"
+        fi
+
+        summary_file="agentverify-summary.json"
+        extra_args="$extra_args --summary-file $summary_file"
+        echo "summary-file=$summary_file" >> "$GITHUB_OUTPUT"
+
+        # GITHUB_STEP_SUMMARY is already set by the runner — the CLI writes the job-summary panel
+        # itself (see packages/cli/src/cli.ts writeGithubJobSummary) with no extra flag needed.
 
         case "$format" in
           markdown)
@@ -73,3 +105,50 @@ runs:
       with:
         name: agentverify-results
         path: ${{ steps.scan.outputs.output-file }}
+
+    # Only runs for a pull_request-triggered workflow (github.event.pull_request.number is unset
+    # otherwise, so the step is a clean no-op on push/schedule/workflow_dispatch runs). Finds an
+    # existing Agent Verify comment by a hidden HTML marker and updates it in place on later
+    # commits, rather than posting a new comment every run.
+    - name: Comment on pull request
+      if: ${{ always() && inputs.comment-on-pr == 'true' && github.event.pull_request.number }}
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.github-token }}
+        SUMMARY_FILE: ${{ steps.scan.outputs.summary-file }}
+        REPO: ${{ github.repository }}
+        PR_NUMBER: ${{ github.event.pull_request.number }}
+      run: |
+        set -e
+        MARKER="<!-- agentverify-summary-comment -->"
+
+        body=$(node -e '
+          const fs = require("fs");
+          const marker = "<!-- agentverify-summary-comment -->";
+          let data;
+          try { data = JSON.parse(fs.readFileSync(process.env.SUMMARY_FILE, "utf8")); }
+          catch { console.log(marker + "\n\n**Agent Verify** — no summary was produced for this run."); process.exit(0); }
+          const { summary, results } = data;
+          const lines = [marker, "", "## Agent Verify", "", `${summary.verified} verified · ${summary.notVerified} not verified · ${summary.notAssessed} not assessed · ${summary.errors} error(s)`, ""];
+          for (const item of results) {
+            if (!item.result) { lines.push(`- ⚠️ \`${item.file}\`: ${item.error ?? "error"}`); continue; }
+            const r = item.result;
+            const icon = r.verdict === "VERIFIED" ? "✅" : r.verdict === "NOT_ASSESSED" ? "⚠️" : "❌";
+            const verdict = r.verdict === "NOT_VERIFIED" ? "NOT VERIFIED" : r.verdict.replace("_", " ");
+            const critical = r.findings.filter(f => f.severity === "critical").length;
+            const high = r.findings.filter(f => f.severity === "high").length;
+            let line = `${icon} \`${item.file}\` — **${verdict}** (score ${r.riskScore}/100, ${critical} critical / ${high} high)`;
+            if (r.policyProfile) line += ` — policy \`${r.policyProfile}\`: **${r.policyResult}**`;
+            if (r.reportUrl) line += ` — [report](${r.reportUrl})`;
+            lines.push(line);
+          }
+          console.log(lines.join("\n"));
+        ')
+
+        existing_id=$(gh api "repos/$REPO/issues/$PR_NUMBER/comments" --paginate --jq ".[] | select(.body | startswith(\"$MARKER\")) | .id" | head -n1)
+
+        if [ -n "$existing_id" ]; then
+          gh api --method PATCH "repos/$REPO/issues/comments/$existing_id" -f body="$body"
+        else
+          gh api --method POST "repos/$REPO/issues/$PR_NUMBER/comments" -f body="$body"
+        fi

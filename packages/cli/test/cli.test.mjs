@@ -27,7 +27,7 @@ const run = (args, env = {}) => new Promise((resolve) => {
 
 try {
   const missing = await run(['scan', '--file', fixture])
-  assert.equal(missing.status, 1)
+  assert.equal(missing.status, 3) // execution error (no API key), distinct from a verification failure
   assert.match(missing.stderr, /API key required/)
 
   const unauthorizedServer = http.createServer((req, res) => {
@@ -38,7 +38,7 @@ try {
   const unauthorizedUrl = `http://127.0.0.1:${unauthorizedServer.address().port}/v1/scan`
   const unauthorized = await run(['scan', '--file', fixture, '--key', 'av_fake_cli_test_key_000000000000', '--json'], { AGENTVERIFY_API_URL: unauthorizedUrl })
   unauthorizedServer.close()
-  assert.equal(unauthorized.status, 1)
+  assert.equal(unauthorized.status, 3) // execution error (unauthorized key), distinct from a verification failure
   assert.doesNotMatch(unauthorized.stdout + unauthorized.stderr, /av_fake_cli_test_key/)
   assert.match(unauthorized.stdout, /Invalid or unauthorized Agent Verify API key/)
 
@@ -55,6 +55,9 @@ try {
     threatCategories: [{ id: 'prompt-injection', label: 'Prompt Injection', status: 'possible', severity: 'high', whatItMeans: '', evidencePattern: '', whyItMatters: '', recommendedFix: '', a2spaImpact: '' }],
     bom: { detectedLanguage: 'TypeScript', detectedFramework: null, detectedPlatform: null, agentName: 'TestAgent', toolAccessLevel: 'Restricted', credentialExposure: 'Not Detected', memoryPersistence: 'Unknown', auditLogging: 'Unknown', humanGates: 'Unknown', rateLimiting: 'Unknown', promptInjectionSurface: 'Unknown', delegationScope: 'Unknown' },
     metadata: { schemaVersion: '1.3.0', scannerVersion: 'test', fileName: 'agent.ts', fileSize: 1, scannedAt: new Date().toISOString(), detectedLanguage: 'TypeScript', detectedFramework: null, selectedPlatform: null, agentName: 'TestAgent', scanDuration: 1 },
+    artifactFingerprint: { artifactHash: 'a'.repeat(64), artifactHashAlgorithm: 'SHA-256', artifactFingerprintVersion: '1.0.0' },
+    policyProfile: 'financial-agent',
+    policyResult: 'FAIL',
   }
   const okServer = http.createServer((req, res) => {
     res.writeHead(200, { 'content-type': 'application/json' })
@@ -67,6 +70,45 @@ try {
   assert.match(normal.stdout, /NOT VERIFIED/)
   assert.match(normal.stdout, /Prompt Injection/)
   assert.match(normal.stdout, /https:\/\/aimodularity\.com\/agentverify\/report\/\?id=REPORT-test123/)
+  assert.match(normal.stdout, /Critical \/ High findings:/)
+  assert.match(normal.stdout, /1 \/ 0/)
+  assert.match(normal.stdout, /Artifact fingerprint:/)
+  assert.match(normal.stdout, /aaaaaaaaaaaa…/) // first 12 chars of the fixture's artifactHash
+  assert.match(normal.stdout, /Policy \(financial-agent\):/)
+  assert.match(normal.stdout, /FAIL/)
+
+  // --policy is forwarded to the API request body.
+  let capturedBody = null
+  const captureServer = http.createServer((req, res) => {
+    let raw = ''
+    req.on('data', chunk => { raw += chunk })
+    req.on('end', () => {
+      capturedBody = JSON.parse(raw)
+      res.writeHead(200, { 'content-type': 'application/json' })
+      res.end(JSON.stringify(scanBody))
+    })
+  })
+  await new Promise(resolve => captureServer.listen(0, '127.0.0.1', resolve))
+  const captureUrl = `http://127.0.0.1:${captureServer.address().port}/v1/scan`
+  await run(['scan', '--file', fixture, '--key', 'av_valid_cli_test_key_000000000000', '--policy', 'financial-agent'], { AGENTVERIFY_API_URL: captureUrl })
+  assert.equal(capturedBody.policyId, 'financial-agent')
+  captureServer.close()
+
+  // --summary-file writes the same {results, summary} shape --json prints to stdout, to a file.
+  const summaryFilePath = join(temp, 'summary.json')
+  await run(['scan', '--file', fixture, '--key', 'av_valid_cli_test_key_000000000000', '--summary-file', summaryFilePath], { AGENTVERIFY_API_URL: okUrl })
+  const summaryFileContent = JSON.parse(readFileSync(summaryFilePath, 'utf8'))
+  assert.equal(summaryFileContent.summary.total, 1)
+  assert.equal(summaryFileContent.results[0].result.verdict, 'NOT_VERIFIED')
+
+  // GITHUB_STEP_SUMMARY is written to when the env var is set (GitHub Actions sets this itself —
+  // no CLI flag needed) and left alone otherwise.
+  const jobSummaryPath = join(temp, 'job-summary.md')
+  writeFileSync(jobSummaryPath, '')
+  await run(['scan', '--file', fixture, '--key', 'av_valid_cli_test_key_000000000000'], { AGENTVERIFY_API_URL: okUrl, GITHUB_STEP_SUMMARY: jobSummaryPath })
+  const jobSummaryContent = readFileSync(jobSummaryPath, 'utf8')
+  assert.match(jobSummaryContent, /# Agent Verify/)
+  assert.match(jobSummaryContent, /NOT VERIFIED/)
 
   const ci = await run(['scan', '--file', fixture, '--key', 'av_valid_cli_test_key_000000000000', '--ci'], { AGENTVERIFY_API_URL: okUrl })
   assert.equal(ci.status, 1)

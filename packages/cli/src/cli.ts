@@ -1,13 +1,22 @@
 #!/usr/bin/env node
 
-import { readFileSync, readdirSync, statSync } from 'fs'
+import { readFileSync, readdirSync, statSync, appendFileSync, writeFileSync } from 'fs'
 import { join, relative, extname } from 'path'
 import { scan } from './sdk'
 import type { ScanResult } from './types'
 
-const VERSION = '1.3.0'
+const VERSION = '1.4.0'
 const API_URL = process.env.AGENTVERIFY_API_URL ?? 'https://agentverify-api.agentverify.workers.dev/v1/scan'
 const A2SPA_DOCS_URL = 'https://aimodularity.com/A2SPA/docs'
+
+// Exit codes distinguish a security/verification result from an application error, so CI
+// can tell "the agent failed the security check" apart from "the scan itself couldn't run"
+// (bad key, network failure, missing file, etc). All non-zero codes still fail a pipeline
+// step by default — existing `if [ $? -ne 0 ]`-style checks keep working unchanged.
+const EXIT_OK = 0
+const EXIT_NOT_VERIFIED = 1 // security/verification failure — the agent itself did not pass
+const EXIT_NOT_ASSESSED = 2 // insufficient evidence to issue a verdict (unless --allow-not-assessed)
+const EXIT_EXECUTION_ERROR = 3 // the scan could not complete — bad key, network, file, etc.
 
 // ANSI colors
 const c = {
@@ -25,6 +34,7 @@ const c = {
 const write = (value = '') => process.stdout.write(`${value}\n`)
 
 const SUPPORTED_EXTENSIONS = new Set(['.js', '.ts', '.py', '.json', '.yaml', '.yml', '.md', '.mjs', '.cjs'])
+const MAX_SCAN_FILE_BYTES = 5 * 1024 * 1024 // 5MB — matches the web scanner's upload limit
 const SKIP_DIRS = new Set(['node_modules', '.git', 'dist', 'build', '.next', 'vendor', 'coverage', '.cache'])
 
 function collectFiles(dir: string): string[] {
@@ -58,6 +68,8 @@ function parseArgs(argv: string[]): {
   allowNotAssessed: boolean
   help: boolean
   version: boolean
+  policy: string
+  summaryFile: string
 } {
   const args = argv.slice(2)
   const result = {
@@ -71,6 +83,8 @@ function parseArgs(argv: string[]): {
     allowNotAssessed: false,
     help: false,
     version: false,
+    policy: '',
+    summaryFile: '',
   }
 
   if (result.command === '--help' || result.command === '-h') {
@@ -91,6 +105,8 @@ function parseArgs(argv: string[]): {
     else if (arg === '--markdown') result.markdown = true
     else if (arg === '--ci') result.ci = true
     else if (arg === '--allow-not-assessed') result.allowNotAssessed = true
+    else if (arg === '--policy') result.policy = args[++i] ?? ''
+    else if (arg === '--summary-file') result.summaryFile = args[++i] ?? ''
     else if (arg === '--help' || arg === '-h') result.help = true
     else if (arg === '--version' || arg === '-v') result.version = true
     else if (!arg.startsWith('-')) result.dir = arg
@@ -122,6 +138,10 @@ ${c.bold}Options:${c.reset}
   --ci          CI mode: concise output and non-zero exit for NOT VERIFIED
   --allow-not-assessed
                 In CI mode, do not fail only because content is NOT_ASSESSED
+  --policy <id> Evaluate a built-in policy profile against this scan's evidence
+                in addition to the scanner's own verdict (e.g. financial-agent)
+  --summary-file <path>
+                Write results as JSON to this path (in addition to any other output)
   --version, -v Print version
   --help, -h    Show this help message
 
@@ -140,6 +160,12 @@ ${c.bold}Examples:${c.reset}
 
   ${c.gray}# Markdown summary for pull requests${c.reset}
   agentverify scan . --key av_your_key --markdown
+
+${c.bold}Exit codes (--ci):${c.reset}
+  0   All scanned files verified
+  1   NOT VERIFIED — a security/verification check failed
+  2   NOT ASSESSED — insufficient evidence for a verdict (see --allow-not-assessed)
+  3   Execution error — the scan itself could not run (bad key, network, missing file)
 
 ${c.bold}Get your API key:${c.reset}
   https://aimodularity.com/agentverify/dashboard
@@ -169,6 +195,19 @@ function getRelevantThreatCategories(result: ScanResult): string[] {
     .map(item => `${item.label} (${item.status.replace('_', ' ')})`)
 }
 
+function criticalCount(result: ScanResult): number {
+  return result.findings.filter(f => f.severity === 'critical').length
+}
+
+function highCount(result: ScanResult): number {
+  return result.findings.filter(f => f.severity === 'high').length
+}
+
+function fingerprintPreview(result: ScanResult): string | null {
+  const hash = result.artifactFingerprint?.artifactHash
+  return hash ? `${hash.slice(0, 12)}…` : null
+}
+
 function printDetailedSummary(result: ScanResult, fileName: string) {
   const verified = result.verdict === 'VERIFIED'
   const verdictColor = verified ? c.green : result.verdict === 'NOT_ASSESSED' ? c.yellow : c.red
@@ -178,6 +217,10 @@ function printDetailedSummary(result: ScanResult, fileName: string) {
   write(`${c.bold}Verdict:${c.reset} ${verdictColor}${result.verdict === 'NOT_VERIFIED' ? 'NOT VERIFIED' : result.verdict.replace('_', ' ')}${c.reset}`)
   write(`${c.bold}Risk level:${c.reset} ${result.riskLevel}`)
   write(`${c.bold}Confidence:${c.reset} ${result.confidence}/100`)
+  write(`${c.bold}Critical / High findings:${c.reset} ${criticalCount(result)} / ${highCount(result)}`)
+  if (result.metadata?.scannerVersion) write(`${c.bold}Ruleset version:${c.reset} ${result.metadata.scannerVersion}`)
+  if (fingerprintPreview(result)) write(`${c.bold}Artifact fingerprint:${c.reset} ${fingerprintPreview(result)}`)
+  if (result.policyProfile) write(`${c.bold}Policy (${result.policyProfile}):${c.reset} ${result.policyResult === 'PASS' ? `${c.green}PASS${c.reset}` : `${c.red}FAIL${c.reset}`}`)
   write(`${c.bold}Top blocker:${c.reset} ${getTopBlocker(result)}`)
   write(`\n${c.bold}Fix first:${c.reset}`)
   const fixes = getFixFirst(result)
@@ -201,7 +244,11 @@ function markdownSummary(results: Array<{ file: string; result: ScanResult | nul
       lines.push(`## ${item.file}`, '', `Error: ${item.error ?? 'Unknown error'}`, '')
       continue
     }
-    lines.push(`## ${item.file}`, '', `Score: ${item.result.riskScore}/100`, `Verdict: ${item.result.verdict === 'NOT_VERIFIED' ? 'NOT VERIFIED' : item.result.verdict.replace('_', ' ')}`, `Risk level: ${item.result.riskLevel}`, `Top blocker: ${getTopBlocker(item.result)}`, '')
+    lines.push(`## ${item.file}`, '', `Score: ${item.result.riskScore}/100`, `Verdict: ${item.result.verdict === 'NOT_VERIFIED' ? 'NOT VERIFIED' : item.result.verdict.replace('_', ' ')}`, `Risk level: ${item.result.riskLevel}`, `Critical / High findings: ${criticalCount(item.result)} / ${highCount(item.result)}`)
+    if (item.result.metadata?.scannerVersion) lines.push(`Ruleset version: ${item.result.metadata.scannerVersion}`)
+    if (fingerprintPreview(item.result)) lines.push(`Artifact fingerprint: \`${fingerprintPreview(item.result)}\``)
+    if (item.result.policyProfile) lines.push(`Policy (${item.result.policyProfile}): ${item.result.policyResult}`)
+    lines.push(`Top blocker: ${getTopBlocker(item.result)}`, '')
     const fixes = getFixFirst(item.result)
     if (fixes.length) lines.push('Fix first:', ...fixes.map((fix, index) => `${index + 1}. ${fix}`), '')
     const threats = getRelevantThreatCategories(item.result)
@@ -210,6 +257,33 @@ function markdownSummary(results: Array<{ file: string; result: ScanResult | nul
   }
   lines.push(`A2SPA docs: ${A2SPA_DOCS_URL}`)
   return lines.join('\n')
+}
+
+/**
+ * Writes a GitHub Actions job summary — the collapsible "Summary" panel shown on a workflow
+ * run's page — when GITHUB_STEP_SUMMARY is set (GitHub sets this automatically inside Actions;
+ * it's absent everywhere else, so this is a genuine no-op outside CI, not something that needs
+ * its own flag). Reuses the same markdownSummary() content, so there is exactly one place that
+ * decides what a "summary" contains.
+ */
+function writeGithubJobSummary(results: Array<{ file: string; result: ScanResult | null; error: string | null }>, summary: { total: number; verified: number; notVerified: number; notAssessed: number; errors: number }) {
+  const summaryPath = process.env.GITHUB_STEP_SUMMARY
+  if (!summaryPath) return
+  try {
+    appendFileSync(summaryPath, `${markdownSummary(results, summary)}\n`)
+  } catch (e) {
+    console.error(`Warning: could not write GitHub job summary: ${e instanceof Error ? e.message : e}`)
+  }
+}
+
+/** Optional machine-readable summary file (--summary-file <path>) for a caller (e.g. a custom CI step, or the composite Action's PR-comment step) that wants the results without re-parsing stdout. */
+function writeSummaryFile(path: string, results: Array<{ file: string; result: ScanResult | null; error: string | null }>, summary: { total: number; verified: number; notVerified: number; notAssessed: number; errors: number }) {
+  if (!path) return
+  try {
+    writeFileSync(path, JSON.stringify({ results, summary }, null, 2))
+  } catch (e) {
+    console.error(`Warning: could not write summary file: ${e instanceof Error ? e.message : e}`)
+  }
 }
 
 function printVerdict(result: ScanResult, fileName: string) {
@@ -244,7 +318,7 @@ async function runScan(args: ReturnType<typeof parseArgs>) {
     console.error(`  Set with --key av_your_key or AGENTVERIFY_API_KEY env var.`)
     console.error(`  Get your key at https://aimodularity.com/agentverify/dashboard/`)
     console.error(`  Example: AGENTVERIFY_API_KEY=av_your_key agentverify scan .\n`)
-    process.exit(1)
+    process.exit(EXIT_EXECUTION_ERROR)
   }
 
   // Collect files
@@ -278,10 +352,14 @@ async function runScan(args: ReturnType<typeof parseArgs>) {
     const batch = files.slice(i, i + CONCURRENCY)
     const batchResults = await Promise.allSettled(
       batch.map(async (filePath) => {
+        const fileStat = statSync(filePath)
+        if (fileStat.size > MAX_SCAN_FILE_BYTES) {
+          throw new Error(`File is ${(fileStat.size / 1024 / 1024).toFixed(1)}MB, over the ${MAX_SCAN_FILE_BYTES / 1024 / 1024}MB scan limit — skipped`)
+        }
         const content = readFileSync(filePath, 'utf-8')
         const relPath = relative(args.dir === '.' ? process.cwd() : args.dir, filePath)
         const result = await scan(
-          { content, fileName: relPath },
+          { content, fileName: relPath, policyId: args.policy || undefined },
           { apiKey: args.key, apiUrl: API_URL }
         )
         return { filePath, relPath, result }
@@ -314,23 +392,25 @@ async function runScan(args: ReturnType<typeof parseArgs>) {
   }
 
   const summary = { total: files.length, verified, notVerified, notAssessed, errors }
+  writeGithubJobSummary(jsonResults, summary)
+  writeSummaryFile(args.summaryFile, jsonResults, summary)
 
   if (args.json) {
     write(JSON.stringify({ results: jsonResults, summary }, null, 2))
-    if (errors > 0) process.exit(1)
+    if (errors > 0) process.exit(EXIT_EXECUTION_ERROR)
     if (args.ci) {
-      if (notVerified > 0) process.exit(1)
-      if (notAssessed > 0 && !args.allowNotAssessed) process.exit(2)
+      if (notVerified > 0) process.exit(EXIT_NOT_VERIFIED)
+      if (notAssessed > 0 && !args.allowNotAssessed) process.exit(EXIT_NOT_ASSESSED)
     }
     return
   }
 
   if (args.markdown) {
     write(markdownSummary(jsonResults, summary))
-    if (errors > 0) process.exit(1)
+    if (errors > 0) process.exit(EXIT_EXECUTION_ERROR)
     if (args.ci) {
-      if (notVerified > 0) process.exit(1)
-      if (notAssessed > 0 && !args.allowNotAssessed) process.exit(2)
+      if (notVerified > 0) process.exit(EXIT_NOT_VERIFIED)
+      if (notAssessed > 0 && !args.allowNotAssessed) process.exit(EXIT_NOT_ASSESSED)
     }
     return
   }
@@ -349,11 +429,11 @@ async function runScan(args: ReturnType<typeof parseArgs>) {
   else write(`\n${c.gray}No dashboard report was saved. Check API key access and retry if you need dashboard sync.${c.reset}`)
   write(`${c.gray}A2SPA docs: ${A2SPA_DOCS_URL}${c.reset}\n`)
 
-  if (errors > 0) process.exit(1)
+  if (errors > 0) process.exit(EXIT_EXECUTION_ERROR)
 
   if (args.ci) {
-    if (notVerified > 0) process.exit(1)
-    if (notAssessed > 0 && !args.allowNotAssessed) process.exit(2)
+    if (notVerified > 0) process.exit(EXIT_NOT_VERIFIED)
+    if (notAssessed > 0 && !args.allowNotAssessed) process.exit(EXIT_NOT_ASSESSED)
   }
 }
 
@@ -362,12 +442,12 @@ async function main() {
 
   if (args.version) {
     write(`agentverify v${VERSION}`)
-    process.exit(0)
+    process.exit(EXIT_OK)
   }
 
   if (args.help || !args.command) {
     printHelp()
-    process.exit(0)
+    process.exit(EXIT_OK)
   }
 
   if (args.command === 'scan') {
@@ -375,11 +455,11 @@ async function main() {
   } else {
     console.error(`\n${c.red}Unknown command: ${args.command}${c.reset}`)
     console.error(`Run ${c.cyan}agentverify --help${c.reset} for usage\n`)
-    process.exit(1)
+    process.exit(EXIT_EXECUTION_ERROR)
   }
 }
 
 main().catch(err => {
   console.error(`\n${c.red}Fatal error:${c.reset}`, err instanceof Error ? err.message : err)
-  process.exit(1)
+  process.exit(EXIT_EXECUTION_ERROR)
 })

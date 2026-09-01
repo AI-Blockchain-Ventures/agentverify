@@ -54,6 +54,11 @@ function normalizeScanResult(data: Partial<ScanResult>): ScanResult {
     },
     saved: data.saved === true,
     reportUrl: data.reportUrl ?? null,
+    artifactFingerprint: data.artifactFingerprint,
+    reportIntegrity: data.reportIntegrity,
+    policyProfile: data.policyProfile ?? null,
+    policyResult: data.policyResult ?? null,
+    attestation: data.attestation ?? null,
   } as ScanResult
 }
 
@@ -103,6 +108,7 @@ export async function scan(
         content: input.content,
         fileName: input.fileName ?? 'agent',
         platform: input.platform,
+        policyId: input.policyId,
       }),
       signal: controller.signal,
     })

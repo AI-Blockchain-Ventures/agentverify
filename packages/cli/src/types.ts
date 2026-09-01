@@ -2,6 +2,30 @@ export interface ScanInput {
   content: string
   fileName?: string
   platform?: string
+  /** One of the built-in policy profile ids (e.g. "financial-agent") — evaluated server-side against this scan's evidence, in addition to (never instead of) the scanner's own verdict. */
+  policyId?: string
+}
+
+export interface ArtifactFingerprint {
+  artifactHash: string
+  artifactHashAlgorithm: string
+  artifactFingerprintVersion: string
+}
+
+export interface ReportIntegrity {
+  reportHash: string
+  algorithm: string
+  schemaVersion: string
+  scannerVersion: string
+  scanId: string
+  timestamp: string
+}
+
+export interface SignedAttestation {
+  payload: Record<string, unknown>
+  signature: string
+  algorithm: string
+  publicKey: Record<string, unknown>
 }
 
 export type Verdict = 'VERIFIED' | 'NOT_VERIFIED' | 'NOT_ASSESSED'
@@ -111,6 +135,11 @@ export interface ScanResult {
   }
   saved: boolean
   reportUrl?: string | null
+  artifactFingerprint?: ArtifactFingerprint
+  reportIntegrity?: ReportIntegrity
+  policyProfile?: string | null
+  policyResult?: string | null
+  attestation?: SignedAttestation | null
 }
 
 export interface ScanOptions {

@@ -51,6 +51,17 @@ agentverify scan ./agents --ci
 
 Normal scans print findings without failing the shell just because issues exist. CI mode is stricter: it exits non-zero when an agent is `NOT_VERIFIED`, when a scan errors, or when submitted content cannot be assessed.
 
+Exit codes distinguish a security/verification result from an application error, so a pipeline can tell "the agent failed the check" apart from "the scan itself couldn't run":
+
+| Code | Meaning |
+| --- | --- |
+| `0` | All scanned files verified |
+| `1` | `NOT_VERIFIED` — a security/verification check failed |
+| `2` | `NOT_ASSESSED` — insufficient evidence for a verdict (see `--allow-not-assessed`) |
+| `3` | Execution error — the scan itself could not run (bad key, network failure, missing file) |
+
+All non-zero codes still fail a pipeline step by default, so an existing `if [ $? -ne 0 ]`-style check keeps working unchanged.
+
 ## SDK Usage
 
 ```ts
@@ -105,7 +116,7 @@ The workflow requires a valid `AGENTVERIFY_API_KEY`. The local Worker code path 
 
 Saved CLI reports sync to the dashboard through the API `cliReports` save path. If the API cannot save the report, the CLI still prints local scan output and tells you dashboard sync did not complete.
 
-Verified reports can expose a README badge from the report page. A packaged Agent Verify GitHub Action with automatic PR comments is planned after the v1.3.0 app/CLI release candidate stabilizes.
+Verified reports can expose a README badge from the report page. A packaged Agent Verify GitHub Action (`AI-Blockchain-Ventures/agentverify@v1`) already exists and produces text/Markdown/JSON output plus an optional workflow artifact — see below. Automatically posting that output as a PR comment (rather than just producing it for you to post) is still a planned enhancement, not yet built.
 
 See the full GitHub Action guide at `docs/github-action.md` for composite action inputs, JSON/Markdown examples, branch protection, optional PR comments, and badge guidance.
 

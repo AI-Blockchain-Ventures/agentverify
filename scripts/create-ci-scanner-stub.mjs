@@ -378,8 +378,23 @@ export function familyFor(_category: SecurityCategoryId): RiskFamilyId {
   return 'runtime-network'
 }
 
+// Real, faithful implementation — NOT proprietary. Recursive key-sort canonicalization is a pure,
+// public function (also independently reimplemented client-side at apps/web/src/lib/
+// verifyAttestation.ts for the same reason: it's part of the public verification contract, safe
+// to run anywhere, and must stay byte-identical to packages/scanner/src/reportIntegrity.ts's
+// canonicalizeForHash for signatures produced by the real signing key to verify correctly here.
 export function canonicalizeForHash(value: unknown): unknown {
-  return value
+  if (value === null || value === undefined) return null
+  if (Array.isArray(value)) return value.map(canonicalizeForHash)
+  if (typeof value === 'object') {
+    const sorted: Record<string, unknown> = {}
+    for (const key of Object.keys(value as Record<string, unknown>).sort()) {
+      sorted[key] = canonicalizeForHash((value as Record<string, unknown>)[key])
+    }
+    return sorted
+  }
+  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') return value
+  return String(value)
 }
 export async function computeReportHash(result: ScanResult): Promise<ReportIntegrity> {
   return { reportHash: '0'.repeat(64), algorithm: 'SHA-256', schemaVersion: result.schemaVersion, scannerVersion: result.metadata.scannerVersion, scanId: result.reportId, timestamp: result.metadata.scannedAt }
@@ -402,21 +417,163 @@ export function buildAttestationPayload(input: BuildAttestationPayloadInput): At
   if (input.policyResult !== undefined) payload.policyResult = input.policyResult
   return payload
 }
+// Real implementation — the exact string that gets signed / whose signature gets verified. Must
+// match packages/scanner/src/attestation.ts's canonicalAttestationJson exactly: both the real
+// module and this stub call the SAME canonicalizeForHash shape, over the SAME payload fields.
 export function canonicalAttestationJson(payload: AttestationPayload): string {
-  return JSON.stringify(payload)
+  return JSON.stringify(canonicalizeForHash(payload))
 }
-export async function verifyAttestation(_signed: unknown, _expectedPublicKey?: JsonWebKey): Promise<AttestationVerificationResult> {
-  return { status: 'MALFORMED', reason: 'CI scanner stub — attestation verification is not implemented here.' }
+const REQUIRED_ATTESTATION_PAYLOAD_FIELDS = [
+  'attestationVersion', 'artifactHash', 'artifactHashAlgorithm', 'artifactFingerprintVersion',
+  'scanId', 'reportHash', 'verdict', 'score', 'scannerVersion', 'rulesetVersion', 'schemaVersion',
+  'issuedAt', 'issuer',
+] as const
+function isWellFormedAttestation(signed: unknown): signed is SignedAttestation {
+  if (typeof signed !== 'object' || signed === null) return false
+  const s = signed as Record<string, unknown>
+  if (typeof s.signature !== 'string' || s.signature.length === 0) return false
+  if (s.algorithm !== 'ECDSA-P256-SHA256') return false
+  if (typeof s.publicKey !== 'object' || s.publicKey === null) return false
+  if (typeof s.payload !== 'object' || s.payload === null) return false
+  const payload = s.payload as Record<string, unknown>
+  return REQUIRED_ATTESTATION_PAYLOAD_FIELDS.every(field => payload[field] !== undefined && payload[field] !== null)
 }
-export const BUILTIN_POLICIES: PolicyProfile[] = []
-export function findPolicyById(_id: string): PolicyProfile | undefined {
-  return undefined
+function base64ToBytesForVerify(b64: string): Uint8Array {
+  const binary = atob(b64)
+  const bytes = new Uint8Array(binary.length)
+  for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i)
+  return bytes
 }
-export function evaluatePolicy(_result: ScanResult, policy: PolicyProfile): PolicyEvaluationResult {
-  return { policy, pass: true, reasons: [] }
+// Real ECDSA P-256 / SHA-256 (ES256) signature verification via the standard Web Crypto API —
+// this is the PUBLIC verification contract (a viewer or third party verifies a signed attestation
+// against its own embedded public key, exactly as documented at
+// docs/private-scanner-boundary.md), not proprietary detection logic. It never signs anything and
+// never touches a private key. Byte-identical algorithm to packages/scanner/src/attestation.ts's
+// verifyAttestation and its independent client-side port at
+// apps/web/src/lib/verifyAttestation.ts.
+export async function verifyAttestation(signed: unknown, expectedPublicKey?: JsonWebKey): Promise<AttestationVerificationResult> {
+  if (!isWellFormedAttestation(signed)) {
+    return { status: 'MALFORMED', reason: 'Attestation is missing required fields or has an unrecognized shape.' }
+  }
+  if (signed.payload.attestationVersion !== ATTESTATION_VERSION) {
+    return { status: 'UNSUPPORTED_VERSION', reason: \`This verifier supports attestationVersion \${ATTESTATION_VERSION}, got \${signed.payload.attestationVersion}.\` }
+  }
+  if (expectedPublicKey && JSON.stringify(canonicalizeForHash(expectedPublicKey)) !== JSON.stringify(canonicalizeForHash(signed.publicKey))) {
+    return { status: 'INVALID_SIGNATURE', reason: 'The embedded public key does not match the expected Agent Verify signing key.' }
+  }
+  try {
+    const key = await crypto.subtle.importKey('jwk', signed.publicKey, { name: 'ECDSA', namedCurve: 'P-256' }, false, ['verify'])
+    const signatureBytes = base64ToBytesForVerify(signed.signature)
+    const dataBytes = new TextEncoder().encode(canonicalAttestationJson(signed.payload))
+    const valid = await crypto.subtle.verify({ name: 'ECDSA', hash: 'SHA-256' }, key, signatureBytes as BufferSource, dataBytes as BufferSource)
+    return valid ? { status: 'VALID' } : { status: 'INVALID_SIGNATURE', reason: 'Signature does not match the payload under the embedded public key.' }
+  } catch {
+    return { status: 'MALFORMED', reason: 'Public key or signature could not be parsed.' }
+  }
 }
-export function evaluateAllPolicies(_result: ScanResult): PolicyEvaluationResult[] {
-  return []
+// Real, faithful port of packages/scanner/src/policy.ts's built-in policy definitions and pure
+// evaluator — NOT proprietary. Policy evaluation consumes already-produced scan evidence
+// (findings, securityControlsDetected) and decides pass/fail against public, documented
+// thresholds; it never determines HOW the private engine discovers that evidence. Identical to
+// the independent client-side port at apps/web/src/lib/policyEvaluation.ts, for the same "safe
+// to run anywhere, keep in sync by hand" reasoning documented there. Do not add, remove, or
+// change policy ids/requirements here independently of packages/scanner/src/policy.ts.
+const POLICY_SEVERITY_RANK: Record<string, number> = { critical: 4, high: 3, medium: 2, low: 1 }
+const POLICY_CONTROL_LABELS: Record<string, string> = {
+  signature: 'cryptographic execution-signature verification',
+  nonce: 'replay-protection (nonce) verification',
+  fail_closed: 'fail-closed enforcement on verification failure',
+  scoped_permissions: 'an explicit, non-wildcard permission scope',
+  human_approval: 'a human approval gate before consequential actions',
+  audit_logging: 'audit logging',
+  rate_limiting: 'execution rate limiting',
+  bounded_memory: 'bounded (non-indefinite) memory retention',
+  prompt_sanitization: 'input sanitization near prompt assembly',
+  scoped_delegation: 'scope-constrained delegation',
+  https_only: 'HTTPS-only network calls',
+}
+export const BUILTIN_POLICIES: PolicyProfile[] = [
+  {
+    id: 'standard',
+    name: 'Standard',
+    description: 'A reasonable baseline for internal tools and low-stakes agents. Blocks critical findings only.',
+    maxAllowedSeverity: 'critical',
+    requiredControlIds: [],
+    forbiddenFindingCodes: [],
+    requirements: ['No critical-severity findings'],
+  },
+  {
+    id: 'high-security',
+    name: 'High Security',
+    description: 'For agents with broad system access or sensitive data exposure. Blocks critical and high findings, and requires visible execution-authorization and audit controls.',
+    maxAllowedSeverity: 'high',
+    requiredControlIds: ['signature', 'audit_logging'],
+    forbiddenFindingCodes: ['UNSAFE_EVAL_EXEC', 'COMMAND_INJECTION_RISK', 'PRIVILEGED_CONTAINER_CONFIG'],
+    requirements: [
+      'No critical or high-severity findings',
+      'Cryptographic execution-signature verification detected',
+      'Audit logging detected',
+      'No dynamic code execution, command injection risk, or privileged container configuration',
+    ],
+  },
+  {
+    id: 'financial-agent',
+    name: 'Financial Agent',
+    description: 'For agents that can move money, touch payment systems, or access financial records. The strictest built-in profile.',
+    maxAllowedSeverity: 'high',
+    requiredControlIds: ['signature', 'human_approval', 'audit_logging', 'scoped_permissions'],
+    forbiddenFindingCodes: ['HARDCODED_CREDENTIALS'],
+    requirements: [
+      'No critical or high-severity findings',
+      'Cryptographic execution-signature verification detected',
+      'Human approval gate detected before consequential actions',
+      'Audit logging detected',
+      'An explicit, scoped (non-wildcard) permission declaration detected',
+      'No hardcoded credentials',
+    ],
+  },
+  {
+    id: 'production-infrastructure',
+    name: 'Production Infrastructure',
+    description: 'For agents with shell, deployment, or infrastructure-level access. Focused on execution boundaries and supply-chain integrity.',
+    maxAllowedSeverity: 'high',
+    requiredControlIds: ['signature', 'fail_closed'],
+    forbiddenFindingCodes: ['COMMAND_INJECTION_RISK', 'UNSAFE_EVAL_EXEC', 'PRIVILEGED_CONTAINER_CONFIG', 'SUPPLY_CHAIN_RISK'],
+    requirements: [
+      'No critical or high-severity findings',
+      'No command injection risk or unsafe dynamic code execution',
+      'No privileged/host-mounted container configuration',
+      'No unpinned or remote-install supply-chain risk',
+      'Execution-signature verification and fail-closed enforcement detected',
+    ],
+  },
+]
+export function findPolicyById(id: string): PolicyProfile | undefined {
+  return BUILTIN_POLICIES.find(p => p.id === id)
+}
+export function evaluatePolicy(result: ScanResult, policy: PolicyProfile): PolicyEvaluationResult {
+  const findings = result.findings ?? []
+  const controlIds = new Set((result.securityControlsDetected ?? []).map(c => c.id).filter(Boolean))
+  const reasons: string[] = []
+  const maxRank = POLICY_SEVERITY_RANK[policy.maxAllowedSeverity]
+  for (const f of findings) {
+    const rank = f.severity ? POLICY_SEVERITY_RANK[f.severity] : undefined
+    if (rank !== undefined && rank >= maxRank) {
+      reasons.push(\`\${f.title ?? f.code ?? 'Finding'} (\${f.severity}) exceeds this policy's maximum allowed severity.\`)
+    }
+    if (f.code && policy.forbiddenFindingCodes.includes(f.code)) {
+      reasons.push(\`\${f.title ?? f.code} is explicitly forbidden by this policy.\`)
+    }
+  }
+  for (const controlId of policy.requiredControlIds) {
+    if (!controlIds.has(controlId)) {
+      reasons.push(\`No detected evidence of \${POLICY_CONTROL_LABELS[controlId] ?? controlId}.\`)
+    }
+  }
+  return { policy, pass: reasons.length === 0, reasons }
+}
+export function evaluateAllPolicies(result: ScanResult): PolicyEvaluationResult[] {
+  return BUILTIN_POLICIES.map(p => evaluatePolicy(result, p))
 }
 `
 
@@ -498,7 +655,15 @@ export function familyFor(_category) {
 }
 
 export function canonicalizeForHash(value) {
-  return value
+  if (value === null || value === undefined) return null
+  if (Array.isArray(value)) return value.map(canonicalizeForHash)
+  if (typeof value === 'object') {
+    const sorted = {}
+    for (const key of Object.keys(value).sort()) sorted[key] = canonicalizeForHash(value[key])
+    return sorted
+  }
+  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') return value
+  return String(value)
 }
 export async function computeReportHash(result) {
   return { reportHash: '0'.repeat(64), algorithm: 'SHA-256', schemaVersion: result.schemaVersion, scannerVersion: result.metadata.scannerVersion, scanId: result.reportId, timestamp: result.metadata.scannedAt }
@@ -522,20 +687,151 @@ export function buildAttestationPayload(input) {
   return payload
 }
 export function canonicalAttestationJson(payload) {
-  return JSON.stringify(payload)
+  return JSON.stringify(canonicalizeForHash(payload))
 }
-export async function verifyAttestation(_signed, _expectedPublicKey) {
-  return { status: 'MALFORMED', reason: 'CI scanner stub — attestation verification is not implemented here.' }
+const REQUIRED_ATTESTATION_PAYLOAD_FIELDS = [
+  'attestationVersion', 'artifactHash', 'artifactHashAlgorithm', 'artifactFingerprintVersion',
+  'scanId', 'reportHash', 'verdict', 'score', 'scannerVersion', 'rulesetVersion', 'schemaVersion',
+  'issuedAt', 'issuer',
+]
+function isWellFormedAttestation(signed) {
+  if (typeof signed !== 'object' || signed === null) return false
+  if (typeof signed.signature !== 'string' || signed.signature.length === 0) return false
+  if (signed.algorithm !== 'ECDSA-P256-SHA256') return false
+  if (typeof signed.publicKey !== 'object' || signed.publicKey === null) return false
+  if (typeof signed.payload !== 'object' || signed.payload === null) return false
+  return REQUIRED_ATTESTATION_PAYLOAD_FIELDS.every(field => signed.payload[field] !== undefined && signed.payload[field] !== null)
 }
-export const BUILTIN_POLICIES = []
-export function findPolicyById(_id) {
-  return undefined
+function base64ToBytesForVerify(b64) {
+  const binary = atob(b64)
+  const bytes = new Uint8Array(binary.length)
+  for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i)
+  return bytes
 }
-export function evaluatePolicy(_result, policy) {
-  return { policy, pass: true, reasons: [] }
+// Real ECDSA P-256 / SHA-256 signature verification via the standard Web Crypto API — the PUBLIC
+// verification contract (see docs/private-scanner-boundary.md), not proprietary detection logic.
+// Never signs, never touches a private key. Byte-identical algorithm to
+// packages/scanner/src/attestation.ts's verifyAttestation.
+export async function verifyAttestation(signed, expectedPublicKey) {
+  if (!isWellFormedAttestation(signed)) {
+    return { status: 'MALFORMED', reason: 'Attestation is missing required fields or has an unrecognized shape.' }
+  }
+  if (signed.payload.attestationVersion !== ATTESTATION_VERSION) {
+    return { status: 'UNSUPPORTED_VERSION', reason: 'This verifier supports attestationVersion ' + ATTESTATION_VERSION + ', got ' + signed.payload.attestationVersion + '.' }
+  }
+  if (expectedPublicKey && JSON.stringify(canonicalizeForHash(expectedPublicKey)) !== JSON.stringify(canonicalizeForHash(signed.publicKey))) {
+    return { status: 'INVALID_SIGNATURE', reason: 'The embedded public key does not match the expected Agent Verify signing key.' }
+  }
+  try {
+    const key = await crypto.subtle.importKey('jwk', signed.publicKey, { name: 'ECDSA', namedCurve: 'P-256' }, false, ['verify'])
+    const signatureBytes = base64ToBytesForVerify(signed.signature)
+    const dataBytes = new TextEncoder().encode(canonicalAttestationJson(signed.payload))
+    const valid = await crypto.subtle.verify({ name: 'ECDSA', hash: 'SHA-256' }, key, signatureBytes, dataBytes)
+    return valid ? { status: 'VALID' } : { status: 'INVALID_SIGNATURE', reason: 'Signature does not match the payload under the embedded public key.' }
+  } catch {
+    return { status: 'MALFORMED', reason: 'Public key or signature could not be parsed.' }
+  }
 }
-export function evaluateAllPolicies(_result) {
-  return []
+// Real, faithful port of packages/scanner/src/policy.ts — public policy evaluation over
+// already-produced scan evidence, not proprietary detection logic. See the matching comment in
+// the TypeScript block above; must stay in sync with packages/scanner/src/policy.ts and
+// apps/web/src/lib/policyEvaluation.ts.
+const POLICY_SEVERITY_RANK = { critical: 4, high: 3, medium: 2, low: 1 }
+const POLICY_CONTROL_LABELS = {
+  signature: 'cryptographic execution-signature verification',
+  nonce: 'replay-protection (nonce) verification',
+  fail_closed: 'fail-closed enforcement on verification failure',
+  scoped_permissions: 'an explicit, non-wildcard permission scope',
+  human_approval: 'a human approval gate before consequential actions',
+  audit_logging: 'audit logging',
+  rate_limiting: 'execution rate limiting',
+  bounded_memory: 'bounded (non-indefinite) memory retention',
+  prompt_sanitization: 'input sanitization near prompt assembly',
+  scoped_delegation: 'scope-constrained delegation',
+  https_only: 'HTTPS-only network calls',
+}
+export const BUILTIN_POLICIES = [
+  {
+    id: 'standard',
+    name: 'Standard',
+    description: 'A reasonable baseline for internal tools and low-stakes agents. Blocks critical findings only.',
+    maxAllowedSeverity: 'critical',
+    requiredControlIds: [],
+    forbiddenFindingCodes: [],
+    requirements: ['No critical-severity findings'],
+  },
+  {
+    id: 'high-security',
+    name: 'High Security',
+    description: 'For agents with broad system access or sensitive data exposure. Blocks critical and high findings, and requires visible execution-authorization and audit controls.',
+    maxAllowedSeverity: 'high',
+    requiredControlIds: ['signature', 'audit_logging'],
+    forbiddenFindingCodes: ['UNSAFE_EVAL_EXEC', 'COMMAND_INJECTION_RISK', 'PRIVILEGED_CONTAINER_CONFIG'],
+    requirements: [
+      'No critical or high-severity findings',
+      'Cryptographic execution-signature verification detected',
+      'Audit logging detected',
+      'No dynamic code execution, command injection risk, or privileged container configuration',
+    ],
+  },
+  {
+    id: 'financial-agent',
+    name: 'Financial Agent',
+    description: 'For agents that can move money, touch payment systems, or access financial records. The strictest built-in profile.',
+    maxAllowedSeverity: 'high',
+    requiredControlIds: ['signature', 'human_approval', 'audit_logging', 'scoped_permissions'],
+    forbiddenFindingCodes: ['HARDCODED_CREDENTIALS'],
+    requirements: [
+      'No critical or high-severity findings',
+      'Cryptographic execution-signature verification detected',
+      'Human approval gate detected before consequential actions',
+      'Audit logging detected',
+      'An explicit, scoped (non-wildcard) permission declaration detected',
+      'No hardcoded credentials',
+    ],
+  },
+  {
+    id: 'production-infrastructure',
+    name: 'Production Infrastructure',
+    description: 'For agents with shell, deployment, or infrastructure-level access. Focused on execution boundaries and supply-chain integrity.',
+    maxAllowedSeverity: 'high',
+    requiredControlIds: ['signature', 'fail_closed'],
+    forbiddenFindingCodes: ['COMMAND_INJECTION_RISK', 'UNSAFE_EVAL_EXEC', 'PRIVILEGED_CONTAINER_CONFIG', 'SUPPLY_CHAIN_RISK'],
+    requirements: [
+      'No critical or high-severity findings',
+      'No command injection risk or unsafe dynamic code execution',
+      'No privileged/host-mounted container configuration',
+      'No unpinned or remote-install supply-chain risk',
+      'Execution-signature verification and fail-closed enforcement detected',
+    ],
+  },
+]
+export function findPolicyById(id) {
+  return BUILTIN_POLICIES.find(p => p.id === id)
+}
+export function evaluatePolicy(result, policy) {
+  const findings = result.findings ?? []
+  const controlIds = new Set((result.securityControlsDetected ?? []).map(c => c.id).filter(Boolean))
+  const reasons = []
+  const maxRank = POLICY_SEVERITY_RANK[policy.maxAllowedSeverity]
+  for (const f of findings) {
+    const rank = f.severity ? POLICY_SEVERITY_RANK[f.severity] : undefined
+    if (rank !== undefined && rank >= maxRank) {
+      reasons.push((f.title ?? f.code ?? 'Finding') + ' (' + f.severity + ') exceeds this policy\\'s maximum allowed severity.')
+    }
+    if (f.code && policy.forbiddenFindingCodes.includes(f.code)) {
+      reasons.push((f.title ?? f.code) + ' is explicitly forbidden by this policy.')
+    }
+  }
+  for (const controlId of policy.requiredControlIds) {
+    if (!controlIds.has(controlId)) {
+      reasons.push('No detected evidence of ' + (POLICY_CONTROL_LABELS[controlId] ?? controlId) + '.')
+    }
+  }
+  return { policy, pass: reasons.length === 0, reasons }
+}
+export function evaluateAllPolicies(result) {
+  return BUILTIN_POLICIES.map(p => evaluatePolicy(result, p))
 }
 `
 

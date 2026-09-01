@@ -1,6 +1,15 @@
-# Agent Verify v1.3 Scanner Contract
+# Agent Verify Scanner Contract
 
-`@agentverify/scanner` is the single authority for scan classification, findings, scoring, verdicts, BOM output, and scanner metadata. Browser, CLI, and Cloudflare Worker paths must call this package rather than reimplement scanner rules.
+`@agentverify/scanner` is the single authority for scan classification, findings, scoring,
+verdicts, BOM output, and scanner metadata. **Only Worker-side (server-only) code and Next.js
+Server Components may call this package directly** — see
+[private-scanner-boundary.md](./private-scanner-boundary.md). Browser-shipped code must never
+import it, even transitively; the CLI reaches it only through the Worker API, never as a local
+dependency. A narrow set of pure, non-secret operations (attestation signature verification,
+report-hash computation, policy evaluation against an already-produced result) are independently
+reimplemented client-side rather than reimplementing scanner *rules* — those reimplementations
+are documented at the top of each file that has one (`apps/web/src/lib/verifyAttestation.ts`,
+`reportIntegrity.ts`, `policyEvaluation.ts`) and must stay faithful to this contract.
 
 ## Result Shape
 

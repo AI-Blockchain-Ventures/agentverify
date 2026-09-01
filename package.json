@@ -1,18 +1,32 @@
 {
   "name": "agentverify",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "private": true,
-  "workspaces": ["apps/*", "packages/*", "workers/*"],
+  "workspaces": [
+    "apps/*",
+    "packages/*",
+    "workers/*"
+  ],
   "scripts": {
     "dev": "npm run dev --workspace=apps/web",
     "build": "npm run build --workspace=apps/web",
     "export": "npm run export --workspace=apps/web",
     "build:cli": "npm run build --workspace=packages/cli",
     "check:worker": "npm run typecheck --workspace=workers/api",
+    "check:web": "npm run typecheck --workspace=apps/web",
     "build:worker": "npm run build --workspace=workers/api",
     "private:build:scanner": "npm run build --workspace=packages/scanner",
     "private:test:scanner": "npm run test --workspace=packages/scanner",
     "test:worker": "npm run test --workspace=workers/api",
-    "lint": "npm run lint --workspace=apps/web"
+    "test:rules": "npx firebase-tools@13 emulators:exec --only firestore --project agentverify-rules-test \"node firestore-tests/rules.test.mjs\"",
+    "lint": "npm run lint --workspace=apps/web",
+    "review": "node scripts/review.mjs",
+    "check:private-boundary": "node scripts/check-private-boundary.mjs"
+  },
+  "devDependencies": {
+    "@firebase/rules-unit-testing": "^5.0.2"
+  },
+  "dependencies": {
+    "stripe": "^22.6.0"
   }
 }

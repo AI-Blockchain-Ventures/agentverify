@@ -36,6 +36,15 @@ jobs:
       - name: Test Worker
         run: npm test --workspace=workers/api
 
+      - name: Web typecheck
+        run: npm run check:web
+
+      - name: Web lint
+        run: npm run lint --workspace=apps/web
+
+      - name: Private scanner boundary check
+        run: npm run check:private-boundary
+
       - name: Confirm private scanner is not tracked
         shell: bash
         run: |

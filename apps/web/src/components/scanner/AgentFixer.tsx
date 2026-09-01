@@ -1,125 +1,109 @@
 'use client'
 
-import { useState } from 'react'
-import type { Finding, ScanResult } from '@/types'
+import { useEffect, useState } from 'react'
+import type { User } from 'firebase/auth'
+import type { ScanResult } from '@/types'
+import { canCreateFixPr, findingKey, verifyFixCandidate, type VerifiedFix } from '@/lib/fixVerification'
+import { copyToClipboard } from '@/lib/clipboard'
 
 interface AgentFixerProps {
   result: ScanResult
   originalContent: string
+  reportId: string
+  user: User
 }
 
-const generateFixedAgent = (content: string, findings: Finding[]): string => {
-  const fixes: string[] = []
+/** Not currently wired into ReportView — kept correct and ready rather than deleted. Verification
+ * now goes through the Worker (see fixVerification.ts), so this needs the report's real id and
+ * the signed-in user's token for every fix it checks, hence the added props above. */
+export function AgentFixer({ result, originalContent, reportId, user }: AgentFixerProps) {
+  const [copied, setCopied] = useState<string | null>(null)
+  const [prMessage, setPrMessage] = useState<string | null>(null)
+  const [verifications, setVerifications] = useState<VerifiedFix[] | null>(null)
 
-  findings.forEach(f => {
-    switch (f.title) {
-      case 'Missing cryptographic signature':
-        fixes.push(`// A2SPA Protocol implementation required
-// Contact hello@aiblockchainventures.com for licensing`)
-        break
-      case 'Missing nonce validation':
-        fixes.push(`// A2SPA Protocol implementation required
-// Contact hello@aiblockchainventures.com for licensing`)
-        break
-      case 'Missing timestamp enforcement':
-        fixes.push(`// A2SPA Protocol implementation required
-// Contact hello@aiblockchainventures.com for licensing`)
-        break
-      case 'Missing fail-closed enforcement':
-        fixes.push(`// A2SPA Protocol implementation required
-// Contact hello@aiblockchainventures.com for licensing`)
-        break
-      case 'Over-permissioned action scope':
-        fixes.push(`// A2SPA Protocol implementation required
-// Contact hello@aiblockchainventures.com for licensing`)
-        break
-      case 'Missing human-in-the-loop gates':
-        fixes.push(`// Human approval gate for sensitive actions
-async function requireApproval(action, details) {
-  // Implement approval workflow here
-  // e.g., Slack notification, email confirmation
-  throw new Error('Human approval required for: ' + action)
-}`)
-        break
-      case 'Missing audit logging':
-        fixes.push(`// Audit logging
-const auditLog = []
-function logAction(action, details) {
-  auditLog.push({ action, details, timestamp: new Date().toISOString(), id: Math.random().toString(36).slice(2) })
-}`)
-        break
-      case 'No execution rate limiting':
-        fixes.push(`// Rate limiting
-const callCounts = new Map()
-function checkRateLimit(userId, maxCalls = 100) {
-  const count = (callCounts.get(userId) || 0) + 1
-  if (count > maxCalls) throw new Error('Rate limit exceeded')
-  callCounts.set(userId, count)
-}`)
-        break
-      case 'Hardcoded credentials detected':
-        fixes.push(`// Move credentials to environment variables
-// const apiKey = process.env.API_KEY
-// const secret = process.env.SECRET_KEY
-// Never commit credentials to version control`)
-        break
+  useEffect(() => {
+    let cancelled = false
+    setVerifications(null)
+    Promise.all(
+      result.findings.map(finding => verifyFixCandidate(result, originalContent, finding, reportId, () => user.getIdToken()))
+    ).then(next => { if (!cancelled) setVerifications(next) })
+    return () => { cancelled = true }
+  }, [originalContent, result, reportId, user])
+
+  const copy = async (text: string, key: string) => {
+    if (await copyToClipboard(text)) {
+      setCopied(key)
+      setTimeout(() => setCopied(null), 2000)
     }
-  })
+  }
 
-  if (fixes.length === 0) return content
-
-  const header = `// ============================================
-// AGENT VERIFY — SECURITY FIXES APPLIED
-// ${fixes.length} issue${fixes.length !== 1 ? 's' : ''} addressed
-// Generated: ${new Date().toISOString()}
-// Run a new scan to verify: aimodularity.com/agentverify
-// ============================================
-`
-  return header + fixes.join('\n\n') + '\n\n// ============ ORIGINAL CODE ============\n\n' + content
-}
-
-export function AgentFixer({ result, originalContent }: AgentFixerProps) {
-  const [copied, setCopied] = useState(false)
-  const fixed = generateFixedAgent(originalContent, result.findings)
-  const applied = result.findings.filter(f => fixed.includes(f.title) || fixed !== originalContent)
-
-  const copy = async () => {
-    await navigator.clipboard.writeText(fixed)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
+  const createFixPr = (fix: VerifiedFix) => {
+    if (!canCreateFixPr(fix)) {
+      setPrMessage('Create Fix PR is blocked because this fix is not verified by a re-scan.')
+      return
+    }
+    setPrMessage('Verified fix is eligible for the Phase 3 GitHub App PR flow.')
   }
 
   return (
     <div className="space-y-4">
       <div style={{ borderBottom: '1px solid var(--border)' }} className="mb-6 pb-4">
-        <h3 style={{ color: 'var(--text-primary)' }} className="mb-1 font-semibold">
-          Agent Fixer
-        </h3>
-        <p style={{ color: 'var(--text-secondary)' }} className="text-sm">
-          Here are the specific changes needed to secure this agent. Each fix addresses a finding from the scan above.
-        </p>
+        <h3 style={{ color: 'var(--text-primary)' }} className="mb-1 font-semibold">Agent Fixer</h3>
+        <p style={{ color: 'var(--text-secondary)' }} className="text-sm">Each generated fix is re-scanned before it is marked verified. Unverified fixes cannot start a Fix PR.</p>
+        {prMessage && <p className="mt-3 rounded-xl border border-[#E07B39]/30 bg-[#E07B39]/10 p-3 text-xs font-semibold text-[color:var(--accent-orange-text)]">{prMessage}</p>}
       </div>
-      <div className="grid gap-4 md:grid-cols-2">
-        <div style={{ backgroundColor: 'var(--bg)', border: '1px solid var(--border)' }} className="rounded-xl">
-          <div style={{ borderBottom: '1px solid var(--border)' }} className="flex items-center justify-between px-4 py-3">
-            <span style={{ color: 'var(--text-primary)' }} className="text-sm font-medium">Original Agent</span>
-            <span style={{ border: '1px solid var(--border)', color: 'var(--text-muted)' }} className="rounded-full px-2 py-0.5 text-xs">{result.findings.length} findings</span>
-          </div>
-          <pre style={{ color: 'var(--text-secondary)' }} className="max-h-96 overflow-auto p-4 font-mono text-xs">{originalContent}</pre>
+
+      {result.findings.length === 0 ? (
+        <div style={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)' }} className="rounded-xl p-4">
+          <p style={{ color: 'var(--text-secondary)' }} className="text-sm">No fixes needed. This scan has no findings.</p>
         </div>
-        <div style={{ backgroundColor: 'var(--bg)', border: '1px solid rgba(0,179,126,0.2)' }} className="rounded-xl">
-          <div style={{ borderBottom: '1px solid var(--border)' }} className="flex items-center justify-between px-4 py-3">
-            <div className="flex items-center gap-2"><span style={{ color: 'var(--text-primary)' }} className="text-sm font-medium">Fixed Agent</span><span className="rounded-full bg-[#00B37E]/10 px-2 py-0.5 text-xs text-[#00B37E]">Fixed</span></div>
-            <button onClick={copy} style={{ border: '1px solid var(--border)', color: 'var(--text-secondary)' }} className="rounded px-2 py-1 text-xs hover:opacity-70">{copied ? 'Copied' : 'Copy'}</button>
-          </div>
-          <pre className="max-h-96 overflow-auto p-4 font-mono text-xs text-[#00C4CC]">{fixed}</pre>
+      ) : verifications === null ? (
+        <div style={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)' }} className="rounded-xl p-4">
+          <p style={{ color: 'var(--text-secondary)' }} className="text-sm">Verifying fixes…</p>
         </div>
-      </div>
-      <div style={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)' }} className="rounded-xl p-4">
-        <h3 style={{ color: 'var(--text-primary)' }} className="mb-3 text-sm font-semibold">Changes made</h3>
-        {applied.length ? <div className="space-y-2">{applied.map(f => <div key={f.id} style={{ color: 'var(--text-secondary)' }} className="flex gap-2 text-sm"><span className="text-[#00B37E]">✓</span>{f.recommendedFix}</div>)}</div> : <p style={{ color: 'var(--text-secondary)' }} className="text-sm">No changes needed — agent passed all checks</p>}
-        <p style={{ color: 'var(--text-muted)' }} className="mt-4 text-xs">A2SPA Protocol fixes are available under license. Contact hello@aiblockchainventures.com for support.</p>
-      </div>
+      ) : (
+        <div className="space-y-4">
+          {verifications.map((fix, index) => (
+            <div key={`${findingKey(fix.finding)}-${index}`} style={{ backgroundColor: 'var(--card)', border: `1px solid ${fix.verified ? 'rgba(0,179,126,0.35)' : 'rgba(224,123,57,0.35)'}` }} className="rounded-2xl p-4">
+              <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                <div>
+                  <p style={{ color: 'var(--text-primary)' }} className="text-sm font-semibold">{fix.finding.title}</p>
+                  <div className={`mt-2 inline-flex rounded-full px-3 py-1 text-xs font-semibold ${fix.verified ? 'bg-[#00B37E]/10 text-[color:var(--accent-green-text)]' : 'bg-[#E07B39]/10 text-[color:var(--accent-orange-text)]'}`}>{fix.verified ? 'Verified Fix' : 'Suggested Fix - Not Verified'}</div>
+                </div>
+                <div className="flex gap-2">
+                  <button onClick={() => copy(fix.fixedCode, `fix-${index}`)} style={{ border: '1px solid var(--border)', color: 'var(--text-secondary)' }} className="rounded-xl px-3 py-2 text-xs font-semibold hover:opacity-75">{copied === `fix-${index}` ? 'Copied' : 'Copy fix'}</button>
+                  <button onClick={() => createFixPr(fix)} disabled={!canCreateFixPr(fix)} className="rounded-xl bg-[#7C3AED] px-3 py-2 text-xs font-semibold text-white hover:opacity-85 disabled:cursor-not-allowed disabled:opacity-40">Create Fix PR</button>
+                </div>
+              </div>
+
+              <div className="mt-4 grid gap-4 lg:grid-cols-2">
+                <div>
+                  <p style={{ color: 'var(--text-muted)' }} className="mb-2 text-xs font-semibold uppercase tracking-wider">Generated fix</p>
+                  <pre style={{ backgroundColor: 'var(--input-bg)', border: '1px solid var(--border)' }} className="max-h-80 overflow-auto rounded-xl p-4 font-mono text-xs leading-relaxed text-[color:var(--accent-purple-text)]">{fix.fixedCode}</pre>
+                </div>
+                <div>
+                  <p style={{ color: 'var(--text-muted)' }} className="mb-2 text-xs font-semibold uppercase tracking-wider">Verification re-scan</p>
+                  <div style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }} className="rounded-xl p-4">
+                    {fix.error || !fix.rescan ? (
+                      <p className="text-sm text-[color:var(--accent-red-text)]">{fix.error ?? 'Could not verify this fix.'}</p>
+                    ) : (
+                      <>
+                        <p style={{ color: 'var(--text-primary)' }} className="text-sm font-semibold">{fix.rescan.verdict} - {fix.rescan.riskScore}/100 - {fix.rescan.findings.length} finding{fix.rescan.findings.length === 1 ? '' : 's'}</p>
+                        <ul className="mt-3 space-y-2 text-xs">
+                          <li className={fix.resolvedOriginal ? 'text-[color:var(--accent-green-text)]' : 'text-[color:var(--accent-orange-text)]'}>{fix.resolvedOriginal ? 'Original finding no longer appears.' : `Original finding still appears (${fix.remainingMatches.length}).`}</li>
+                          <li className={fix.newFindings.length === 0 ? 'text-[color:var(--accent-green-text)]' : 'text-[color:var(--accent-orange-text)]'}>{fix.newFindings.length === 0 ? 'No new findings introduced.' : `${fix.newFindings.length} new finding${fix.newFindings.length === 1 ? '' : 's'} introduced.`}</li>
+                        </ul>
+                        {fix.newFindings.length > 0 && <div className="mt-3 space-y-1">{fix.newFindings.slice(0, 3).map(item => <p key={findingKey(item)} style={{ color: 'var(--text-secondary)' }} className="text-xs">- {item.title}</p>)}</div>}
+                        {!fix.resolvedOriginal && <p style={{ color: 'var(--text-secondary)' }} className="mt-3 text-xs">The generated fix remains a suggestion because the vulnerability that triggered this fix is still present in the re-scan.</p>}
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }

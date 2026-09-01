@@ -1,17 +1,15 @@
 'use client'
 
-import { useEffect, useRef, useState, type SyntheticEvent } from 'react'
+import { useRef, useState, type SyntheticEvent } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { scan } from '@agentverify/scanner'
 import type { ScanResult as ScanResultType } from '@/types'
 import type { User } from 'firebase/auth'
 import { ScanResult } from './ScanResult'
-import { saveReport } from '@/lib/scanStore'
 import { trackScan } from '@/lib/analytics'
 import { assetUrl } from '@/lib/assets'
-import { freeScanLimit } from '@/lib/pricing'
-import { useBillingStatus } from '@/lib/useBillingStatus'
+import { getApiBaseUrl } from '@/lib/billing'
+import { useBillingStatusState } from '@/lib/useBillingStatus'
 
 type ScannerExample = {
   fileName: string
@@ -236,7 +234,8 @@ interface ScannerPanelProps {
 }
 
 export function ScannerPanel({ user, onScanComplete }: ScannerPanelProps) {
-  const billingStatus = useBillingStatus(user)
+  const billing = useBillingStatusState(user)
+  const billingStatus = billing.status
   const [tab, setTab] = useState<'upload' | 'paste'>('paste')
   const [content, setContent] = useState('')
   const [fileName, setFileName] = useState('')
@@ -244,48 +243,68 @@ export function ScannerPanel({ user, onScanComplete }: ScannerPanelProps) {
   const [drag, setDrag] = useState(false)
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState<ScanResultType | null>(null)
-  const [localMonthlyScans, setLocalMonthlyScans] = useState(0)
+  const [scanError, setScanError] = useState<string | null>(null)
+  const [uploadError, setUploadError] = useState<string | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
-  useEffect(() => {
-    const key = `agentverify-free-scans-${new Date().toISOString().slice(0, 7)}`
-    setLocalMonthlyScans(Number(window.localStorage.getItem(key) ?? '0') || 0)
-  }, [])
-
+  // Reject oversized files before ever reading them into memory — an unbounded file.text()
+  // read on a multi-GB selection can hang or crash the tab well before the scanner's own
+  // truncation guard ever runs.
+  const MAX_UPLOAD_BYTES = 5 * 1024 * 1024 // 5MB
   const readFile = async (file: File) => {
+    setUploadError(null)
+    if (file.size > MAX_UPLOAD_BYTES) {
+      setUploadError(`"${file.name}" is ${(file.size / 1024 / 1024).toFixed(1)}MB, over the ${MAX_UPLOAD_BYTES / 1024 / 1024}MB scan limit. Scan the specific agent file rather than a whole bundle or vendored directory.`)
+      return
+    }
     setFileName(file.name)
     setContent(await file.text())
     setTab('paste')
   }
 
-  const run = () => {
-    if (!content.trim()) return
+  // The actual scan now runs server-side, in the Worker (POST /v1/scan, same endpoint the CLI
+  // and API-key path already use — see workers/api/src/worker.ts) rather than in the browser:
+  // this is what makes the monthly quota a real, server-enforced limit instead of a localStorage
+  // counter anyone could clear, and it's also what keeps the proprietary scanner engine off the
+  // client entirely (it no longer ships in this bundle at all).
+  const run = async () => {
+    if (!content.trim() || !user) return
     setLoading(true)
+    setScanError(null)
     try {
-      const next = scan({
-        content,
-        fileName: fileName || 'agent.txt',
-        fileSize: content.length,
-        platform: selectedPlatform || undefined,
+      const res = await fetch(`${getApiBaseUrl()}/v1/scan`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${await user.getIdToken()}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          content,
+          fileName: fileName || 'agent.txt',
+          fileSize: content.length,
+          platform: selectedPlatform || undefined,
+        }),
       })
-      setResult(next)
-      const month = new Date().toISOString().slice(0, 7)
-      const key = `agentverify-free-scans-${month}`
-      const nextCount = localMonthlyScans + 1
-      setLocalMonthlyScans(nextCount)
-      window.localStorage.setItem(key, String(nextCount))
-      trackScan(next)
-      if (user) {
-        saveReport(user.uid, next)
-          .then(() => {
-            onScanComplete?.()
-          })
-          .catch(e => {
-            console.error('Save failed:', e)
-          })
+      const data = await res.json().catch(() => ({})) as (ScanResultType & { error?: string; limit?: number; used?: number; saved?: boolean })
+      if (res.status === 429) {
+        setScanError(`You've used all ${data.limit ?? billingStatus.scanQuota} scans included this month. ${billingStatus.plan === 'pro' ? 'Your quota resets next month.' : 'Upgrade to Pro for 100 scans/month.'}`)
+        return
       }
-    } catch (e) {
-      console.error('Scan failed:', e)
+      if (res.status === 401) {
+        setScanError('Sign in again to scan.')
+        return
+      }
+      if (res.status === 413) {
+        setScanError('That content is too large to scan. Scan the specific agent file rather than a whole bundle.')
+        return
+      }
+      if (!res.ok || !data.reportId) {
+        setScanError(data.error ?? 'Scan failed. Please retry.')
+        return
+      }
+      setResult(data)
+      trackScan(data)
+      billing.refresh() // real used-count changed server-side; reflect it without a full reload
+      onScanComplete?.()
+    } catch {
+      setScanError('Network error while scanning. Please retry.')
     } finally {
       setLoading(false)
     }
@@ -302,17 +321,17 @@ export function ScannerPanel({ user, onScanComplete }: ScannerPanelProps) {
   )
 
   return (
-    <div className="mx-auto max-w-4xl rounded-[2rem] border border-[var(--border)] bg-[radial-gradient(circle_at_top_right,rgba(0,196,204,0.10),transparent_32%),var(--card)] p-5 shadow-2xl shadow-black/10 backdrop-blur md:p-7">
+    <div className="mx-auto max-w-4xl rounded-[2rem] border border-[var(--border)] bg-[radial-gradient(circle_at_top_right,rgba(6,182,212,0.10),transparent_32%),var(--card)] p-5 shadow-2xl shadow-black/10 backdrop-blur md:p-7">
       <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <div>
-        <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#00C4CC]">Private browser scan</p>
+        <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[color:var(--accent-purple-text)]">Private browser scan</p>
         <h2 style={{ color: 'var(--text-primary)' }} className="mt-2 text-2xl font-semibold tracking-tight">Scan agent</h2>
         <p style={{ color: 'var(--text-muted)' }} className="mt-1 text-sm">Upload or paste an agent file to generate a security report with findings and next steps.</p>
         </div>
-        <div className="grid grid-cols-3 gap-2 text-center text-[11px] font-semibold text-[#00C4CC]">
-          <span className="rounded-full bg-[#00C4CC]/10 px-3 py-1.5">Risk</span>
-          <span className="rounded-full bg-[#00C4CC]/10 px-3 py-1.5">A2SPA</span>
-          <span className="rounded-full bg-[#00C4CC]/10 px-3 py-1.5">Fixes</span>
+        <div className="grid grid-cols-3 gap-2 text-center text-[11px] font-semibold text-[color:var(--accent-purple-text)]">
+          <span className="rounded-full bg-[#7C3AED]/10 px-3 py-1.5">Risk</span>
+          <span className="rounded-full bg-[#7C3AED]/10 px-3 py-1.5">A2SPA</span>
+          <span className="rounded-full bg-[#7C3AED]/10 px-3 py-1.5">Fixes</span>
         </div>
       </div>
       {/* Tabs */}
@@ -333,6 +352,12 @@ export function ScannerPanel({ user, onScanComplete }: ScannerPanelProps) {
         </button>
       </div>
 
+      {uploadError && (
+        <div className="mb-4 rounded-xl border border-[#E07B39]/30 bg-[#E07B39]/10 p-3">
+          <p className="text-xs font-semibold text-[color:var(--accent-orange-text)]">File too large</p>
+          <p style={{ color: 'var(--text-secondary)' }} className="mt-1 text-xs">{uploadError}</p>
+        </div>
+      )}
       {tab === 'upload' ? (
         <div
           onClick={() => inputRef.current?.click()}
@@ -357,6 +382,7 @@ export function ScannerPanel({ user, onScanComplete }: ScannerPanelProps) {
       ) : (
         <div>
           <textarea
+            aria-label="Agent code to scan"
             value={content}
             onChange={e => setContent(e.target.value)}
             style={{ backgroundColor: 'var(--input-bg)', border: '1px solid var(--input-border)', color: 'var(--input-text)' }}
@@ -385,7 +411,7 @@ export function ScannerPanel({ user, onScanComplete }: ScannerPanelProps) {
               onClick={() => setSelectedPlatform(item.name)}
               className={`flex cursor-pointer items-center gap-1.5 rounded-lg border px-2 py-1.5 text-xs transition-colors md:px-3 md:py-2 ${
                 selectedPlatform === item.name
-                  ? 'border-[#00C4CC]/50 bg-[#00C4CC]/10 text-[#00C4CC]'
+                  ? 'border-[#7C3AED]/50 bg-[#7C3AED]/10 text-[color:var(--accent-purple-text)]'
                   : 'border-[var(--border)] text-[var(--text-muted)] hover:opacity-70'
               }`}
             >
@@ -417,7 +443,7 @@ export function ScannerPanel({ user, onScanComplete }: ScannerPanelProps) {
             >
               <span style={{ color: 'var(--text-primary)' }} className="block font-semibold">{label}</span>
               <span className="mt-0.5 block leading-relaxed">{example.description}</span>
-              <span className="mt-2 block rounded-lg bg-[var(--card)] px-2 py-1 font-mono text-[10px] text-[#00C4CC]">{example.expected}</span>
+              <span className="mt-2 block rounded-lg bg-[var(--card)] px-2 py-1 font-mono text-[10px] text-[color:var(--accent-purple-text)]">{example.expected}</span>
               <span style={{ color: 'var(--text-muted)' }} className="mt-1 block leading-relaxed">Checks: {example.demonstrates}</span>
             </button>
           ))}
@@ -425,25 +451,32 @@ export function ScannerPanel({ user, onScanComplete }: ScannerPanelProps) {
       </div>
 
       {/* Run button */}
-      {billingStatus.plan !== 'pro' && localMonthlyScans >= freeScanLimit && (
+      {!billing.loading && billingStatus.used >= billingStatus.scanQuota && (
         <div className="mt-6 rounded-xl border border-[#E07B39]/30 bg-[#E07B39]/10 p-4">
-          <p className="text-sm font-semibold text-[#E07B39]">You have used {freeScanLimit}+ local scans this month</p>
-          <p style={{ color: 'var(--text-secondary)' }} className="mt-1 text-xs">Free includes {freeScanLimit} scans/month once server-side billing enforcement is enabled. Pro includes 100 scans/month plus full remediation, PDF export, and shareable reports.</p>
-          <Link href="/pricing" className="mt-3 inline-flex rounded-lg bg-[#00C4CC] px-3 py-2 text-xs font-semibold text-[#060A0F]">View Pro</Link>
+          <p className="text-sm font-semibold text-[color:var(--accent-orange-text)]">You&apos;ve used all {billingStatus.scanQuota} scans included this month</p>
+          <p style={{ color: 'var(--text-secondary)' }} className="mt-1 text-xs">
+            {billingStatus.plan === 'pro' ? 'Your quota resets at the start of next month.' : 'Free includes 10 scans/month. Pro includes 100 scans/month plus full remediation and PDF export.'}
+          </p>
+          {billingStatus.plan !== 'pro' && <Link href="/pricing" className="mt-3 inline-flex rounded-lg bg-[#7C3AED] px-3 py-2 text-xs font-semibold text-white">View Pro</Link>}
+        </div>
+      )}
+      {scanError && (
+        <div className="mt-6 rounded-xl border border-[#E03E3E]/30 bg-[#E03E3E]/10 p-4">
+          <p className="text-sm text-[color:var(--accent-red-text)]">{scanError}</p>
         </div>
       )}
       <button
         onClick={run}
-        disabled={!content.trim() || loading}
-        className="mt-6 w-full rounded-2xl bg-[#00C4CC] py-4 font-semibold text-[#060A0F] shadow-[0_18px_50px_rgba(0,196,204,0.22)] transition-colors hover:bg-[#22D3EE] disabled:opacity-30"
+        disabled={!content.trim() || loading || (!billing.loading && billingStatus.used >= billingStatus.scanQuota)}
+        className="mt-6 w-full rounded-2xl bg-[#7C3AED] py-4 font-semibold text-white hover:text-[#060A0F] shadow-[0_18px_50px_rgba(6,182,212,0.22)] transition-colors hover:bg-[#06B6D4] disabled:opacity-30"
       >
         {loading ? 'Scanning...' : 'Scan agent'}
       </button>
       {content.length > 50000 && (
-        <p className="mt-2 text-xs text-[#E07B39]">Large file detected. The scan may take a little longer.</p>
+        <p className="mt-2 text-xs text-[color:var(--accent-orange-text)]">Large file detected. The scan may take a little longer.</p>
       )}
       <p style={{ color: 'var(--text-muted)' }} className="mt-2 text-center text-xs">
-        Dashboard scans run in your browser. Never paste a production private key into Agent Verify, source code, or a public repository. Store it in an environment variable or a secret manager.
+        Scans run through Agent Verify&apos;s secure API, never stored longer than needed to produce your report. Never paste a production private key into Agent Verify, source code, or a public repository. Store it in an environment variable or a secret manager.
       </p>
     </div>
   )

@@ -1,6 +1,7 @@
-import { initializeApp, getApps, getApp } from 'firebase/app'
-import { getAuth, connectAuthEmulator } from 'firebase/auth'
-import { getFirestore, connectFirestoreEmulator } from 'firebase/firestore'
+import { initializeApp, getApps, getApp, type FirebaseApp } from 'firebase/app'
+import { getAuth, connectAuthEmulator, type Auth } from 'firebase/auth'
+import { getFirestore, connectFirestoreEmulator, type Firestore } from 'firebase/firestore'
+import { computeHasFirebaseConfig, createUnconfiguredFirebaseProxy } from './firebaseConfigGuard'
 
 // Local review mode (npm run review): NEXT_PUBLIC_USE_FIREBASE_EMULATOR=true points this app at
 // local Firebase emulators instead of production, so review data never touches a real project.
@@ -28,9 +29,20 @@ const firebaseConfig = useEmulator
       appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
     }
 
-export const app = getApps().length ? getApp() : initializeApp(firebaseConfig)
-export const auth = getAuth(app)
-export const db = getFirestore(app)
+// Next.js inlines NEXT_PUBLIC_* values at BUILD time (not read at request time), and evaluates
+// this module during static prerendering for every page — including 'use client' components,
+// which still render once server-side to produce their initial HTML. initializeApp()/getAuth()
+// throw synchronously on a missing/invalid config, so without this guard, a build with no
+// NEXT_PUBLIC_FIREBASE_* configured (public CI, the private-boundary check's isolated build —
+// neither ever needs real Firebase) fails on EVERY page, not just Firebase-dependent ones. See
+// firebaseConfigGuard.ts (and its test) for the guard logic itself.
+const hasFirebaseConfig = computeHasFirebaseConfig(firebaseConfig, useEmulator)
+
+export const app: FirebaseApp = hasFirebaseConfig
+  ? (getApps().length ? getApp() : initializeApp(firebaseConfig))
+  : createUnconfiguredFirebaseProxy<FirebaseApp>('App')
+export const auth: Auth = hasFirebaseConfig ? getAuth(app) : createUnconfiguredFirebaseProxy<Auth>('Auth')
+export const db: Firestore = hasFirebaseConfig ? getFirestore(app) : createUnconfiguredFirebaseProxy<Firestore>('Firestore')
 
 if (useEmulator) {
   // Guard against Fast Refresh (browser) or a re-import (Node seed script) re-running this

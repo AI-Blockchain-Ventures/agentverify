@@ -9,7 +9,7 @@
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
-    "test:unit": "node test/comparisonAndGrouping.test.mjs",
+    "test:unit": "node test/comparisonAndGrouping.test.mjs && node test/firebaseConfigGuard.test.mjs",
     "test:e2e": "playwright test"
   },
   "dependencies": {

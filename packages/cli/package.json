@@ -3,7 +3,7 @@
   "version": "1.4.0",
   "description": "CLI and SDK for Agent Verify — execution trust analysis for AI agents",
   "bin": {
-    "agentverify": "./dist/cli.js"
+    "agentverify": "dist/cli.js"
   },
   "main": "./dist/sdk.js",
   "module": "./dist/sdk.mjs",

@@ -23,6 +23,7 @@ const SECTIONS: NavSection[] = [
   ] },
   { label: 'Platform', items: [
     { id: 'workspace', label: 'Workspace', icon: '▣' },
+    { id: 'billing', label: 'Billing / Plan', icon: '◆' },
     { id: 'integrations', label: 'Integrations', icon: '⇄' },
     { id: 'api', label: 'API / CLI', icon: '◈' },
     { id: 'settings', label: 'Settings', icon: '⚙' },

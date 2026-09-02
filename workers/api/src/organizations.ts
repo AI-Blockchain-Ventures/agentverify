@@ -214,10 +214,25 @@ export interface MyOrganization {
   name: string
 }
 
+/**
+ * Thrown by listMyOrganizations when the underlying Firestore query itself fails (missing
+ * collection-group index, transient outage, bad/expired admin credentials, etc.) — deliberately
+ * distinct from "the query succeeded and this uid simply belongs to zero organizations", which is
+ * a normal, valid result and must keep returning `[]`. Collapsing both cases into the same silent
+ * `[]` previously made a genuine backend failure indistinguishable from "you have no workspaces":
+ * on 2026-09-02, the `members` collectionGroup query needed a COLLECTION_GROUP index on `uid` that
+ * had never been created, so this call 400'd (FAILED_PRECONDITION) on every invocation, and the
+ * caller's `if (!res.ok) return []` silently swallowed it — org creation itself kept succeeding,
+ * but the immediate follow-up list-refresh always came back empty, so the dashboard looked exactly
+ * like the workspace had never been created. See the /v1/organizations/mine handler in worker.ts,
+ * which turns this into a real 5xx + actionable error message instead of a fake empty list.
+ */
+export class OrganizationsQueryError extends Error {}
+
 /** Lists every organization a uid belongs to, via a collectionGroup query across every org's `members` subcollection filtered by the `uid` field (never by relying on the document ID alone, since collectionGroup queries need a real field to filter on). Powers the workspace switcher / "my organizations" list — never trusts a client-supplied org list. */
 export async function listMyOrganizations(uid: string, env: OrganizationsEnv): Promise<MyOrganization[]> {
   const headers = await firestoreAdminAuthHeader(env)
-  if (!headers) return []
+  if (!headers) throw new OrganizationsQueryError('Firestore admin access is not configured')
   const url = `${firestoreBaseUrl(env)}:runQuery`
   const res = await fetch(url, {
     method: 'POST',
@@ -230,7 +245,11 @@ export async function listMyOrganizations(uid: string, env: OrganizationsEnv): P
       },
     }),
   })
-  if (!res.ok) return []
+  if (!res.ok) {
+    const detail = await res.text().catch(() => '')
+    console.error('listMyOrganizations: members collectionGroup query failed', res.status, detail)
+    throw new OrganizationsQueryError(`Could not query organization memberships (Firestore ${res.status})`)
+  }
   const rows = await res.json() as Array<{ document?: { name?: string; fields?: Record<string, FirestoreValue> } }>
 
   // Build (orgId, role) pairs from the SAME row in one pass — deliberately not two independently

@@ -18,6 +18,7 @@ import { CheckCatalog } from '@/components/dashboard/CheckCatalog'
 import { PolicyProfiles } from '@/components/dashboard/PolicyProfiles'
 import { Integrations } from '@/components/dashboard/Integrations'
 import { Workspace } from '@/components/dashboard/Workspace'
+import { Billing } from '@/components/dashboard/Billing'
 import { useBillingStatusState } from '@/lib/useBillingStatus'
 import { summarizeBillingState } from '@/lib/billing'
 
@@ -29,6 +30,7 @@ const pageCopy: Record<DashboardTab, { title: string; subtitle: string; docsHref
   checks: { title: 'Verification Checks', subtitle: 'The real, auditable catalog of checks Agent Verify runs on every scan.', docsHref: '/docs#catalog' },
   policies: { title: 'Policies', subtitle: 'Define the security requirements agents must meet.', docsHref: '/docs' },
   workspace: { title: 'Workspace', subtitle: 'Members, roles, activity, and webhooks shared across your team.', docsHref: '/docs' },
+  billing: { title: 'Billing & plan', subtitle: 'Your plan, scan usage, and Stripe billing — without leaving the dashboard.' },
   integrations: { title: 'Integrations', subtitle: 'Real ways to connect Agent Verify to your workflow.', docsHref: '/docs#ci-cd' },
   api: { title: 'API access', subtitle: 'Run Agent Verify from your terminal or automation workflow.', docsHref: '/docs#cli' },
   settings: { title: 'Settings', subtitle: 'Manage appearance, account, and workspace preferences.' },
@@ -172,6 +174,7 @@ export default function DashboardPage() {
             {tab === 'checks' && <CheckCatalog />}
             {tab === 'policies' && <PolicyProfiles user={user} />}
             {tab === 'workspace' && <Workspace user={user} />}
+            {tab === 'billing' && <Billing user={user} />}
             {tab === 'integrations' && <Integrations />}
             {tab === 'api' && <APIAccess />}
             {tab === 'settings' && <Settings onNavigate={changeTab} />}

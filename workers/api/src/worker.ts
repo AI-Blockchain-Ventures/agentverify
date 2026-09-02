@@ -5,7 +5,7 @@ import { createScanResult } from './scanResponse'
 import { signAttestation, getAttestationPublicKeyInfo, type AttestationSigningEnv } from './attestationSigning'
 import { lookupVerificationStatus } from './verificationStatus'
 import { firestoreBaseUrl, firestoreAdminAuthHeader, apiKeyQueryParam, type FirebaseServiceAccountEnv } from './firebaseAuth'
-import { createOrganization, getMembership, listMembers, listMyOrganizations, requirePermission, resolveUidByEmail, removeMember, upsertMember, type OrganizationsEnv } from './organizations'
+import { createOrganization, getMembership, listMembers, listMyOrganizations, requirePermission, resolveUidByEmail, removeMember, upsertMember, OrganizationsQueryError, type OrganizationsEnv } from './organizations'
 import { isValidRole } from './rbac'
 import { recordAuditEvent, listAuditEvents, type AuditLogEnv } from './auditLog'
 import { createWebhook, listWebhooks, setWebhookStatus, type WebhooksEnv } from './webhooks'
@@ -408,8 +408,18 @@ export default {
     if (request.method === 'GET' && url.pathname === '/v1/organizations/mine') {
       const principal = await authenticateRequest(request, env)
       if (!principal || principal.type === 'SYSTEM') return unauthorized()
-      const orgs = await listMyOrganizations(principal.uid, env)
-      return json({ organizations: orgs })
+      try {
+        const orgs = await listMyOrganizations(principal.uid, env)
+        return json({ organizations: orgs })
+      } catch (err) {
+        // A genuine query failure (see OrganizationsQueryError's own comment — e.g. a missing
+        // Firestore index) must never look identical to "this uid has zero workspaces": that
+        // silent collapse is exactly what made workspace creation appear to do nothing on
+        // 2026-09-02, since the create call succeeds but the immediate list-refresh came back
+        // looking empty either way. Surface it as a real error instead.
+        if (err instanceof OrganizationsQueryError) return json({ error: 'Could not load your workspaces. Please try again shortly.' }, 503)
+        throw err
+      }
     }
 
     const orgMembersMatch = url.pathname.match(/^\/v1\/organizations\/([^/]+)\/members\/?$/)

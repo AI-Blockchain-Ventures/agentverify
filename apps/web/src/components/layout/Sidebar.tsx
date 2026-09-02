@@ -100,10 +100,18 @@ export function Sidebar({
           <span className="w-4 text-center text-sm" aria-hidden="true">▥</span>
           <span>Docs</span>
         </Link>
-        <Link href="/pricing" style={{ color: 'var(--text-muted)' }} className="av-transition flex items-center gap-3 rounded-2xl px-3 py-2.5 text-xs font-semibold hover:bg-[var(--surface)] hover:text-[var(--text-primary)]">
+        <button
+          onClick={() => onChange('billing')}
+          aria-current={active === 'billing' ? 'page' : undefined}
+          style={{
+            backgroundColor: active === 'billing' ? 'var(--surface)' : 'transparent',
+            color: active === 'billing' ? 'var(--text-primary)' : 'var(--text-muted)',
+          }}
+          className="av-transition flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-xs font-semibold hover:opacity-90"
+        >
           <span className="w-4 text-center text-sm" aria-hidden="true">◆</span>
           <span>Billing / Plan</span>
-        </Link>
+        </button>
         <button
           onClick={() => onChange('settings')}
           aria-current={active === 'settings' ? 'page' : undefined}

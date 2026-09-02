@@ -46,7 +46,7 @@ export type {
   SecurityControl,
 }
 
-export type DashboardTab = 'overview' | 'agents' | 'scan' | 'reports' | 'checks' | 'policies' | 'workspace' | 'integrations' | 'api' | 'settings'
+export type DashboardTab = 'overview' | 'agents' | 'scan' | 'reports' | 'checks' | 'policies' | 'workspace' | 'billing' | 'integrations' | 'api' | 'settings'
 export type SourceType = 'dashboard' | 'cli' | 'public'
 
 export interface StoredReport {

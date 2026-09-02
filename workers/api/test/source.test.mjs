@@ -975,6 +975,12 @@ function createOrgFirestoreMock() {
 
   return {
     docs, apiKeys, emails,
+    // When true, the members collectionGroup query responds exactly like real Firestore does
+    // without the required COLLECTION_GROUP index on `members`/`uid` — a 400 FAILED_PRECONDITION
+    // — instead of a normal result. Reproduces the exact production failure mode from 2026-09-02
+    // (see OrganizationsQueryError's comment in organizations.ts) so listMyOrganizations()'s error
+    // handling has real regression coverage, not just the happy path the old mock always returned.
+    simulateMembersIndexMissing: false,
     registerApiKey(key, uid) { apiKeys.set(key, uid) },
     registerEmail(email, uid) { emails.set(email, uid) },
     async fetch(url, init) {
@@ -1016,6 +1022,11 @@ function createOrgFirestoreMock() {
         const body = JSON.parse(init.body)
         const from = body.structuredQuery.from[0]
         if (from.collectionId === 'members' && from.allDescendants) {
+          if (this.simulateMembersIndexMissing) {
+            return new Response(JSON.stringify([{
+              error: { code: 400, status: 'FAILED_PRECONDITION', message: 'The query requires a COLLECTION_GROUP_ASC index for collection members and field uid.' },
+            }]), { status: 400, headers: { 'content-type': 'application/json' } })
+          }
           const filterUid = body.structuredQuery.where.fieldFilter.value.stringValue
           const rows = []
           for (const [path, fields] of docs.entries()) {
@@ -1208,6 +1219,37 @@ assert.equal(removeOwnerAttempt.status, 400)
 // --- Unauthenticated / unauthorized requests to org endpoints are rejected outright ---
 const noAuthOrgCreate = await worker.fetch(new Request('https://api.test/v1/organizations', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: 'x' }) }), orgServiceEnv)
 assert.equal(noAuthOrgCreate.status, 401)
+
+// --- Regression: creation must never appear to silently do nothing when the follow-up list
+// query fails (production incident, 2026-09-02 — see OrganizationsQueryError in organizations.ts).
+// An authenticated Owner can always create a workspace...
+orgMock.registerApiKey('av_frank_worker_test_key_00000000000000', 'frank_uid')
+const frankCreateRes = await worker.fetch(new Request('https://api.test/v1/organizations', {
+  method: 'POST', headers: { 'Content-Type': 'application/json', ...authHeader('av_frank_worker_test_key_00000000000000') }, body: JSON.stringify({ name: 'Frank Workspace' }),
+}), orgServiceEnv)
+assert.equal(frankCreateRes.status, 201, 'a valid authenticated caller can always create a workspace')
+const frankOrg = await frankCreateRes.json()
+assert.ok(frankOrg.orgId)
+
+// ...and when Firestore's members collectionGroup query itself fails (e.g. the required
+// COLLECTION_GROUP index is missing — the real production root cause), the list endpoint must
+// return an actionable error, NEVER a fake-empty `{ organizations: [] }` that looks identical to
+// "you created nothing" from the dashboard's point of view.
+orgMock.simulateMembersIndexMissing = true
+const frankListDuringOutage = await worker.fetch(new Request('https://api.test/v1/organizations/mine', { headers: authHeader('av_frank_worker_test_key_00000000000000') }), orgServiceEnv)
+assert.equal(frankListDuringOutage.status, 503, 'a genuine query failure must be a real error status, never a disguised-empty 200')
+const outageBody = await frankListDuringOutage.json()
+assert.ok(outageBody.error, 'the error response must carry an actionable message, not silently empty organizations')
+assert.equal(outageBody.organizations, undefined, 'a failed query must never be reported as if it succeeded with zero results')
+orgMock.simulateMembersIndexMissing = false
+
+// Once the underlying query works again (index created / outage over), the SAME workspace Frank
+// already created a moment ago is visible — proving the earlier create truly succeeded server-side
+// and was never lost; only the read path was broken.
+const frankListRecovered = await worker.fetch(new Request('https://api.test/v1/organizations/mine', { headers: authHeader('av_frank_worker_test_key_00000000000000') }), orgServiceEnv)
+assert.equal(frankListRecovered.status, 200)
+const frankOrgs = (await frankListRecovered.json()).organizations
+assert.deepEqual(frankOrgs.map(o => o.orgId), [frankOrg.orgId], 'the workspace created during the earlier "outage" was never actually lost')
 
 globalThis.fetch = originalFetch
 

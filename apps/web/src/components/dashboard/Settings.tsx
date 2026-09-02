@@ -7,13 +7,19 @@ import { useAuth } from '@/components/auth/AuthProvider'
 import { db } from '@/lib/firebase'
 import { useTheme } from '@/lib/useTheme'
 import { useBillingStatusState } from '@/lib/useBillingStatus'
-import { openBillingPortal, summarizeBillingState } from '@/lib/billing'
+import { summarizeBillingState } from '@/lib/billing'
 import type { DashboardTab } from '@/types'
 
 /** Settings deliberately stays lean — Workspace/Billing/API-CLI/Integrations already have their
  * own dedicated destinations with the full real experience; duplicating that here would just be
  * two places that can drift out of sync. This page owns only what's genuinely personal (theme,
- * account, local report data) and links out to everything else. */
+ * account, local report data) and links out to everything else.
+ *
+ * The billing card below is a plain in-app tab switch (onNavigate('billing')), NOT a
+ * <Link href="/pricing">, on purpose — an external link here previously took an authenticated
+ * user out of the whole dashboard shell (no Sidebar) just to see their own plan. The full billing
+ * experience, including the real "Manage billing" → Stripe Customer Portal redirect, lives in
+ * Billing.tsx now. */
 export function Settings({ onNavigate }: { onNavigate?: (tab: DashboardTab) => void }) {
   const { user, signOut } = useAuth()
   const { theme, setMode } = useTheme()
@@ -26,19 +32,9 @@ export function Settings({ onNavigate }: { onNavigate?: (tab: DashboardTab) => v
         : 'PRO — CANCELING'
       : 'PRO — ACTIVE'
     : 'FREE'
-  const [portalBusy, setPortalBusy] = useState(false)
-  const [portalMessage, setPortalMessage] = useState<{ text: string; reviewMode?: boolean } | null>(null)
   const [deleting, setDeleting] = useState(false)
   const [showConfirm, setShowConfirm] = useState(false)
 
-  const manageBilling = async () => {
-    if (!user) return
-    setPortalBusy(true)
-    setPortalMessage(null)
-    const result = await openBillingPortal(() => user.getIdToken())
-    if (!result.ok) setPortalMessage({ text: result.message, reviewMode: result.reviewMode })
-    setPortalBusy(false)
-  }
   const memberSince = user?.metadata.creationTime
     ? new Date(user.metadata.creationTime).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
     : 'Unknown'
@@ -147,6 +143,7 @@ export function Settings({ onNavigate }: { onNavigate?: (tab: DashboardTab) => v
         <div className="mt-4 grid gap-2 sm:grid-cols-2">
           {([
             { tab: 'workspace' as const, label: 'Workspace', desc: 'Members, roles, audit log, webhooks' },
+            { tab: 'billing' as const, label: 'Billing / Plan', desc: billing.loading ? 'Loading plan…' : billingStateLabel },
             { tab: 'api' as const, label: 'API / CLI', desc: 'Keys for scripts and CI' },
             { tab: 'integrations' as const, label: 'Integrations', desc: 'GitHub Actions, REST API' },
           ]).map(item => (
@@ -160,37 +157,7 @@ export function Settings({ onNavigate }: { onNavigate?: (tab: DashboardTab) => v
               <p style={{ color: 'var(--text-muted)' }} className="mt-0.5 text-xs">{item.desc}</p>
             </button>
           ))}
-          <Link
-            href="/pricing"
-            style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}
-            className="av-press rounded-2xl p-3.5 text-left transition-opacity hover:opacity-85"
-          >
-            <p style={{ color: 'var(--text-primary)' }} className="text-sm font-semibold">Billing / Plan →</p>
-            <p style={{ color: 'var(--text-muted)' }} className="mt-0.5 text-xs font-semibold tracking-wide">{billing.loading ? 'Loading plan…' : billingStateLabel}</p>
-          </Link>
         </div>
-        {!billing.loading && billingState.isActivePro && (
-          <div style={{ borderTop: '1px solid var(--border)' }} className="mt-4 flex flex-wrap items-center justify-between gap-2 pt-4">
-            <div>
-              <p style={{ color: 'var(--text-primary)' }} className="text-sm font-medium">Manage your subscription</p>
-              <p style={{ color: 'var(--text-muted)' }} className="mt-0.5 text-xs">
-                {billingState.isCanceling
-                  ? billingState.periodEndDate
-                    ? `Your Pro plan remains active until ${billingState.periodEndDate}. Update payment method or resume — through Stripe's secure billing portal.`
-                    : "Your Pro plan is canceling at the end of the current billing period. Update payment method or resume — through Stripe's secure billing portal."
-                  : "Update payment method, view invoices, or cancel — through Stripe's secure billing portal."}
-              </p>
-            </div>
-            <button onClick={manageBilling} disabled={portalBusy} className="av-press shrink-0 rounded-xl border px-4 py-2 text-xs font-semibold disabled:opacity-50" style={{ borderColor: 'var(--border)', color: 'var(--text-primary)', backgroundColor: 'var(--surface)' }}>
-              {portalBusy ? 'Opening…' : 'Manage billing →'}
-            </button>
-          </div>
-        )}
-        {portalMessage && (
-          <p className="mt-3 text-xs" style={{ color: portalMessage.reviewMode ? 'var(--text-muted)' : 'var(--accent-orange-text)' }}>
-            {portalMessage.text}
-          </p>
-        )}
       </section>
 
       <section style={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)' }} className="rounded-3xl p-6 shadow-xl shadow-black/5">

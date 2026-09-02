@@ -1,12 +1,14 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
+import Link from 'next/link'
 import type { User } from 'firebase/auth'
 import * as orgApi from '@/lib/orgApi'
 import { copyToClipboard } from '@/lib/clipboard'
 import type { MyOrganization, Member, AuditEvent, Webhook, Role } from '@/lib/orgApi'
 import { hasPermission, ROLE_LABELS, ROLE_DESCRIPTIONS } from '@/lib/rbac'
 import { describeAuditEvent } from '@/lib/auditEventCopy'
+import type { DashboardTab } from '@/types'
 
 type Section = 'overview' | 'members' | 'audit' | 'webhooks'
 
@@ -16,7 +18,7 @@ type Section = 'overview' | 'members' | 'audit' | 'webhooks'
  * here is enforced server-side; this component only decides what to SHOW based on the caller's
  * real, server-reported role — never grants anything on its own.
  */
-export function Workspace({ user }: { user: User }) {
+export function Workspace({ user, onNavigate }: { user: User; onNavigate?: (tab: DashboardTab) => void }) {
   const [orgs, setOrgs] = useState<MyOrganization[] | null>(null)
   const [selectedOrgId, setSelectedOrgId] = useState<string | null>(null)
   const [section, setSection] = useState<Section>('overview')
@@ -115,7 +117,7 @@ export function Workspace({ user }: { user: User }) {
           {error && <p className="text-xs text-[color:var(--accent-red-text)]">{error}</p>}
 
           <div key={section} className="av-animate-fade">
-            {section === 'overview' && <WorkspaceOverview org={selectedOrg} />}
+            {section === 'overview' && <WorkspaceOverview org={selectedOrg} onNavigate={onNavigate} />}
             {section === 'members' && <MembersSection user={user} org={selectedOrg} onError={setError} />}
             {section === 'audit' && <AuditLogSection user={user} org={selectedOrg} />}
             {section === 'webhooks' && <WebhooksSection user={user} org={selectedOrg} onError={setError} />}
@@ -126,7 +128,7 @@ export function Workspace({ user }: { user: User }) {
   )
 }
 
-function WorkspaceOverview({ org }: { org: MyOrganization }) {
+function WorkspaceOverview({ org, onNavigate }: { org: MyOrganization; onNavigate?: (tab: DashboardTab) => void }) {
   return (
     <div style={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)' }} className="rounded-3xl p-6 shadow-xl shadow-black/5">
       <div className="grid gap-4 sm:grid-cols-3">
@@ -146,6 +148,11 @@ function WorkspaceOverview({ org }: { org: MyOrganization }) {
       <p style={{ color: 'var(--text-muted)' }} className="mt-5 text-xs leading-relaxed">
         Agents, policies, and integrations scanned or configured with an API key attributed to this workspace (via <code>organizationId</code> on a scan) show up in the Audit Log tab. See the Agents and Policies tabs for the full lists — they aren&apos;t duplicated here.
       </p>
+      <div style={{ borderTop: '1px solid var(--border)' }} className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 pt-4 text-xs">
+        <button onClick={() => onNavigate?.('api')} className="font-semibold text-[color:var(--accent-cyan-text)] hover:opacity-80">Your API keys →</button>
+        <Link href="/docs#workspaces" className="font-semibold text-[color:var(--accent-cyan-text)] hover:opacity-80">Workspaces docs →</Link>
+        <Link href="/docs#webhooks" className="font-semibold text-[color:var(--accent-cyan-text)] hover:opacity-80">Webhooks docs →</Link>
+      </div>
     </div>
   )
 }
@@ -401,17 +408,25 @@ function WebhooksSection({ user, org, onError }: { user: User; org: MyOrganizati
 
       {canConfigure && (
         <div style={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)' }} className="rounded-2xl p-4">
-          <p style={{ color: 'var(--text-primary)' }} className="mb-2 text-sm font-semibold">Create a webhook</p>
-          <input value={endpoint} onChange={e => setEndpoint(e.target.value)} placeholder="https://your-service.example.com/webhook" style={{ backgroundColor: 'var(--input-bg)', border: '1px solid var(--input-border)', color: 'var(--input-text)' }} className="w-full rounded-xl px-3 py-2 text-sm outline-none" />
-          <div className="mt-2 flex flex-wrap gap-2">
-            {['SCAN_COMPLETED', 'VERIFICATION_PASSED', 'VERIFICATION_FAILED', 'POLICY_APPLIED', 'ROLE_CHANGED', 'MEMBER_ADDED'].map(e => (
+          <p style={{ color: 'var(--text-primary)' }} className="text-sm font-semibold">Add Webhook Endpoint</p>
+          <p style={{ color: 'var(--text-muted)' }} className="mt-1 text-xs leading-relaxed">
+            Send Agent Verify events to your SIEM, automation, or backend. A webhook is a URL of yours that Agent Verify can notify — pick which events matter to you below, and every notification is signed so your endpoint can verify it really came from Agent Verify.
+            {' '}<Link href="/docs#webhooks" className="underline hover:opacity-80">How webhooks work →</Link>
+          </p>
+          <p style={{ color: 'var(--accent-orange-text)' }} className="mt-2 text-xs">
+            Configuration is live today; automatic delivery to your endpoint is not enabled yet — see the docs above for what that means right now.
+          </p>
+          <input value={endpoint} onChange={e => setEndpoint(e.target.value)} placeholder="https://your-service.example.com/webhook" aria-label="Webhook endpoint URL" style={{ backgroundColor: 'var(--input-bg)', border: '1px solid var(--input-border)', color: 'var(--input-text)' }} className="mt-3 w-full rounded-xl px-3 py-2 text-sm outline-none" />
+          <p style={{ color: 'var(--text-muted)' }} className="mt-3 text-[11px] font-semibold uppercase tracking-wide">Notify this endpoint when:</p>
+          <div className="mt-1.5 flex flex-wrap gap-2">
+            {['SCAN_COMPLETED', 'VERIFICATION_PASSED', 'VERIFICATION_FAILED', 'ATTESTATION_ISSUED', 'POLICY_APPLIED', 'ROLE_CHANGED', 'MEMBER_ADDED'].map(e => (
               <button key={e} onClick={() => toggleEvent(e)} style={{ backgroundColor: events.includes(e) ? 'var(--text-primary)' : 'var(--card)', color: events.includes(e) ? 'var(--bg)' : 'var(--text-muted)', border: '1px solid var(--border)' }} className="av-transition rounded-full px-3 py-1 text-[11px] font-semibold">
                 {e.replace(/_/g, ' ')}
               </button>
             ))}
           </div>
           <button onClick={create} disabled={busy || !endpoint.trim() || events.length === 0} className="av-press mt-3 rounded-xl bg-[#06B6D4] px-4 py-2 text-sm font-semibold text-[#080B14] disabled:opacity-50">
-            {busy ? 'Creating...' : 'Create webhook'}
+            {busy ? 'Adding...' : 'Add webhook endpoint'}
           </button>
         </div>
       )}

@@ -20,6 +20,8 @@ const nav = [
   { id: 'cli', label: 'CLI' },
   { id: 'npm', label: 'npm Installation' },
   { id: 'authentication', label: 'Authentication' },
+  { id: 'workspaces', label: 'Workspaces' },
+  { id: 'webhooks', label: 'Webhooks' },
   { id: 'api', label: 'API' },
   { id: 'ci-cd', label: 'CI/CD & GitHub Actions' },
   { id: 'scan-results', label: 'Scan Results' },
@@ -161,6 +163,112 @@ npx agentverify scan . --key av_your_key`}</CodeBlock>
             <Section id="authentication" title="Authentication">
               <p>Sign up with email/password or Google. Forgot your password? Use <strong>Forgot password?</strong> on the sign-in form &mdash; if an account exists for that email, a reset link is sent. For account-security reasons, the response is identical whether or not the email is registered.</p>
               <p>API keys are generated per-account from <strong>Dashboard &rarr; API access</strong>. Regenerating a key immediately revokes the previous one.</p>
+            </Section>
+
+            <Section id="workspaces" title="Workspaces">
+              <p>A <strong>workspace</strong> (also called an organization) is a shared context multiple people can belong to, with its own members, roles, audit log, and integration settings &mdash; separate from your personal account, which continues to work exactly as before if you never create one. Scans, reports, and API keys stay tied to your own account either way; a workspace adds a <em>shared view</em> on top: who else can see what, and a record of what happened.</p>
+
+              <p><strong>Why a team uses one:</strong> a solo account has no concept of teammates. A workspace lets a security lead invite the rest of the team, see every member&apos;s scan activity in one audit log, and (as an Owner or Admin) enforce who can invite others, change policies, or configure integrations &mdash; without sharing a single login.</p>
+
+              <h3 style={{ color: 'var(--text-primary)' }} className="pt-2 text-sm font-semibold">Roles</h3>
+              <table className="w-full border-collapse text-xs">
+                <thead>
+                  <tr style={{ borderBottom: '1px solid var(--border)' }}>
+                    <th className="py-1.5 pr-4 text-left font-semibold" style={{ color: 'var(--text-primary)' }}>Role</th>
+                    <th className="py-1.5 pr-4 text-left font-semibold" style={{ color: 'var(--text-primary)' }}>Scan, view &amp; share reports</th>
+                    <th className="py-1.5 pr-4 text-left font-semibold" style={{ color: 'var(--text-primary)' }}>Invite / manage members</th>
+                    <th className="py-1.5 pr-4 text-left font-semibold" style={{ color: 'var(--text-primary)' }}>Policies, integrations &amp; webhooks</th>
+                    <th className="py-1.5 text-left font-semibold" style={{ color: 'var(--text-primary)' }}>Billing &amp; delete workspace</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr style={{ borderBottom: '1px solid var(--border)' }}><td className="py-1.5 pr-4 font-semibold">Owner</td><td className="py-1.5 pr-4">Yes</td><td className="py-1.5 pr-4">Yes, incl. changing roles</td><td className="py-1.5 pr-4">Yes</td><td className="py-1.5">Yes</td></tr>
+                  <tr style={{ borderBottom: '1px solid var(--border)' }}><td className="py-1.5 pr-4 font-semibold">Admin</td><td className="py-1.5 pr-4">Yes</td><td className="py-1.5 pr-4">Yes, cannot change roles</td><td className="py-1.5 pr-4">Yes</td><td className="py-1.5">No</td></tr>
+                  <tr style={{ borderBottom: '1px solid var(--border)' }}><td className="py-1.5 pr-4 font-semibold">Member</td><td className="py-1.5 pr-4">Yes</td><td className="py-1.5 pr-4">View only</td><td className="py-1.5 pr-4">View only</td><td className="py-1.5">No</td></tr>
+                  <tr><td className="py-1.5 pr-4 font-semibold">Viewer</td><td className="py-1.5 pr-4">View only</td><td className="py-1.5 pr-4">View only</td><td className="py-1.5 pr-4">View only</td><td className="py-1.5">No</td></tr>
+                </tbody>
+              </table>
+              <p>Every role check happens server-side against the role actually stored for your account in that workspace &mdash; the dashboard only hides buttons you can&apos;t use, it never grants anything on its own.</p>
+
+              <h3 style={{ color: 'var(--text-primary)' }} className="pt-2 text-sm font-semibold">Creating a workspace</h3>
+              <p>From <strong>Dashboard &rarr; Workspace</strong>, enter a name and select <strong>Create workspace</strong>. You become its Owner immediately. There&apos;s no limit on how many workspaces you can belong to, and no migration or setup required &mdash; your existing scans and reports are unaffected.</p>
+
+              <h3 style={{ color: 'var(--text-primary)' }} className="pt-2 text-sm font-semibold">Managing members</h3>
+              <p>An Owner or Admin invites a teammate by email from the Members tab and assigns their role. The invited person must already have an Agent Verify account with that email &mdash; invites don&apos;t currently create an account for someone who hasn&apos;t signed up. Roles can be changed or a member removed at any time (except the Owner, who can&apos;t be demoted or removed through this screen &mdash; a workspace always keeps its Owner).</p>
+
+              <h3 style={{ color: 'var(--text-primary)' }} className="pt-2 text-sm font-semibold">API keys and workspaces</h3>
+              <p>Your API key (from <strong>Dashboard &rarr; API access</strong>) is tied to your personal account, not to a specific workspace &mdash; there is no separate workspace-owned key today. What a workspace <em>does</em> add: a scan request can optionally include an <code>organizationId</code>, and if your role in that workspace has scan permission, that scan is attributed to the workspace and appears in its Audit Log. This is the real, current mechanism for connecting scan activity to a team &mdash; workspace-issued/rotatable API keys are not implemented yet.</p>
+
+              <h3 style={{ color: 'var(--text-primary)' }} className="pt-2 text-sm font-semibold">Audit log</h3>
+              <p>The Audit Log tab is a server-written record of what actually happened in the workspace &mdash; never something a client can fabricate or backdate. Every entry the log can show today is one of: a scan completing (with its verdict), an attestation being issued, a policy being applied to a scan, a member being added or removed, a role being changed, or a webhook being created or disabled. It&apos;s searchable and filterable by action type directly in the tab.</p>
+
+              <h3 style={{ color: 'var(--text-primary)' }} className="pt-2 text-sm font-semibold">Integrations</h3>
+              <p>The Integrations tab lists the real ways to connect Agent Verify to your workflow: <a href="#ci-cd" className="underline">GitHub Actions</a> and the <a href="#cli" className="underline">CLI</a> for CI/CD, and the <a href="#api" className="underline">REST API</a> for custom tooling &mdash; all available today. <a href="#webhooks" className="underline">Webhooks</a> are the newest addition; see the next section for exactly what that means right now.</p>
+            </Section>
+
+            <Section id="webhooks" title="Webhooks">
+              <p>A webhook lets Agent Verify notify another application automatically when something happens in your workspace &mdash; instead of that application having to repeatedly ask &quot;did anything change yet?&quot;, Agent Verify would push an event to a URL you provide, the moment it happens. Owners and Admins configure webhooks from <strong>Dashboard &rarr; Workspace &rarr; Webhooks</strong>.</p>
+
+              <div style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }} className="rounded-xl p-4 text-sm">
+                <p style={{ color: 'var(--text-primary)' }} className="font-semibold">What&apos;s real today vs. what&apos;s planned</p>
+                <p className="mt-1.5"><strong>Available now:</strong> creating a webhook (an endpoint URL plus the events you want it to listen for), getting a unique signing secret for it, listing your workspace&apos;s webhooks, and disabling one. The endpoint URL is validated to reject local/internal network addresses before it&apos;s ever saved.</p>
+                <p className="mt-1.5"><strong>Not implemented yet:</strong> Agent Verify does not currently send an HTTP request to your endpoint when an event occurs. Creating a webhook records your configuration and is ready for delivery to be turned on, but no outbound call happens today &mdash; every one of the events below is already visible in real time in your workspace&apos;s <a href="#workspaces" className="underline">Audit Log</a> in the meantime. This is also why the Integrations tab lists Webhooks as &quot;Planned&quot; rather than &quot;Available.&quot;</p>
+              </div>
+
+              <h3 style={{ color: 'var(--text-primary)' }} className="pt-2 text-sm font-semibold">Supported events</h3>
+              <p>A webhook can be subscribed to any of these seven event types &mdash; the exact set the API accepts, no more:</p>
+              <table className="w-full border-collapse text-xs">
+                <thead>
+                  <tr style={{ borderBottom: '1px solid var(--border)' }}>
+                    <th className="py-1.5 pr-4 text-left font-semibold" style={{ color: 'var(--text-primary)' }}>Event</th>
+                    <th className="py-1.5 text-left font-semibold" style={{ color: 'var(--text-primary)' }}>Fires when</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr style={{ borderBottom: '1px solid var(--border)' }}><td className="py-1.5 pr-4 font-mono">SCAN_COMPLETED</td><td className="py-1.5">A scan attributed to the workspace finishes, regardless of verdict.</td></tr>
+                  <tr style={{ borderBottom: '1px solid var(--border)' }}><td className="py-1.5 pr-4 font-mono">VERIFICATION_PASSED</td><td className="py-1.5">That scan&apos;s verdict was <code>VERIFIED</code>.</td></tr>
+                  <tr style={{ borderBottom: '1px solid var(--border)' }}><td className="py-1.5 pr-4 font-mono">VERIFICATION_FAILED</td><td className="py-1.5">That scan&apos;s verdict was <code>NOT_VERIFIED</code>.</td></tr>
+                  <tr style={{ borderBottom: '1px solid var(--border)' }}><td className="py-1.5 pr-4 font-mono">ATTESTATION_ISSUED</td><td className="py-1.5">A signed attestation was produced for the scan.</td></tr>
+                  <tr style={{ borderBottom: '1px solid var(--border)' }}><td className="py-1.5 pr-4 font-mono">POLICY_APPLIED</td><td className="py-1.5">A policy profile was evaluated against the scan.</td></tr>
+                  <tr style={{ borderBottom: '1px solid var(--border)' }}><td className="py-1.5 pr-4 font-mono">MEMBER_ADDED</td><td className="py-1.5">Someone was invited into the workspace.</td></tr>
+                  <tr><td className="py-1.5 pr-4 font-mono">ROLE_CHANGED</td><td className="py-1.5">A member&apos;s role was changed.</td></tr>
+                </tbody>
+              </table>
+
+              <h3 style={{ color: 'var(--text-primary)' }} className="pt-2 text-sm font-semibold">Payload &amp; signature (the real, tested scheme)</h3>
+              <p>Even though delivery isn&apos;t wired up yet, the payload shape and signing algorithm below are real, implemented, and covered by tests &mdash; not a forward-looking guess. When delivery ships, this is exactly what your endpoint will receive:</p>
+              <CodeBlock>{`POST <your endpoint URL>
+Content-Type: application/json
+Agent-Verify-Signature: t=1735689600,v1=5f4dcc3b5aa765d61d8327deb882cf99...
+
+{
+  "eventId": "3fa2c1e0-...",
+  "eventType": "VERIFICATION_FAILED",
+  "organizationId": "org_abc123",
+  "timestamp": "2026-09-02T13:49:12.000Z",
+  "data": { "reportId": "REPORT-qhhic9fbkv", "verdict": "NOT_VERIFIED", "riskScore": 30 }
+}`}</CodeBlock>
+              <p>The <code>Agent-Verify-Signature</code> header carries <code>t=&lt;unix-seconds&gt;,v1=&lt;hex-encoded HMAC-SHA256&gt;</code> &mdash; the same shape Stripe uses for its own webhooks. The signature is computed over <code>{`\${timestamp}.\${rawRequestBody}`}</code> using your webhook&apos;s secret (shown once, at creation &mdash; store it like any other credential). To verify a delivery:</p>
+              <CodeBlock>{`const [t, v1] = signatureHeader.split(',').map(p => p.split('=')[1])
+const expected = hmacSha256Hex(webhookSecret, \`\${t}.\${rawBody}\`)
+if (!timingSafeEqual(v1, expected)) reject('invalid signature')
+if (Math.abs(nowInSeconds() - Number(t)) > 300) reject('too old — possible replay')`}</CodeBlock>
+              <p><strong>Replay/freshness protection:</strong> implemented in the reference verifier &mdash; a signature older than 5 minutes is rejected as expired, so a captured, valid delivery can&apos;t be replayed indefinitely.</p>
+
+              <h3 style={{ color: 'var(--text-primary)' }} className="pt-2 text-sm font-semibold">Expected HTTP behavior &amp; retries</h3>
+              <p>Once delivery is enabled, your endpoint should verify the signature, then respond quickly with a <code>2xx</code> status to acknowledge receipt. <strong>Retry behavior is not implemented yet</strong> &mdash; there is no automatic retry-on-failure today, because there is no automatic delivery today. This will be documented here once it ships, not before.</p>
+
+              <h3 style={{ color: 'var(--text-primary)' }} className="pt-2 text-sm font-semibold">Disabling a webhook</h3>
+              <p>An Owner or Admin can disable a webhook at any time from the Webhooks tab &mdash; it stops being active immediately. There is currently no way to permanently delete a webhook or rotate its secret; if a secret is compromised, disable that webhook and create a new one.</p>
+
+              <h3 style={{ color: 'var(--text-primary)' }} className="pt-2 text-sm font-semibold">Security recommendations</h3>
+              <ul className="ml-4 list-disc space-y-1">
+                <li>Always verify <code>Agent-Verify-Signature</code> before trusting a payload &mdash; never process an unsigned or incorrectly-signed request.</li>
+                <li>Reject anything outside the 5-minute timestamp window, even with a valid signature.</li>
+                <li>Use an HTTPS endpoint. Plain <code>http://</code> is technically accepted, but a real destination should not accept unencrypted webhook traffic.</li>
+                <li>Treat your webhook secret like any other credential &mdash; it&apos;s shown once, at creation, and never displayed again.</li>
+                <li>A webhook endpoint can never point at a private/internal address (localhost, RFC1918 ranges, cloud metadata endpoints) &mdash; Agent Verify rejects those at creation time.</li>
+              </ul>
             </Section>
 
             <Section id="api" title="API">

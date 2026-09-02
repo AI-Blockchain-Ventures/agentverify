@@ -52,7 +52,9 @@ const INTEGRATIONS: IntegrationCard[] = [
     name: 'Webhooks',
     status: 'planned',
     purpose: 'Notify an external system (Slack, SIEM, your own service) when a scan completes, a verification fails, or a policy check fails.',
-    setup: 'Not yet available. The underlying event model (scan completed, verification failed, critical finding added, policy failed) exists internally and webhooks are on the roadmap.',
+    setup: 'You can configure a webhook endpoint and its events today from Workspace → Webhooks, and the signing/verification scheme is real and testable — but automatic delivery to your endpoint is not enabled yet.',
+    docsHref: '/docs#webhooks',
+    docsLabel: 'View webhook docs',
   },
 ]
 

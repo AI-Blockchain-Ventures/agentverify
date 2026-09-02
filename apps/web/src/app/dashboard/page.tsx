@@ -173,7 +173,7 @@ export default function DashboardPage() {
             )}
             {tab === 'checks' && <CheckCatalog />}
             {tab === 'policies' && <PolicyProfiles user={user} />}
-            {tab === 'workspace' && <Workspace user={user} />}
+            {tab === 'workspace' && <Workspace user={user} onNavigate={changeTab} />}
             {tab === 'billing' && <Billing user={user} />}
             {tab === 'integrations' && <Integrations />}
             {tab === 'api' && <APIAccess />}

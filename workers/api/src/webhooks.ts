@@ -191,6 +191,50 @@ export async function listWebhooks(orgId: string, env: WebhooksEnv): Promise<Web
     .filter((w): w is WebhookConfig => w !== null)
 }
 
+/**
+ * INTERNAL ONLY — includes the signing secret. Used exclusively by webhookDelivery.ts to sign an
+ * outbound delivery; the secret must never reach any HTTP response (see WebhookConfig/toWebhookConfig
+ * above, which deliberately never carries it). Never call this from a route handler directly.
+ */
+export interface WebhookConfigWithSecret extends WebhookConfig {
+  secret: string
+}
+
+function toWebhookConfigWithSecret(orgId: string, webhookId: string, fields: Record<string, FirestoreValue>): WebhookConfigWithSecret | null {
+  const secret = str(fields.secret)
+  if (!secret) return null
+  return { ...toWebhookConfig(orgId, webhookId, fields), secret }
+}
+
+/** Single webhook, with its secret — for signing a delivery. Returns null if the webhook doesn't exist. */
+export async function getWebhookForDelivery(orgId: string, webhookId: string, env: WebhooksEnv): Promise<WebhookConfigWithSecret | null> {
+  const headers = await firestoreAdminAuthHeader(env)
+  if (!headers) return null
+  const res = await fetch(docPath(env, `organizations/${encodeURIComponent(orgId)}/webhooks/${encodeURIComponent(webhookId)}`), { headers })
+  if (!res.ok) return null
+  const data = await res.json() as FirestoreDocResponse
+  if (!data.fields) return null
+  return toWebhookConfigWithSecret(orgId, webhookId, data.fields)
+}
+
+/** Every ACTIVE webhook in an org subscribed to a given event type, with secrets — the fan-out list a real event enqueues deliveries to. */
+export async function listActiveWebhooksForEvent(orgId: string, eventType: WebhookEventType, env: WebhooksEnv): Promise<WebhookConfigWithSecret[]> {
+  const headers = await firestoreAdminAuthHeader(env)
+  if (!headers) return []
+  const res = await fetch(docPath(env, `organizations/${encodeURIComponent(orgId)}/webhooks`), { headers })
+  if (!res.ok) return []
+  const data = await res.json() as { documents?: Array<{ name?: string; fields?: Record<string, FirestoreValue> }> }
+  return (data.documents ?? [])
+    .map(d => {
+      const id = d.name?.split('/').pop()
+      if (!id || !d.fields) return null
+      const config = toWebhookConfigWithSecret(orgId, id, d.fields)
+      if (!config || config.status !== 'active' || !config.enabledEvents.includes(eventType)) return null
+      return config
+    })
+    .filter((w): w is WebhookConfigWithSecret => w !== null)
+}
+
 export async function setWebhookStatus(orgId: string, webhookId: string, status: 'active' | 'disabled', env: WebhooksEnv): Promise<boolean> {
   const headers = await firestoreAdminAuthHeader(env)
   if (!headers) return false

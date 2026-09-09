@@ -21,7 +21,8 @@
     "test:rules": "npx firebase-tools@13 emulators:exec --only firestore --project agentverify-rules-test \"node firestore-tests/rules.test.mjs\"",
     "lint": "npm run lint --workspace=apps/web",
     "review": "node scripts/review.mjs",
-    "check:private-boundary": "node scripts/check-private-boundary.mjs"
+    "check:private-boundary": "node scripts/check-private-boundary.mjs",
+    "verify:security-release": "node scripts/verify-security-release.mjs"
   },
   "devDependencies": {
     "@firebase/rules-unit-testing": "^5.0.2"

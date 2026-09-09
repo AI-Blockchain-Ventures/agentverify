@@ -209,11 +209,13 @@ npx agentverify scan . --key av_your_key`}</CodeBlock>
             <Section id="webhooks" title="Webhooks">
               <p>A webhook lets Agent Verify notify another application automatically when something happens in your workspace &mdash; instead of that application having to repeatedly ask &quot;did anything change yet?&quot;, Agent Verify would push an event to a URL you provide, the moment it happens. Owners and Admins configure webhooks from <strong>Dashboard &rarr; Workspace &rarr; Webhooks</strong>.</p>
 
-              <div style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }} className="rounded-xl p-4 text-sm">
-                <p style={{ color: 'var(--text-primary)' }} className="font-semibold">What&apos;s real today vs. what&apos;s planned</p>
-                <p className="mt-1.5"><strong>Available now:</strong> creating a webhook (an endpoint URL plus the events you want it to listen for), getting a unique signing secret for it, listing your workspace&apos;s webhooks, and disabling one. The endpoint URL is validated to reject local/internal network addresses before it&apos;s ever saved.</p>
-                <p className="mt-1.5"><strong>Not implemented yet:</strong> Agent Verify does not currently send an HTTP request to your endpoint when an event occurs. Creating a webhook records your configuration and is ready for delivery to be turned on, but no outbound call happens today &mdash; every one of the events below is already visible in real time in your workspace&apos;s <a href="#workspaces" className="underline">Audit Log</a> in the meantime. This is also why the Integrations tab lists Webhooks as &quot;Planned&quot; rather than &quot;Available.&quot;</p>
+              <div style={{ backgroundColor: 'var(--surface)', border: '1px solid #E07B3955' }} className="rounded-xl p-4 text-sm">
+                <p style={{ color: 'var(--accent-orange-text)' }} className="font-semibold">IMPLEMENTED, not yet PRODUCTION VERIFIED</p>
+                <p className="mt-1.5">Automatic delivery is fully built and covered by a real integration test suite that sends genuine signed HTTP requests to a real local server and exercises every path below &mdash; but as of this writing it has not yet been deployed to the production Worker, and the Cron Trigger that drives it has not yet been activated in production. Until that deploy happens, webhook delivery behaves exactly as it did before: your configuration is saved and every event is still visible in real time in the <a href="#workspaces" className="underline">Audit Log</a>, but no outbound request is sent yet. This section will be updated to remove this notice once delivery has been verified live in production.</p>
               </div>
+
+              <h3 style={{ color: 'var(--text-primary)' }} className="pt-2 text-sm font-semibold">How delivery works</h3>
+              <p>When one of the events below happens, Agent Verify inserts a durable delivery record (Cloudflare D1) for every active webhook subscribed to it, then a Cron Trigger sweeps for due deliveries roughly every minute and sends a real signed <code>POST</code>. This is not fire-and-forget: every attempt&apos;s outcome (HTTP status, response snippet, error, timestamp) is written back to that same durable record, which is what powers the delivery history and retry described below.</p>
 
               <h3 style={{ color: 'var(--text-primary)' }} className="pt-2 text-sm font-semibold">Supported events</h3>
               <p>A webhook can be subscribed to any of these seven event types &mdash; the exact set the API accepts, no more:</p>
@@ -235,8 +237,8 @@ npx agentverify scan . --key av_your_key`}</CodeBlock>
                 </tbody>
               </table>
 
-              <h3 style={{ color: 'var(--text-primary)' }} className="pt-2 text-sm font-semibold">Payload &amp; signature (the real, tested scheme)</h3>
-              <p>Even though delivery isn&apos;t wired up yet, the payload shape and signing algorithm below are real, implemented, and covered by tests &mdash; not a forward-looking guess. When delivery ships, this is exactly what your endpoint will receive:</p>
+              <h3 style={{ color: 'var(--text-primary)' }} className="pt-2 text-sm font-semibold">Payload &amp; signature</h3>
+              <p>This is exactly what your endpoint receives once delivery is live in production:</p>
               <CodeBlock>{`POST <your endpoint URL>
 Content-Type: application/json
 Agent-Verify-Signature: t=1735689600,v1=5f4dcc3b5aa765d61d8327deb882cf99...
@@ -255,11 +257,14 @@ if (!timingSafeEqual(v1, expected)) reject('invalid signature')
 if (Math.abs(nowInSeconds() - Number(t)) > 300) reject('too old — possible replay')`}</CodeBlock>
               <p><strong>Replay/freshness protection:</strong> implemented in the reference verifier &mdash; a signature older than 5 minutes is rejected as expired, so a captured, valid delivery can&apos;t be replayed indefinitely.</p>
 
-              <h3 style={{ color: 'var(--text-primary)' }} className="pt-2 text-sm font-semibold">Expected HTTP behavior &amp; retries</h3>
-              <p>Once delivery is enabled, your endpoint should verify the signature, then respond quickly with a <code>2xx</code> status to acknowledge receipt. <strong>Retry behavior is not implemented yet</strong> &mdash; there is no automatic retry-on-failure today, because there is no automatic delivery today. This will be documented here once it ships, not before.</p>
+              <h3 style={{ color: 'var(--text-primary)' }} className="pt-2 text-sm font-semibold">Expected HTTP behavior, retries &amp; dead-letter</h3>
+              <p>Your endpoint should verify the signature, then respond quickly with a <code>2xx</code> status to acknowledge receipt. Anything else (a non-2xx status, a timeout, or a connection error) is treated as a failed attempt and retried with exponential backoff: 1 minute, 5 minutes, 30 minutes, 2 hours, then 12 hours. After 6 total attempts with no <code>2xx</code> response, the delivery becomes a <strong>dead letter</strong> and stops retrying automatically.</p>
+
+              <h3 style={{ color: 'var(--text-primary)' }} className="pt-2 text-sm font-semibold">Delivery history &amp; manual retry</h3>
+              <p>Every webhook in the Workspace &rarr; Webhooks tab has an expandable delivery history: status (Delivered / Retrying / Failed), attempt count, the last HTTP status or error, and (while retrying) when the next attempt is scheduled. A dead-lettered delivery can be manually retried &mdash; an Owner or Admin&apos;s explicit decision gives it a full fresh attempt cycle, not just one more try. Delivery history never includes the event payload or the signing secret, only attempt/outcome metadata.</p>
 
               <h3 style={{ color: 'var(--text-primary)' }} className="pt-2 text-sm font-semibold">Disabling a webhook</h3>
-              <p>An Owner or Admin can disable a webhook at any time from the Webhooks tab &mdash; it stops being active immediately. There is currently no way to permanently delete a webhook or rotate its secret; if a secret is compromised, disable that webhook and create a new one.</p>
+              <p>An Owner or Admin can disable a webhook at any time from the Webhooks tab &mdash; it stops being active immediately, including any deliveries already queued and waiting for their next retry (disabling is checked again right before every attempt, not just when a delivery is first queued). There is currently no way to permanently delete a webhook or rotate its secret; if a secret is compromised, disable that webhook and create a new one.</p>
 
               <h3 style={{ color: 'var(--text-primary)' }} className="pt-2 text-sm font-semibold">Security recommendations</h3>
               <ul className="ml-4 list-disc space-y-1">
@@ -353,15 +358,16 @@ Content-Type: application/json
             </Section>
 
             <Section id="report-types" title="Report Types">
-              <p>Every report is built from one canonical scan result &mdash; the same verdict, score, and findings, rendered six different ways for six different audiences, all from the exact same evidence. Switch between them with the tabs at the top of any report:</p>
+              <p>Every report is built from one canonical scan result &mdash; the same verdict, score, and findings, rendered six different ways for six different audiences, all from the exact same evidence, each in its own component (<code>apps/web/src/components/report/views/</code>). Switch between them with the tabs at the top of any report:</p>
               <ul className="ml-4 list-disc space-y-1">
-                <li><strong>Executive</strong> &mdash; a 60-second read for a CEO, CISO, CTO, buyer, or investor: verdict, score, top risks, what to fix first.</li>
-                <li><strong>Security</strong> &mdash; the full security analysis: posture, categories, capability chains, MCP, controls, evidence, limitations.</li>
-                <li><strong>Developer</strong> &mdash; action-oriented: file, line, what&apos;s wrong, why it matters, how to fix it, and example code, for every finding.</li>
-                <li><strong>Compliance</strong> &mdash; findings mapped to OWASP LLM Top 10, NIST AI RMF, and SOC 2 &mdash; evidence, never a certification claim.</li>
+                <li><strong>Executive</strong> &mdash; a 60-second read for a CEO, CISO, CTO, buyer, or investor: an explicit <strong>deployment recommendation</strong> (<code>DEPLOY</code> / <code>DEPLOY WITH CONDITIONS</code> / <code>DO NOT DEPLOY</code> / <code>NOT ASSESSED</code>, derived only from the verdict and critical/high finding counts &mdash; never a separately-invented judgment), the specific <strong>deployment blockers</strong> when it isn&apos;t a clean DEPLOY, top risks, what to fix first, and a <strong>posture trend</strong> (Improving / Degrading / Unchanged) computed from your real scan history &mdash; shown honestly as &quot;No prior scan available&quot; rather than a guess when there is nothing to compare against.</li>
+                <li><strong>Security</strong> &mdash; answers &quot;where can this agent hurt us?&quot;: attack surface, capabilities/privileges, MCP/tool exposure, capability chains (real evidence-based combinations, surfaced as &quot;top attack paths&quot; &mdash; never a fabricated one), credential/secret exposure, human-approval and authorization gaps, and a prioritized remediation plan.</li>
+                <li><strong>Developer</strong> &mdash; action-oriented, for every finding: rule/check ID, severity, confidence, file/line (explicitly &quot;Not available&quot; when the content doesn&apos;t make one locatable, never guessed), technical reason, exact remediation, example fix code when one is real, how to verify the fix (re-scan and confirm that rule ID no longer fires), and a machine-readable remediation metadata block for tooling.</li>
+                <li><strong>Compliance</strong> &mdash; a real evidence-mapping engine, not a re-render of finding labels. See <a href="#compliance" className="underline">Compliance Mapping</a> below.</li>
                 <li><strong>AI / JSON</strong> &mdash; the stable, schema-versioned machine-readable report for CI/CD, SIEM, and API clients.</li>
                 <li><strong>Full Technical</strong> &mdash; essentially everything Agent Verify knows about the scan in one place, without exposing the detection engine&apos;s internal implementation.</li>
               </ul>
+              <p style={{ color: 'var(--text-muted)' }} className="text-xs">All six are proven distinct from the same evidence object by a real automated test (<code>apps/web/test/sixViewContract.test.mjs</code>), which server-renders every view and asserts each one shows the fields specific to it and none of the fields that belong only to another view.</p>
             </Section>
 
             <Section id="reports" title="Reports">
@@ -382,7 +388,14 @@ Content-Type: application/json
             </Section>
 
             <Section id="compliance" title="Compliance Mapping">
-              <p>The Compliance report view maps findings to <strong>OWASP LLM Top 10</strong>, <strong>NIST AI Risk Management Framework</strong> (GOVERN/MAP/MEASURE/MANAGE function citations), and <strong>SOC 2 Trust Services Criteria</strong>. Every row says <strong>&quot;Potential Gap&quot;</strong> (a finding suggests a control may not be met) or <strong>&quot;Evidence Found&quot;</strong> (a detected positive control) &mdash; never <strong>&quot;Compliant&quot;</strong>. A framework control with no mapped item for a given scan is shown as <em>not evaluated</em>, not silently omitted as if it passed. This is a real, code-derived mapping (each finding already carries its own citations), not a marketing checklist, and it does not constitute a compliance certification of any kind.</p>
+              <p>The Compliance view is a real evidence-mapping engine (<code>apps/web/src/lib/complianceMapping.ts</code>) between canonical scan evidence and framework controls &mdash; <strong>OWASP LLM Top 10</strong>, <strong>NIST AI Risk Management Framework</strong> (GOVERN/MAP/MEASURE/MANAGE function citations), and <strong>SOC 2 Trust Services Criteria</strong> &mdash; not a re-render of finding labels. Every control gets exactly one of four statuses, and the wording <strong>&quot;compliant&quot;, &quot;certified&quot;, or &quot;passed compliance&quot; is never used anywhere</strong> in this view (enforced by a real test):</p>
+              <ul className="ml-4 list-disc space-y-1">
+                <li><strong>GAP_IDENTIFIED</strong> &mdash; a real finding fired in this scan and its own citation implicates this control. Always traceable to that exact finding.</li>
+                <li><strong>EVIDENCE_OBSERVED</strong> &mdash; a narrow, explicitly-documented case: the scanner ran its complete check set for a security category and found nothing wrong (e.g. all 12 secret-detection checks found no exposed credential). Real, checked, negative-result evidence &mdash; always shown at medium confidence, never high, because a clean static scan still isn&apos;t a guarantee.</li>
+                <li><strong>NOT_ASSESSED</strong> &mdash; this scan produced no evidence either way for a real, known control. This is not the same as passing, and is shown explicitly rather than omitted.</li>
+                <li><strong>NOT_APPLICABLE</strong> &mdash; reserved for a control that is structurally impossible for static code analysis to ever assess, when one is genuinely determinable as such.</li>
+              </ul>
+              <p>A control can never become GAP_IDENTIFIED or EVIDENCE_OBSERVED merely because a tag string exists somewhere &mdash; both require real backing evidence (a firing finding, or a genuinely <code>strong</code> category status), proven by a dedicated regression test (<code>apps/web/test/complianceMapping.test.mjs</code>) that specifically checks an unrelated strong category can never leak evidence onto a different control. This does not constitute a compliance certification of any kind.</p>
             </Section>
 
             <Section id="integrity" title="Report Integrity">

@@ -414,7 +414,7 @@ function WebhooksSection({ user, org, onError }: { user: User; org: MyOrganizati
             {' '}<Link href="/docs#webhooks" className="underline hover:opacity-80">How webhooks work →</Link>
           </p>
           <p style={{ color: 'var(--accent-orange-text)' }} className="mt-2 text-xs">
-            Configuration is live today; automatic delivery to your endpoint is not enabled yet — see the docs above for what that means right now.
+            Delivery is built and tested, but not yet live in production — configuration is saved today, and every event is still visible in your Audit Log, but no request will reach your endpoint until this is deployed. See the docs above for the exact status.
           </p>
           <input value={endpoint} onChange={e => setEndpoint(e.target.value)} placeholder="https://your-service.example.com/webhook" aria-label="Webhook endpoint URL" style={{ backgroundColor: 'var(--input-bg)', border: '1px solid var(--input-border)', color: 'var(--input-text)' }} className="mt-3 w-full rounded-xl px-3 py-2 text-sm outline-none" />
           <p style={{ color: 'var(--text-muted)' }} className="mt-3 text-[11px] font-semibold uppercase tracking-wide">Notify this endpoint when:</p>
@@ -459,9 +459,90 @@ function WebhooksSection({ user, org, onError }: { user: User; org: MyOrganizati
                 )}
               </div>
             </div>
+            <DeliveryHistory user={user} org={org} webhookId={w.webhookId} canConfigure={canConfigure} />
           </div>
         ))}
       </div>
+    </div>
+  )
+}
+
+const DELIVERY_STATUS_LABEL: Record<orgApi.WebhookDelivery['status'], string> = {
+  delivered: 'Delivered',
+  pending: 'Retrying',
+  dead_letter: 'Failed (gave up)',
+}
+
+/** Per-webhook delivery history — collapsed by default, loaded on first expand. Shows exactly what
+ * actually happened for each real attempt (status, HTTP code, error, timing) — never a payload or
+ * the signing secret, matching what the server's history endpoint itself returns. */
+function DeliveryHistory({ user, org, webhookId, canConfigure }: { user: User; org: MyOrganization; webhookId: string; canConfigure: boolean }) {
+  const [expanded, setExpanded] = useState(false)
+  const [deliveries, setDeliveries] = useState<orgApi.WebhookDelivery[] | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [retryingId, setRetryingId] = useState<string | null>(null)
+
+  const load = () => {
+    orgApi.listWebhookDeliveries(user, org.orgId, webhookId)
+      .then(setDeliveries)
+      .catch(err => setError(err instanceof orgApi.OrgApiError ? err.message : 'Could not load delivery history.'))
+  }
+
+  const toggle = () => {
+    const next = !expanded
+    setExpanded(next)
+    if (next && deliveries === null) load()
+  }
+
+  const retry = async (deliveryId: string) => {
+    setRetryingId(deliveryId)
+    setError(null)
+    try {
+      await orgApi.retryWebhookDelivery(user, org.orgId, webhookId, deliveryId)
+      load()
+    } catch (err) {
+      setError(err instanceof orgApi.OrgApiError ? err.message : 'Could not retry that delivery.')
+    } finally {
+      setRetryingId(null)
+    }
+  }
+
+  return (
+    <div style={{ borderTop: '1px solid var(--border)' }} className="mt-3 pt-3">
+      <button onClick={toggle} className="text-xs font-semibold text-[color:var(--accent-cyan-text)] hover:opacity-80">
+        {expanded ? 'Hide delivery history ▲' : 'Show delivery history ▼'}
+      </button>
+      {expanded && (
+        <div className="av-animate-fade mt-2 space-y-1.5">
+          {error && <p className="text-xs text-[color:var(--accent-red-text)]">{error}</p>}
+          {deliveries === null ? (
+            <p style={{ color: 'var(--text-muted)' }} className="text-xs">Loading delivery history...</p>
+          ) : deliveries.length === 0 ? (
+            <p style={{ color: 'var(--text-muted)' }} className="text-xs">No deliveries yet — this webhook hasn&apos;t had a matching event fire since it was created.</p>
+          ) : deliveries.map(d => (
+            <div key={d.deliveryId} style={{ backgroundColor: 'var(--surface)' }} className="flex flex-wrap items-center justify-between gap-2 rounded-xl px-3 py-2 text-xs">
+              <div className="min-w-0">
+                <span style={{
+                  color: d.status === 'delivered' ? 'var(--accent-green-text)' : d.status === 'dead_letter' ? 'var(--accent-red-text)' : 'var(--accent-orange-text)',
+                }} className="font-semibold">{DELIVERY_STATUS_LABEL[d.status]}</span>
+                <span style={{ color: 'var(--text-muted)' }} className="ml-2">{d.eventType}</span>
+                <span style={{ color: 'var(--text-muted)' }} className="ml-2">
+                  {d.lastHttpStatus ? `HTTP ${d.lastHttpStatus}` : d.lastError ? d.lastError : 'No attempt yet'}
+                </span>
+                <span style={{ color: 'var(--text-muted)' }} className="ml-2">· attempt {d.attemptCount}/{d.maxAttempts}</span>
+                {d.status === 'pending' && d.nextAttemptAt && (
+                  <span style={{ color: 'var(--text-muted)' }} className="ml-2">· next try {new Date(d.nextAttemptAt).toLocaleTimeString()}</span>
+                )}
+              </div>
+              {canConfigure && d.status === 'dead_letter' && (
+                <button onClick={() => retry(d.deliveryId)} disabled={retryingId === d.deliveryId} className="av-press shrink-0 rounded-lg border px-2.5 py-1 text-[11px] font-semibold disabled:opacity-50" style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }}>
+                  {retryingId === d.deliveryId ? 'Retrying…' : 'Retry now'}
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }

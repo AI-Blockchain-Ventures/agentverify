@@ -3,8 +3,8 @@
   "private": true,
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "build": "npm run typecheck && tsup src/worker.ts src/scanResponse.ts src/billing.ts src/webhookSecurity.ts src/webhooks.ts src/attestationSigning.ts src/firebaseAuth.ts src/authz.ts src/organizations.ts --format esm --out-dir dist --clean",
-    "test": "node --test test/firebaseAuth.test.mjs && node test/source.test.mjs",
+    "build": "npm run typecheck && tsup src/worker.ts src/scanResponse.ts src/billing.ts src/webhookSecurity.ts src/webhooks.ts src/webhookDelivery.ts src/attestationSigning.ts src/firebaseAuth.ts src/authz.ts src/organizations.ts --format esm --out-dir dist --clean",
+    "test": "node --test test/firebaseAuth.test.mjs && node test/source.test.mjs && node test/webhookDelivery.test.mjs",
     "dev": "wrangler dev",
     "deploy": "wrangler deploy --config wrangler.toml"
   },

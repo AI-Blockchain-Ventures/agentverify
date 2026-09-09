@@ -9,7 +9,7 @@
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
-    "test:unit": "node test/comparisonAndGrouping.test.mjs && node test/firebaseConfigGuard.test.mjs && node test/billingNavigation.test.mjs",
+    "test:unit": "node test/comparisonAndGrouping.test.mjs && node test/firebaseConfigGuard.test.mjs && node test/billingNavigation.test.mjs && node test/complianceMapping.test.mjs && node test/sixViewContract.test.mjs",
     "test:e2e": "playwright test"
   },
   "dependencies": {

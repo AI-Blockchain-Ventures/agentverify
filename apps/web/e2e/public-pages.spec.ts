@@ -56,7 +56,7 @@ test('demo report: all six report views render real, distinct content from the s
 
   await tabs.getByRole('tab', { name: 'Compliance' }).click()
   await expect(page.getByText('This is not a compliance certification')).toBeVisible()
-  await expect(page.getByText('Potential Gap').first()).toBeVisible()
+  await expect(page.getByText('Gap identified').first()).toBeVisible()
   // Must never claim certification.
   await expect(page.getByText(/\bis compliant\b/i)).toHaveCount(0)
 

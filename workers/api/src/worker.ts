@@ -9,6 +9,7 @@ import { createOrganization, getMembership, listMembers, listMyOrganizations, re
 import { isValidRole } from './rbac'
 import { recordAuditEvent, listAuditEvents, type AuditLogEnv } from './auditLog'
 import { createWebhook, listWebhooks, setWebhookStatus, type WebhooksEnv } from './webhooks'
+import { enqueueWebhookDeliveries, runDueDeliveries, listDeliveries, retryDelivery, type WebhooksDeliveryEnv } from './webhookDelivery'
 import { authenticateRequest, authorize, type AuthzEnv } from './authz'
 import { isRateLimited, clientIp } from './rateLimit'
 
@@ -143,10 +144,22 @@ async function saveReportToFirebase(
   }
 }
 
-type WorkerEnv = BillingEnv & AttestationSigningEnv & OrganizationsEnv & AuditLogEnv & WebhooksEnv & {
+type WorkerEnv = BillingEnv & AttestationSigningEnv & OrganizationsEnv & AuditLogEnv & WebhooksEnv & WebhooksDeliveryEnv & {
   FIREBASE_API_KEY?: string
   FIREBASE_CLIENT_EMAIL?: string
   FIREBASE_PRIVATE_KEY?: string
+}
+
+// Minimal hand-rolled Cron Trigger types — same convention as billing.ts's D1Database: this
+// codebase has no dependency on @cloudflare/workers-types, so only the members actually used are
+// declared, matching the real Workers runtime API shape exactly.
+interface ScheduledEvent {
+  cron: string
+  scheduledTime: number
+}
+interface ExecutionContext {
+  waitUntil(promise: Promise<unknown>): void
+  passThroughOnException(): void
 }
 
 const MAX_DEMO_CONTENT_LENGTH = 200 * 1024 // 200KB — generous for one pasted demo file, far below the real 5MB scan limit
@@ -444,6 +457,7 @@ export default {
         const ok = await upsertMember(orgId, targetUid, role, check.principal.uid, env)
         if (!ok) return json({ error: 'Failed to add member' }, 500)
         await recordAuditEvent({ organizationId: orgId, actorId: check.principal.uid, actorType: check.principal.type === 'USER' ? 'user' : 'api_key', action: 'MEMBER_ADDED', targetType: 'member', targetId: targetUid, metadata: { role } }, env)
+        await enqueueWebhookDeliveries(orgId, 'MEMBER_ADDED', { uid: targetUid, role }, env)
         return json({ ok: true, uid: targetUid, role })
       }
 
@@ -467,6 +481,7 @@ export default {
         const ok = await upsertMember(orgId, targetUid, body.role, check.principal.uid, env)
         if (!ok) return json({ error: 'Failed to update role' }, 500)
         await recordAuditEvent({ organizationId: orgId, actorId: check.principal.uid, actorType: check.principal.type === 'USER' ? 'user' : 'api_key', action: 'ROLE_CHANGED', targetType: 'member', targetId: targetUid, metadata: { newRole: body.role, previousRole: targetMembership?.role ?? null } }, env)
+        await enqueueWebhookDeliveries(orgId, 'ROLE_CHANGED', { uid: targetUid, newRole: body.role, previousRole: targetMembership?.role ?? null }, env)
         return json({ ok: true, uid: targetUid, role: body.role })
       }
 
@@ -528,6 +543,29 @@ export default {
       const ok = await setWebhookStatus(orgId, webhookId, 'disabled', env)
       if (!ok) return json({ error: 'Failed to disable webhook' }, 500)
       await recordAuditEvent({ organizationId: orgId, actorId: check.principal.uid, actorType: check.principal.type === 'USER' ? 'user' : 'api_key', action: 'WEBHOOK_DISABLED', targetType: 'webhook', targetId: webhookId, metadata: {} }, env)
+      return json({ ok: true })
+    }
+
+    // Delivery history — attempt/outcome metadata only, never the payload or signing secret.
+    const webhookDeliveriesMatch = url.pathname.match(/^\/v1\/organizations\/([^/]+)\/webhooks\/([^/]+)\/deliveries\/?$/)
+    if (webhookDeliveriesMatch && request.method === 'GET') {
+      const orgId = decodeURIComponent(webhookDeliveriesMatch[1])
+      const webhookId = decodeURIComponent(webhookDeliveriesMatch[2])
+      const check = await authorize(request, orgId, 'configure_webhook', env)
+      if (!check.ok) return json({ error: check.error }, check.status)
+      return json({ deliveries: await listDeliveries(webhookId, env) })
+    }
+
+    // Manual retry of a dead-lettered delivery — an operator's explicit decision, never automatic.
+    const webhookRetryMatch = url.pathname.match(/^\/v1\/organizations\/([^/]+)\/webhooks\/([^/]+)\/deliveries\/([^/]+)\/retry\/?$/)
+    if (webhookRetryMatch && request.method === 'POST') {
+      const orgId = decodeURIComponent(webhookRetryMatch[1])
+      const webhookId = decodeURIComponent(webhookRetryMatch[2])
+      const deliveryId = decodeURIComponent(webhookRetryMatch[3])
+      const check = await authorize(request, orgId, 'configure_webhook', env)
+      if (!check.ok) return json({ error: check.error }, check.status)
+      const result = await retryDelivery(webhookId, deliveryId, env)
+      if (!result.ok) return json({ error: result.error }, 400)
       return json({ ok: true })
     }
 
@@ -640,13 +678,20 @@ export default {
       if (orgIdForAudit) {
         const actorType = principal.type === 'USER' ? 'user' : 'api_key'
         const commonMeta = { scanId: scanResult.reportId, verdict: scanResult.verdict, score: scanResult.riskScore, fileName }
+        const verificationAction = scanResult.verdict === 'VERIFIED' ? 'VERIFICATION_PASSED' : 'VERIFICATION_FAILED'
         await recordAuditEvent({ organizationId: orgIdForAudit, actorId: auth.uid, actorType, action: 'SCAN_COMPLETED', targetType: 'scan', targetId: scanResult.reportId, metadata: commonMeta }, env)
-        await recordAuditEvent({ organizationId: orgIdForAudit, actorId: auth.uid, actorType, action: scanResult.verdict === 'VERIFIED' ? 'VERIFICATION_PASSED' : 'VERIFICATION_FAILED', targetType: 'scan', targetId: scanResult.reportId, metadata: commonMeta }, env)
+        await enqueueWebhookDeliveries(orgIdForAudit, 'SCAN_COMPLETED', commonMeta, env)
+        await recordAuditEvent({ organizationId: orgIdForAudit, actorId: auth.uid, actorType, action: verificationAction, targetType: 'scan', targetId: scanResult.reportId, metadata: commonMeta }, env)
+        await enqueueWebhookDeliveries(orgIdForAudit, verificationAction, commonMeta, env)
         if (attestation) {
+          const attestationMeta = { scanId: scanResult.reportId, artifactHash: artifactFingerprint.artifactHash }
           await recordAuditEvent({ organizationId: orgIdForAudit, actorId: auth.uid, actorType, action: 'ATTESTATION_ISSUED', targetType: 'scan', targetId: scanResult.reportId, metadata: { artifactHash: artifactFingerprint.artifactHash } }, env)
+          await enqueueWebhookDeliveries(orgIdForAudit, 'ATTESTATION_ISSUED', attestationMeta, env)
         }
         if (policyProfile) {
+          const policyMeta = { scanId: scanResult.reportId, policyProfile, policyResult }
           await recordAuditEvent({ organizationId: orgIdForAudit, actorId: auth.uid, actorType, action: 'POLICY_APPLIED', targetType: 'scan', targetId: scanResult.reportId, metadata: { policyProfile, policyResult } }, env)
+          await enqueueWebhookDeliveries(orgIdForAudit, 'POLICY_APPLIED', policyMeta, env)
         }
       }
 
@@ -670,5 +715,21 @@ export default {
       console.error('Scan request failed:', e instanceof Error ? e.stack ?? e.message : e)
       return json({ error: 'Invalid JSON body' }, 400)
     }
+  },
+
+  /**
+   * Cron Trigger entry point (see wrangler.toml's [triggers] block) — the only thing that actually
+   * sends a queued webhook delivery. A Worker has no background process of its own; this is what
+   * "delivery eventually happens" means in this runtime. ctx.waitUntil keeps the sweep running
+   * after the trigger's own event returns, same pattern any Workers scheduled handler uses.
+   */
+  async scheduled(_event: ScheduledEvent, env: WorkerEnv, ctx: ExecutionContext): Promise<void> {
+    ctx.waitUntil(
+      runDueDeliveries(env).then(result => {
+        if (result.attempted > 0 || result.skippedDisabled > 0) {
+          console.log('Webhook delivery sweep:', JSON.stringify(result))
+        }
+      }).catch(e => console.error('Webhook delivery sweep failed:', e instanceof Error ? e.message : e))
+    )
   },
 }

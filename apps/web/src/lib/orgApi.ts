@@ -61,6 +61,21 @@ export interface Webhook {
   lastDeliveryStatus: 'success' | 'failed' | null
 }
 
+export interface WebhookDelivery {
+  deliveryId: string
+  eventType: string
+  status: 'pending' | 'delivered' | 'dead_letter'
+  attemptCount: number
+  maxAttempts: number
+  nextAttemptAt: string | null
+  lastHttpStatus: number | null
+  lastResponseSnippet: string | null
+  lastError: string | null
+  createdAt: string
+  lastAttemptedAt: string | null
+  deliveredAt: string | null
+}
+
 export class OrgApiError extends Error {
   status: number
   constructor(message: string, status: number) {
@@ -110,3 +125,9 @@ export const createWebhook = (user: User, orgId: string, endpoint: string, event
 
 export const disableWebhook = (user: User, orgId: string, webhookId: string) =>
   call<{ ok: true }>(user, `/v1/organizations/${orgId}/webhooks/${webhookId}/disable`, { method: 'POST' })
+
+export const listWebhookDeliveries = (user: User, orgId: string, webhookId: string) =>
+  call<{ deliveries: WebhookDelivery[] }>(user, `/v1/organizations/${orgId}/webhooks/${webhookId}/deliveries`).then(r => r.deliveries)
+
+export const retryWebhookDelivery = (user: User, orgId: string, webhookId: string, deliveryId: string) =>
+  call<{ ok: true }>(user, `/v1/organizations/${orgId}/webhooks/${webhookId}/deliveries/${deliveryId}/retry`, { method: 'POST' })

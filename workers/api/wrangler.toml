@@ -14,3 +14,11 @@ ATTESTATION_ISSUER = "agentverify-prod"
 binding = "BILLING_DB"
 database_name = "agentverify-billing-prod"
 database_id = "92d01f37-5a2b-4541-9ba7-8a01513ef699"
+
+# Drives webhook delivery: the scheduled() handler in worker.ts sweeps webhook_deliveries for rows
+# due for an attempt (schema/webhooks.sql, applied to the same BILLING_DB above). Every minute is
+# the finest grain Cron Triggers support; delivery latency for a fresh event is therefore up to
+# ~60s in the worst case, then real exponential backoff (1m/5m/30m/2h/12h) between retries after
+# that. Not deployed until this config is applied via `wrangler deploy`.
+[triggers]
+crons = ["* * * * *"]

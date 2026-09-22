@@ -14,11 +14,15 @@ ATTESTATION_ISSUER = "agentverify-prod"
 # checklist.md. Non-secret: safe as a plain var, same as ATTESTATION_ISSUER. PROFILE_ATTESTATION_KEY_PURPOSE
 # is a fixed protocol constant (must equal packages/scanner/src/profileAttestation.ts's PROFILE_KEY_PURPOSE
 # exactly) -- it is not a naming choice. The PRIVATE KEY itself is never set here: it is a `wrangler secret`
-# (see the checklist). PROFILE_ATTESTATION_EXPECTED_KEY_ID is intentionally NOT set below: it can only be
-# filled in correctly once the actual production key exists and its keyId has been derived and published
-# (checklist step 4); leaving it unset until then is the safe state, not an oversight.
+# (see the checklist).
 PROFILE_ATTESTATION_ISSUER = "agentverify-profile-prod"
 PROFILE_ATTESTATION_KEY_PURPOSE = "agentverify-profile-v1"
+# Pinned per checklist step 4, once and only once, after the production key was provisioned and its keyId
+# independently verified as the RFC 7638 thumbprint of the published public key (2026-09-22):
+# eIO7_uhceQOQ0FDx5bGCODcYEUPkbSgAcuXczunT1QA. Not secret -- the same value the public route publishes.
+# Changing this on a future key rotation is deliberate: a mismatch here refuses to sign (key-identity-mismatch,
+# 503) rather than silently signing under an unexpected key.
+PROFILE_ATTESTATION_EXPECTED_KEY_ID = "eIO7_uhceQOQ0FDx5bGCODcYEUPkbSgAcuXczunT1QA"
 
 [[d1_databases]]
 binding = "BILLING_DB"

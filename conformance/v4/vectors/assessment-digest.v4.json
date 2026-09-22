@@ -1,0 +1,574 @@
+{
+  "vectorSet": "agentverify-profile-attestation-conformance",
+  "version": "4.0.0",
+  "supersedes": "vector set v3 (frozen, unchanged; v4 is a NEW set, not a patch of v3)",
+  "note": "CONFORMANCE VECTOR. Synthetic data and throwaway keys: nothing here is a real customer, scan, key or credential. Do not treat any key in this file as an Agent Verify signing key.",
+  "formula": "avassess-sha256: + hex(SHA-256(UTF8(\"agentverify-assessment-digest/v1\\n\") || UTF8(JCS(assessment)))), JCS under the signed-content numeric profile",
+  "cases": [
+    {
+      "name": "empty-object",
+      "assessment": {},
+      "canonical": "{}",
+      "canonicalSha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+      "digest": "avassess-sha256:1cec14ba0b65607a60e53d6cede30af0caa9c49f7c96a1aafe9705a3cedb810d"
+    },
+    {
+      "name": "empty-array",
+      "assessment": [],
+      "canonical": "[]",
+      "canonicalSha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "digest": "avassess-sha256:4e00275978b11ad96a0356a97aefb9607927f0445fadce4689a2a7dd0fe8af76"
+    },
+    {
+      "name": "nested-empty",
+      "assessment": {
+        "a": {},
+        "b": [],
+        "c": [
+          [],
+          {}
+        ]
+      },
+      "canonical": "{\"a\":{},\"b\":[],\"c\":[[],{}]}",
+      "canonicalSha256": "925c673adf18ca220ee7da7f5e344def6f8c60be721b2ef68c93a67ee7d9c883",
+      "digest": "avassess-sha256:ec4a692922c1cb1d4b4f3abad85abba9cdca2a16d09ce3a9f11aee6feb8aa0ee"
+    },
+    {
+      "name": "key-order-independent-a",
+      "assessment": {
+        "b": 1,
+        "a": 2
+      },
+      "canonical": "{\"a\":2,\"b\":1}",
+      "canonicalSha256": "d3626ac30a87e6f7a6428233b3c68299976865fa5508e4267c5415c76af7a772",
+      "digest": "avassess-sha256:d8d54904bea8d6ab046ed382fa18065350604f415bb2f5e095ea3118d4eb95d8"
+    },
+    {
+      "name": "key-order-independent-b",
+      "assessment": {
+        "a": 2,
+        "b": 1
+      },
+      "canonical": "{\"a\":2,\"b\":1}",
+      "canonicalSha256": "d3626ac30a87e6f7a6428233b3c68299976865fa5508e4267c5415c76af7a772",
+      "digest": "avassess-sha256:d8d54904bea8d6ab046ed382fa18065350604f415bb2f5e095ea3118d4eb95d8"
+    },
+    {
+      "name": "array-order-matters-a",
+      "assessment": {
+        "list": [
+          1,
+          2,
+          3
+        ]
+      },
+      "canonical": "{\"list\":[1,2,3]}",
+      "canonicalSha256": "bbb2330fb3d521b2c0ab5fe632c43d9d8933c5dfb683d0818747b599fc0fcf30",
+      "digest": "avassess-sha256:da9821b46fa3fbdf2877022c24e7cb214c1ef01932e6da7837839142bb49dc0d"
+    },
+    {
+      "name": "array-order-matters-b",
+      "assessment": {
+        "list": [
+          3,
+          2,
+          1
+        ]
+      },
+      "canonical": "{\"list\":[3,2,1]}",
+      "canonicalSha256": "e780023764445c772fa3b5f82e2290c22a475e6a6a30562b988000640a5bfeea",
+      "digest": "avassess-sha256:f118c8cc195771982a4b6ce3698c29606ce63242ac340e382a8be144da6aa24b"
+    },
+    {
+      "name": "unicode",
+      "assessment": {
+        "s": "é🙂\u2028\u007f"
+      },
+      "canonical": "{\"s\":\"é🙂\u2028\u007f\"}",
+      "canonicalSha256": "db5dc7ea3ccd962c1434c6b463c6c53cc6ac67e948b64ca2e2158a17b650a337",
+      "digest": "avassess-sha256:1594df6e23f8b4d4ce95157cde85090f8d9a77dda3eee5165e28764030eba367"
+    },
+    {
+      "name": "integers",
+      "assessment": {
+        "n1": 0,
+        "n2": -1,
+        "n3": 9007199254740991,
+        "n4": 100,
+        "n5": -9007199254740991
+      },
+      "canonical": "{\"n1\":0,\"n2\":-1,\"n3\":9007199254740991,\"n4\":100,\"n5\":-9007199254740991}",
+      "canonicalSha256": "f39de5702107289307152dbaac363fca0a7d1f0afa4516a08341097251065c5a",
+      "digest": "avassess-sha256:ed4e460ad9b46887a0dbb4ecb2027b0b51623fa6299b756c20962bc47734ccc4"
+    },
+    {
+      "name": "nfc-string",
+      "assessment": {
+        "s": "café"
+      },
+      "canonical": "{\"s\":\"café\"}",
+      "canonicalSha256": "298ebe9dfd0022919780451da01d6ff22cd701ae9f614b77522b751906ac2784",
+      "digest": "avassess-sha256:55d4f249b00fd67fc27a204290a8dcf928e6f5092cd8e4c67aec75a00087d78b"
+    },
+    {
+      "name": "nfd-string",
+      "assessment": {
+        "s": "café"
+      },
+      "canonical": "{\"s\":\"café\"}",
+      "canonicalSha256": "01e83133e8239890d58d0e1ec43f3c9312ea253fde7e8affb937003cdd450943",
+      "digest": "avassess-sha256:90685fd4799c29b230fba2a9f96e872e4ba487ef194348bf24488bbb6ac2ac3c"
+    },
+    {
+      "name": "synthetic-assessment-base",
+      "assessment": {
+        "schemaVersion": "1.1.0",
+        "profile": {
+          "profileId": "owasp-agentic-skills-2026",
+          "framework": "OWASP_AGENTIC_SKILLS_TOP_10",
+          "upstreamRepo": "OWASP/www-project-agentic-skills-top-10",
+          "upstreamCommit": "d6f7d7d0de314f52a83a85d1828e06ab096e595c",
+          "upstreamStatus": "public-review",
+          "upstreamLicense": "CC-BY-SA-4.0",
+          "agentverifyProfileVersion": "1.0.0-alpha.1",
+          "implementedControls": [
+            "AST02",
+            "AST03",
+            "AST04"
+          ],
+          "scannerVersion": "1.4.0",
+          "assessmentEngineVersion": "1.0.1",
+          "riskRubricVersion": "1.0.0",
+          "keyAllowlistVersion": "1.0.0",
+          "normalizationVersion": "1.0.0"
+        },
+        "controls": [
+          {
+            "controlId": "AST02",
+            "framework": "OWASP_AGENTIC_SKILLS_TOP_10",
+            "title": "Synthetic control AST02",
+            "upstreamSeverity": "High",
+            "status": "EVIDENCE_OBSERVED",
+            "confidence": "medium",
+            "explanation": "Synthetic explanation for AST02.",
+            "coverage": {
+              "total": 1,
+              "evidenceObserved": 1,
+              "gapIdentified": 0,
+              "notAssessed": 0
+            },
+            "checks": [
+              {
+                "checkId": "2.1",
+                "title": "Synthetic check 2.1",
+                "status": "EVIDENCE_OBSERVED",
+                "confidence": "medium",
+                "explanation": "Synthetic.",
+                "provenance": [
+                  "STATICALLY_OBSERVED"
+                ],
+                "supportingEvidenceIds": [
+                  "ev-0001"
+                ]
+              }
+            ]
+          },
+          {
+            "controlId": "AST03",
+            "framework": "OWASP_AGENTIC_SKILLS_TOP_10",
+            "title": "Synthetic control AST03",
+            "upstreamSeverity": "High",
+            "status": "GAP_IDENTIFIED",
+            "confidence": "medium",
+            "explanation": "Synthetic explanation for AST03.",
+            "coverage": {
+              "total": 1,
+              "evidenceObserved": 0,
+              "gapIdentified": 1,
+              "notAssessed": 0
+            },
+            "checks": [
+              {
+                "checkId": "3.1",
+                "title": "Synthetic check 3.1",
+                "status": "GAP_IDENTIFIED",
+                "confidence": "medium",
+                "explanation": "Synthetic.",
+                "provenance": [
+                  "STATICALLY_OBSERVED"
+                ],
+                "supportingEvidenceIds": [
+                  "ev-0002"
+                ]
+              }
+            ]
+          },
+          {
+            "controlId": "AST04",
+            "framework": "OWASP_AGENTIC_SKILLS_TOP_10",
+            "title": "Synthetic control AST04",
+            "upstreamSeverity": "High",
+            "status": "EVIDENCE_OBSERVED",
+            "confidence": "medium",
+            "explanation": "Synthetic explanation for AST04.",
+            "coverage": {
+              "total": 1,
+              "evidenceObserved": 1,
+              "gapIdentified": 0,
+              "notAssessed": 0
+            },
+            "checks": [
+              {
+                "checkId": "4.1",
+                "title": "Synthetic check 4.1",
+                "status": "EVIDENCE_OBSERVED",
+                "confidence": "medium",
+                "explanation": "Synthetic.",
+                "provenance": [
+                  "STATICALLY_OBSERVED"
+                ],
+                "supportingEvidenceIds": [
+                  "ev-0003"
+                ]
+              }
+            ]
+          }
+        ],
+        "notImplementedControls": [
+          "AST01",
+          "AST05",
+          "AST06",
+          "AST07",
+          "AST08",
+          "AST09",
+          "AST10"
+        ],
+        "evidence": [
+          {
+            "id": "ev-0001",
+            "kind": "conformance.example-positive",
+            "axis": "manifest",
+            "polarity": "positive",
+            "severity": "low",
+            "confidence": "high",
+            "provenance": [
+              "STATICALLY_OBSERVED"
+            ],
+            "summary": "Synthetic positive observation for AST02.",
+            "expected": "n/a",
+            "remediation": "n/a",
+            "facts": {
+              "present": true,
+              "count": 3
+            },
+            "locations": [
+              {
+                "file": "SKILL.md",
+                "line": 2
+              }
+            ]
+          },
+          {
+            "id": "ev-0002",
+            "kind": "conformance.example-gap",
+            "axis": "filesystem",
+            "polarity": "gap",
+            "severity": "high",
+            "confidence": "medium",
+            "provenance": [
+              "STATICALLY_OBSERVED",
+              "INFERRED"
+            ],
+            "summary": "Synthetic gap on a non-ASCII path: résumé 🙂",
+            "expected": "n/a",
+            "remediation": "n/a",
+            "facts": {
+              "printablePercent": 98,
+              "note": "quote \" backslash \\ slash / tab\t newline\n"
+            },
+            "locations": [
+              {
+                "file": "docs/résumé-🙂.md",
+                "line": 1
+              },
+              {
+                "file": "src/index.js"
+              }
+            ]
+          },
+          {
+            "id": "ev-0003",
+            "kind": "conformance.example-context",
+            "axis": "network",
+            "polarity": "context",
+            "severity": "low",
+            "confidence": "low",
+            "provenance": [
+              "DECLARED"
+            ],
+            "summary": "Synthetic context item.",
+            "expected": "n/a",
+            "remediation": "n/a",
+            "facts": {
+              "hosts": [
+                "b.example.test",
+                "a.example.test"
+              ],
+              "empty": []
+            },
+            "locations": []
+          }
+        ],
+        "unmappedEvidenceIds": [],
+        "package": {
+          "digest": "avpkg-sha256:9fc4448c2e85c812c981cfd961939a23acf5d74b52888cbb26814dcb78390ac0",
+          "fileCount": 3,
+          "manifestFiles": [
+            "SKILL.md"
+          ]
+        },
+        "notes": [
+          "Synthetic assessment for conformance vectors. Not scanner output."
+        ]
+      },
+      "canonical": "{\"controls\":[{\"checks\":[{\"checkId\":\"2.1\",\"confidence\":\"medium\",\"explanation\":\"Synthetic.\",\"provenance\":[\"STATICALLY_OBSERVED\"],\"status\":\"EVIDENCE_OBSERVED\",\"supportingEvidenceIds\":[\"ev-0001\"],\"title\":\"Synthetic check 2.1\"}],\"confidence\":\"medium\",\"controlId\":\"AST02\",\"coverage\":{\"evidenceObserved\":1,\"gapIdentified\":0,\"notAssessed\":0,\"total\":1},\"explanation\":\"Synthetic explanation for AST02.\",\"framework\":\"OWASP_AGENTIC_SKILLS_TOP_10\",\"status\":\"EVIDENCE_OBSERVED\",\"title\":\"Synthetic control AST02\",\"upstreamSeverity\":\"High\"},{\"checks\":[{\"checkId\":\"3.1\",\"confidence\":\"medium\",\"explanation\":\"Synthetic.\",\"provenance\":[\"STATICALLY_OBSERVED\"],\"status\":\"GAP_IDENTIFIED\",\"supportingEvidenceIds\":[\"ev-0002\"],\"title\":\"Synthetic check 3.1\"}],\"confidence\":\"medium\",\"controlId\":\"AST03\",\"coverage\":{\"evidenceObserved\":0,\"gapIdentified\":1,\"notAssessed\":0,\"total\":1},\"explanation\":\"Synthetic explanation for AST03.\",\"framework\":\"OWASP_AGENTIC_SKILLS_TOP_10\",\"status\":\"GAP_IDENTIFIED\",\"title\":\"Synthetic control AST03\",\"upstreamSeverity\":\"High\"},{\"checks\":[{\"checkId\":\"4.1\",\"confidence\":\"medium\",\"explanation\":\"Synthetic.\",\"provenance\":[\"STATICALLY_OBSERVED\"],\"status\":\"EVIDENCE_OBSERVED\",\"supportingEvidenceIds\":[\"ev-0003\"],\"title\":\"Synthetic check 4.1\"}],\"confidence\":\"medium\",\"controlId\":\"AST04\",\"coverage\":{\"evidenceObserved\":1,\"gapIdentified\":0,\"notAssessed\":0,\"total\":1},\"explanation\":\"Synthetic explanation for AST04.\",\"framework\":\"OWASP_AGENTIC_SKILLS_TOP_10\",\"status\":\"EVIDENCE_OBSERVED\",\"title\":\"Synthetic control AST04\",\"upstreamSeverity\":\"High\"}],\"evidence\":[{\"axis\":\"manifest\",\"confidence\":\"high\",\"expected\":\"n/a\",\"facts\":{\"count\":3,\"present\":true},\"id\":\"ev-0001\",\"kind\":\"conformance.example-positive\",\"locations\":[{\"file\":\"SKILL.md\",\"line\":2}],\"polarity\":\"positive\",\"provenance\":[\"STATICALLY_OBSERVED\"],\"remediation\":\"n/a\",\"severity\":\"low\",\"summary\":\"Synthetic positive observation for AST02.\"},{\"axis\":\"filesystem\",\"confidence\":\"medium\",\"expected\":\"n/a\",\"facts\":{\"note\":\"quote \\\" backslash \\\\ slash / tab\\t newline\\n\",\"printablePercent\":98},\"id\":\"ev-0002\",\"kind\":\"conformance.example-gap\",\"locations\":[{\"file\":\"docs/résumé-🙂.md\",\"line\":1},{\"file\":\"src/index.js\"}],\"polarity\":\"gap\",\"provenance\":[\"STATICALLY_OBSERVED\",\"INFERRED\"],\"remediation\":\"n/a\",\"severity\":\"high\",\"summary\":\"Synthetic gap on a non-ASCII path: résumé 🙂\"},{\"axis\":\"network\",\"confidence\":\"low\",\"expected\":\"n/a\",\"facts\":{\"empty\":[],\"hosts\":[\"b.example.test\",\"a.example.test\"]},\"id\":\"ev-0003\",\"kind\":\"conformance.example-context\",\"locations\":[],\"polarity\":\"context\",\"provenance\":[\"DECLARED\"],\"remediation\":\"n/a\",\"severity\":\"low\",\"summary\":\"Synthetic context item.\"}],\"notImplementedControls\":[\"AST01\",\"AST05\",\"AST06\",\"AST07\",\"AST08\",\"AST09\",\"AST10\"],\"notes\":[\"Synthetic assessment for conformance vectors. Not scanner output.\"],\"package\":{\"digest\":\"avpkg-sha256:9fc4448c2e85c812c981cfd961939a23acf5d74b52888cbb26814dcb78390ac0\",\"fileCount\":3,\"manifestFiles\":[\"SKILL.md\"]},\"profile\":{\"agentverifyProfileVersion\":\"1.0.0-alpha.1\",\"assessmentEngineVersion\":\"1.0.1\",\"framework\":\"OWASP_AGENTIC_SKILLS_TOP_10\",\"implementedControls\":[\"AST02\",\"AST03\",\"AST04\"],\"keyAllowlistVersion\":\"1.0.0\",\"normalizationVersion\":\"1.0.0\",\"profileId\":\"owasp-agentic-skills-2026\",\"riskRubricVersion\":\"1.0.0\",\"scannerVersion\":\"1.4.0\",\"upstreamCommit\":\"d6f7d7d0de314f52a83a85d1828e06ab096e595c\",\"upstreamLicense\":\"CC-BY-SA-4.0\",\"upstreamRepo\":\"OWASP/www-project-agentic-skills-top-10\",\"upstreamStatus\":\"public-review\"},\"schemaVersion\":\"1.1.0\",\"unmappedEvidenceIds\":[]}",
+      "canonicalSha256": "633e927747e3535e133f7697e8c4d3c04ead9609054df34f06e793c910b2c13f",
+      "digest": "avassess-sha256:aba5ba4a00596a2a469783d5cc92828f824db7f984845aa4bbfb14fc6c4d9784"
+    },
+    {
+      "name": "synthetic-assessment-other",
+      "assessment": {
+        "schemaVersion": "1.1.0",
+        "profile": {
+          "profileId": "owasp-agentic-skills-2026",
+          "framework": "OWASP_AGENTIC_SKILLS_TOP_10",
+          "upstreamRepo": "OWASP/www-project-agentic-skills-top-10",
+          "upstreamCommit": "d6f7d7d0de314f52a83a85d1828e06ab096e595c",
+          "upstreamStatus": "public-review",
+          "upstreamLicense": "CC-BY-SA-4.0",
+          "agentverifyProfileVersion": "1.0.0-alpha.1",
+          "implementedControls": [
+            "AST02",
+            "AST03",
+            "AST04"
+          ],
+          "scannerVersion": "1.4.0",
+          "assessmentEngineVersion": "1.0.1",
+          "riskRubricVersion": "1.0.0",
+          "keyAllowlistVersion": "1.0.0",
+          "normalizationVersion": "1.0.0"
+        },
+        "controls": [
+          {
+            "controlId": "AST02",
+            "framework": "OWASP_AGENTIC_SKILLS_TOP_10",
+            "title": "Synthetic control AST02",
+            "upstreamSeverity": "High",
+            "status": "EVIDENCE_OBSERVED",
+            "confidence": "medium",
+            "explanation": "Synthetic explanation for AST02.",
+            "coverage": {
+              "total": 1,
+              "evidenceObserved": 1,
+              "gapIdentified": 0,
+              "notAssessed": 0
+            },
+            "checks": [
+              {
+                "checkId": "2.1",
+                "title": "Synthetic check 2.1",
+                "status": "EVIDENCE_OBSERVED",
+                "confidence": "medium",
+                "explanation": "Synthetic.",
+                "provenance": [
+                  "STATICALLY_OBSERVED"
+                ],
+                "supportingEvidenceIds": [
+                  "ev-0001"
+                ]
+              }
+            ]
+          },
+          {
+            "controlId": "AST03",
+            "framework": "OWASP_AGENTIC_SKILLS_TOP_10",
+            "title": "Synthetic control AST03",
+            "upstreamSeverity": "High",
+            "status": "GAP_IDENTIFIED",
+            "confidence": "medium",
+            "explanation": "Synthetic explanation for AST03.",
+            "coverage": {
+              "total": 1,
+              "evidenceObserved": 0,
+              "gapIdentified": 1,
+              "notAssessed": 0
+            },
+            "checks": [
+              {
+                "checkId": "3.1",
+                "title": "Synthetic check 3.1",
+                "status": "GAP_IDENTIFIED",
+                "confidence": "medium",
+                "explanation": "Synthetic.",
+                "provenance": [
+                  "STATICALLY_OBSERVED"
+                ],
+                "supportingEvidenceIds": [
+                  "ev-0002"
+                ]
+              }
+            ]
+          },
+          {
+            "controlId": "AST04",
+            "framework": "OWASP_AGENTIC_SKILLS_TOP_10",
+            "title": "Synthetic control AST04",
+            "upstreamSeverity": "High",
+            "status": "EVIDENCE_OBSERVED",
+            "confidence": "medium",
+            "explanation": "Synthetic explanation for AST04.",
+            "coverage": {
+              "total": 1,
+              "evidenceObserved": 1,
+              "gapIdentified": 0,
+              "notAssessed": 0
+            },
+            "checks": [
+              {
+                "checkId": "4.1",
+                "title": "Synthetic check 4.1",
+                "status": "EVIDENCE_OBSERVED",
+                "confidence": "medium",
+                "explanation": "Synthetic.",
+                "provenance": [
+                  "STATICALLY_OBSERVED"
+                ],
+                "supportingEvidenceIds": [
+                  "ev-0003"
+                ]
+              }
+            ]
+          }
+        ],
+        "notImplementedControls": [
+          "AST01",
+          "AST05",
+          "AST06",
+          "AST07",
+          "AST08",
+          "AST09",
+          "AST10"
+        ],
+        "evidence": [
+          {
+            "id": "ev-0001",
+            "kind": "conformance.example-positive",
+            "axis": "manifest",
+            "polarity": "positive",
+            "severity": "low",
+            "confidence": "high",
+            "provenance": [
+              "STATICALLY_OBSERVED"
+            ],
+            "summary": "Synthetic positive observation for AST02.",
+            "expected": "n/a",
+            "remediation": "n/a",
+            "facts": {
+              "present": true,
+              "count": 3
+            },
+            "locations": [
+              {
+                "file": "SKILL.md",
+                "line": 2
+              }
+            ]
+          },
+          {
+            "id": "ev-0002",
+            "kind": "conformance.example-gap",
+            "axis": "filesystem",
+            "polarity": "gap",
+            "severity": "high",
+            "confidence": "medium",
+            "provenance": [
+              "STATICALLY_OBSERVED",
+              "INFERRED"
+            ],
+            "summary": "Synthetic gap on a non-ASCII path: résumé 🙂",
+            "expected": "n/a",
+            "remediation": "n/a",
+            "facts": {
+              "printablePercent": 98,
+              "note": "quote \" backslash \\ slash / tab\t newline\n"
+            },
+            "locations": [
+              {
+                "file": "docs/résumé-🙂.md",
+                "line": 1
+              },
+              {
+                "file": "src/index.js"
+              }
+            ]
+          },
+          {
+            "id": "ev-0003",
+            "kind": "conformance.example-context",
+            "axis": "network",
+            "polarity": "context",
+            "severity": "low",
+            "confidence": "low",
+            "provenance": [
+              "DECLARED"
+            ],
+            "summary": "A different synthetic context item.",
+            "expected": "n/a",
+            "remediation": "n/a",
+            "facts": {
+              "hosts": [
+                "b.example.test",
+                "a.example.test"
+              ],
+              "empty": []
+            },
+            "locations": []
+          },
+          {
+            "id": "ev-0004",
+            "kind": "conformance.example-unmapped",
+            "axis": "metadata",
+            "polarity": "context",
+            "severity": "low",
+            "confidence": "low",
+            "provenance": [
+              "DECLARED"
+            ],
+            "summary": "Synthetic evidence no check cites.",
+            "expected": "n/a",
+            "remediation": "n/a",
+            "facts": {},
+            "locations": []
+          }
+        ],
+        "unmappedEvidenceIds": [
+          "ev-0004"
+        ],
+        "package": {
+          "digest": "avpkg-sha256:9fc4448c2e85c812c981cfd961939a23acf5d74b52888cbb26814dcb78390ac0",
+          "fileCount": 3,
+          "manifestFiles": [
+            "SKILL.md"
+          ]
+        },
+        "notes": [
+          "Synthetic assessment for conformance vectors. Not scanner output.",
+          "A different synthetic assessment."
+        ]
+      },
+      "canonical": "{\"controls\":[{\"checks\":[{\"checkId\":\"2.1\",\"confidence\":\"medium\",\"explanation\":\"Synthetic.\",\"provenance\":[\"STATICALLY_OBSERVED\"],\"status\":\"EVIDENCE_OBSERVED\",\"supportingEvidenceIds\":[\"ev-0001\"],\"title\":\"Synthetic check 2.1\"}],\"confidence\":\"medium\",\"controlId\":\"AST02\",\"coverage\":{\"evidenceObserved\":1,\"gapIdentified\":0,\"notAssessed\":0,\"total\":1},\"explanation\":\"Synthetic explanation for AST02.\",\"framework\":\"OWASP_AGENTIC_SKILLS_TOP_10\",\"status\":\"EVIDENCE_OBSERVED\",\"title\":\"Synthetic control AST02\",\"upstreamSeverity\":\"High\"},{\"checks\":[{\"checkId\":\"3.1\",\"confidence\":\"medium\",\"explanation\":\"Synthetic.\",\"provenance\":[\"STATICALLY_OBSERVED\"],\"status\":\"GAP_IDENTIFIED\",\"supportingEvidenceIds\":[\"ev-0002\"],\"title\":\"Synthetic check 3.1\"}],\"confidence\":\"medium\",\"controlId\":\"AST03\",\"coverage\":{\"evidenceObserved\":0,\"gapIdentified\":1,\"notAssessed\":0,\"total\":1},\"explanation\":\"Synthetic explanation for AST03.\",\"framework\":\"OWASP_AGENTIC_SKILLS_TOP_10\",\"status\":\"GAP_IDENTIFIED\",\"title\":\"Synthetic control AST03\",\"upstreamSeverity\":\"High\"},{\"checks\":[{\"checkId\":\"4.1\",\"confidence\":\"medium\",\"explanation\":\"Synthetic.\",\"provenance\":[\"STATICALLY_OBSERVED\"],\"status\":\"EVIDENCE_OBSERVED\",\"supportingEvidenceIds\":[\"ev-0003\"],\"title\":\"Synthetic check 4.1\"}],\"confidence\":\"medium\",\"controlId\":\"AST04\",\"coverage\":{\"evidenceObserved\":1,\"gapIdentified\":0,\"notAssessed\":0,\"total\":1},\"explanation\":\"Synthetic explanation for AST04.\",\"framework\":\"OWASP_AGENTIC_SKILLS_TOP_10\",\"status\":\"EVIDENCE_OBSERVED\",\"title\":\"Synthetic control AST04\",\"upstreamSeverity\":\"High\"}],\"evidence\":[{\"axis\":\"manifest\",\"confidence\":\"high\",\"expected\":\"n/a\",\"facts\":{\"count\":3,\"present\":true},\"id\":\"ev-0001\",\"kind\":\"conformance.example-positive\",\"locations\":[{\"file\":\"SKILL.md\",\"line\":2}],\"polarity\":\"positive\",\"provenance\":[\"STATICALLY_OBSERVED\"],\"remediation\":\"n/a\",\"severity\":\"low\",\"summary\":\"Synthetic positive observation for AST02.\"},{\"axis\":\"filesystem\",\"confidence\":\"medium\",\"expected\":\"n/a\",\"facts\":{\"note\":\"quote \\\" backslash \\\\ slash / tab\\t newline\\n\",\"printablePercent\":98},\"id\":\"ev-0002\",\"kind\":\"conformance.example-gap\",\"locations\":[{\"file\":\"docs/résumé-🙂.md\",\"line\":1},{\"file\":\"src/index.js\"}],\"polarity\":\"gap\",\"provenance\":[\"STATICALLY_OBSERVED\",\"INFERRED\"],\"remediation\":\"n/a\",\"severity\":\"high\",\"summary\":\"Synthetic gap on a non-ASCII path: résumé 🙂\"},{\"axis\":\"network\",\"confidence\":\"low\",\"expected\":\"n/a\",\"facts\":{\"empty\":[],\"hosts\":[\"b.example.test\",\"a.example.test\"]},\"id\":\"ev-0003\",\"kind\":\"conformance.example-context\",\"locations\":[],\"polarity\":\"context\",\"provenance\":[\"DECLARED\"],\"remediation\":\"n/a\",\"severity\":\"low\",\"summary\":\"A different synthetic context item.\"},{\"axis\":\"metadata\",\"confidence\":\"low\",\"expected\":\"n/a\",\"facts\":{},\"id\":\"ev-0004\",\"kind\":\"conformance.example-unmapped\",\"locations\":[],\"polarity\":\"context\",\"provenance\":[\"DECLARED\"],\"remediation\":\"n/a\",\"severity\":\"low\",\"summary\":\"Synthetic evidence no check cites.\"}],\"notImplementedControls\":[\"AST01\",\"AST05\",\"AST06\",\"AST07\",\"AST08\",\"AST09\",\"AST10\"],\"notes\":[\"Synthetic assessment for conformance vectors. Not scanner output.\",\"A different synthetic assessment.\"],\"package\":{\"digest\":\"avpkg-sha256:9fc4448c2e85c812c981cfd961939a23acf5d74b52888cbb26814dcb78390ac0\",\"fileCount\":3,\"manifestFiles\":[\"SKILL.md\"]},\"profile\":{\"agentverifyProfileVersion\":\"1.0.0-alpha.1\",\"assessmentEngineVersion\":\"1.0.1\",\"framework\":\"OWASP_AGENTIC_SKILLS_TOP_10\",\"implementedControls\":[\"AST02\",\"AST03\",\"AST04\"],\"keyAllowlistVersion\":\"1.0.0\",\"normalizationVersion\":\"1.0.0\",\"profileId\":\"owasp-agentic-skills-2026\",\"riskRubricVersion\":\"1.0.0\",\"scannerVersion\":\"1.4.0\",\"upstreamCommit\":\"d6f7d7d0de314f52a83a85d1828e06ab096e595c\",\"upstreamLicense\":\"CC-BY-SA-4.0\",\"upstreamRepo\":\"OWASP/www-project-agentic-skills-top-10\",\"upstreamStatus\":\"public-review\"},\"schemaVersion\":\"1.1.0\",\"unmappedEvidenceIds\":[\"ev-0004\"]}",
+      "canonicalSha256": "80ded1f3a4fe3241e03bc031d23936ab7823f969452d518efcddda4af326c876",
+      "digest": "avassess-sha256:6efbf71a69eb8188e6af7895367d057a0431086a4caba66a10d822d5aae99068"
+    }
+  ]
+}

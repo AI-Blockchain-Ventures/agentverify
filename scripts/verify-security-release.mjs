@@ -90,6 +90,37 @@ run('Worker suite: RBAC, attestation, replay/freshness, webhook secret non-discl
   sh('npm test', path.join(repoRoot, 'workers', 'api'))
 })
 
+// 3b. Conformance vectors for scan attestations and the profile-assessment attestation design: frozen legacy
+// scan attestations must keep verifying unchanged (scanner or CI stub, plus the web port below), and the
+// canonicalization / digest / signing-input / key-purpose rules are pinned before any signing code exists.
+run('Conformance vectors: legacy attestations unchanged; profile-attestation rules pinned', true, () => {
+  sh('npm run test:conformance')
+})
+
+// 3c. Vector set v3 (a NEW set; v2 above stays frozen): O(n) exact numeric classifier, strict policy, exact assessment schema, pinned profile
+// registry, bytes input, one depth model.
+//
+// v3 carries a byte-identical copy of the same historical 'THE SIGNING GATE' tripwire that v4 does (v4 is a narrow correction pass
+// over v3 and did not touch that test): now that signer implementation exists, `npm run test:conformance:v3` directly would fail on
+// exactly that one test, for the same reason explained at 3d below. See conformance/implementation/CHANGELOG.md.
+run('Conformance vectors v3 (post-authorization): frozen suite unchanged; historical no-implementation tripwire retired', true, () => {
+  sh('npm run test:conformance:v3:post-authorization')
+})
+
+// 3d. Vector set v4: a NARROW correction pass for the three blockers the third independent review of v3 found (evidence-accounting
+// completeness in the schema; normative key-set sequence discipline; normative admission-to-signing identity).
+//
+// The fourth independent review of v4 returned READY FOR SIGNER IMPLEMENTATION and the review gate was lifted; signer
+// implementation now exists in product code. Running `npm run test:conformance:v4` directly would therefore fail here: one of
+// its tests ('THE SIGNING GATE' in conformance/v4/test/docs.test.mjs) exists specifically to assert that no implementation is
+// present, which is now false ON PURPOSE. conformance/implementation/run-v4-post-authorization.mjs runs the SAME frozen v4
+// suite (byte-identical; nothing under conformance/v4/** is modified, skipped inside, or reinterpreted) while separating that
+// one historical tripwire from the rest, and additionally runs the post-authorization implementation gate that replaces it.
+// See conformance/implementation/CHANGELOG.md for the full account.
+run('Conformance vectors v4 (post-authorization): frozen suite unchanged; historical no-implementation tripwire retired; implementation gate enforced', true, () => {
+  sh('npm run test:conformance:v4:post-authorization')
+})
+
 // 4. Web suite: billing-navigation regression, Firebase config guard, compliance-mapping
 // anti-fabrication tests, private-boundary-adjacent unit coverage.
 run('Web unit test suite', true, () => {

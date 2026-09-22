@@ -1,0 +1,148 @@
+{
+  "vectorSet": "agentverify-profile-attestation-conformance",
+  "version": "2.0.0",
+  "supersedes": "vector set v1 (v1 signatures were not low-S; v1 is replaced, not patched)",
+  "note": "CONFORMANCE VECTOR. Synthetic data and throwaway keys: nothing here is a real customer, scan, key or credential. Do not treat any key in this file as an Agent Verify signing key.",
+  "formula": "\"avpkg-sha256:\" + hex(SHA-256(UTF8(\"agentverify-skill-package-digest/v1\\n\") || for each file sorted by UTF-8 path bytes: UTF8(len(path)) \":\" path \"\\n\" UTF8(len(content)) \":\" content \"\\n\"))  (lengths are decimal byte counts)",
+  "cases": [
+    {
+      "name": "single-file",
+      "note": "One file.",
+      "files": [
+        {
+          "path": "SKILL.md",
+          "content": "# hello\n"
+        }
+      ],
+      "preimageHex": "6167656e747665726966792d736b696c6c2d7061636b6167652d6469676573742f76310a383a534b494c4c2e6d640a383a232068656c6c6f0a0a",
+      "digest": "avpkg-sha256:811d8a2e130c782284aafb6975889ba720b7c4fbaf711cb008845bfe5d9b04ca"
+    },
+    {
+      "name": "two-files-sorted",
+      "note": "Two files; order of submission must not matter.",
+      "files": [
+        {
+          "path": "a.txt",
+          "content": "A"
+        },
+        {
+          "path": "b.txt",
+          "content": "B"
+        }
+      ],
+      "preimageHex": "6167656e747665726966792d736b696c6c2d7061636b6167652d6469676573742f76310a353a612e7478740a313a410a353a622e7478740a313a420a",
+      "digest": "avpkg-sha256:bfcdc353730ad2db8fdc6a6115d126b37b812a72bcf3389ddbbf5fec4dab899c"
+    },
+    {
+      "name": "byte-order-not-code-unit-order",
+      "note": "Paths sort by UTF-8 BYTES. U+FF5E is EF BD 9E and U+1F600 is F0 9F 98 80, so U+FF5E sorts first; by UTF-16 code units the emoji (D83D DE00) would sort first. An implementation that sorts JavaScript strings gets a different digest.",
+      "files": [
+        {
+          "path": "dir/😀.md",
+          "content": "emoji"
+        },
+        {
+          "path": "dir/～.md",
+          "content": "fullwidth tilde"
+        }
+      ],
+      "preimageHex": "6167656e747665726966792d736b696c6c2d7061636b6167652d6469676573742f76310a31303a6469722fefbd9e2e6d640a31353a66756c6c77696474682074696c64650a31313a6469722ff09f98802e6d640a353a656d6f6a690a",
+      "digest": "avpkg-sha256:da35daac895d6a21cef56a3a4e0f0dc0268531c4450ec69729177b44d570d4e1"
+    },
+    {
+      "name": "multibyte-content-length",
+      "note": "Content length is in BYTES (11), not characters (7).",
+      "files": [
+        {
+          "path": "a.txt",
+          "content": "héllo 🙂"
+        }
+      ],
+      "preimageHex": "6167656e747665726966792d736b696c6c2d7061636b6167652d6469676573742f76310a353a612e7478740a31313a68c3a96c6c6f20f09f99820a",
+      "digest": "avpkg-sha256:853d474f98702fa0b89b8d4eb1e67d1f05cfe086b62da34ec43487ba9c9d00a4"
+    },
+    {
+      "name": "byte-exact-content",
+      "note": "A leading U+FEFF, CRLF and trailing whitespace are hashed exactly as given.",
+      "files": [
+        {
+          "path": "a.txt",
+          "content": "\ufeffline1\r\nline2  \r\n\t"
+        }
+      ],
+      "preimageHex": "6167656e747665726966792d736b696c6c2d7061636b6167652d6469676573742f76310a353a612e7478740a32303aefbbbf6c696e65310d0a6c696e653220200d0a090a",
+      "digest": "avpkg-sha256:26d1b369dd7ff177cbb0a7c47a8aa9d4fabb38338befe943b0c97f4430ee605d"
+    },
+    {
+      "name": "empty-content",
+      "note": "A zero-length file.",
+      "files": [
+        {
+          "path": "empty.txt",
+          "content": ""
+        }
+      ],
+      "preimageHex": "6167656e747665726966792d736b696c6c2d7061636b6167652d6469676573742f76310a393a656d7074792e7478740a303a0a",
+      "digest": "avpkg-sha256:5460bfd2b9eb18a526d875ed6d7240b00716a2520ca4ab3e76d51f90de47bfe1"
+    },
+    {
+      "name": "length-prefix-single",
+      "note": "Length prefixes make the encoding unambiguous: this one file...",
+      "files": [
+        {
+          "path": "a",
+          "content": "x\n1:b\n1:y"
+        }
+      ],
+      "preimageHex": "6167656e747665726966792d736b696c6c2d7061636b6167652d6469676573742f76310a313a610a393a780a313a620a313a790a",
+      "digest": "avpkg-sha256:c47c2a4dae0fcf5a5d3e3791352f9bb355f9e0f8aa40f34ea8ed6373b027e98f"
+    },
+    {
+      "name": "length-prefix-double",
+      "note": "...must not collide with these two files.",
+      "files": [
+        {
+          "path": "a",
+          "content": "x"
+        },
+        {
+          "path": "b",
+          "content": "y"
+        }
+      ],
+      "preimageHex": "6167656e747665726966792d736b696c6c2d7061636b6167652d6469676573742f76310a313a610a313a780a313a620a313a790a",
+      "digest": "avpkg-sha256:95b67302adc43f73548708f64fb3b1865ce52059bbe9f5a6e1305abf62118dce"
+    },
+    {
+      "name": "nfc-path",
+      "note": "Precomposed e-acute (NFC).",
+      "files": [
+        {
+          "path": "café.txt",
+          "content": "x"
+        }
+      ],
+      "preimageHex": "6167656e747665726966792d736b696c6c2d7061636b6167652d6469676573742f76310a393a636166c3a92e7478740a313a780a",
+      "digest": "avpkg-sha256:ad1843db2e5a2007732ede11a267c44268d5b5d0a759c7633a60322224cb2c17"
+    },
+    {
+      "name": "nfd-path",
+      "note": "Decomposed e + combining acute (NFD): a different digest. Identity is over bytes and is never normalized; the ingester (not the digest function) rejects non-NFC paths.",
+      "files": [
+        {
+          "path": "café.txt",
+          "content": "x"
+        }
+      ],
+      "preimageHex": "6167656e747665726966792d736b696c6c2d7061636b6167652d6469676573742f76310a31303a63616665cc812e7478740a313a780a",
+      "digest": "avpkg-sha256:c9c61788d488205e79b6f0c791358283cbeca1f6e3c398b47ac914dbfa33a7c0"
+    },
+    {
+      "name": "no-files",
+      "note": "The digest function over zero files (ingestion policy is separate).",
+      "files": [],
+      "preimageHex": "6167656e747665726966792d736b696c6c2d7061636b6167652d6469676573742f76310a",
+      "digest": "avpkg-sha256:761a9dccb149ac7d16e2ae421dc4380ef6ee016ea20f93164b8ae34d29cca2be"
+    }
+  ]
+}

@@ -1,0 +1,64 @@
+{
+  "vectorSet": "agentverify-profile-attestation-conformance",
+  "version": "4.0.0",
+  "supersedes": "vector set v3 (frozen, unchanged; v4 is a NEW set, not a patch of v3)",
+  "note": "CONFORMANCE VECTOR. Synthetic data and throwaway keys: nothing here is a real customer, scan, key or credential. Do not treat any key in this file as an Agent Verify signing key.",
+  "rules": [
+    "attestation type, signing tag and key purpose are each unique across the registry",
+    "every tag has the form agentverify-<scope>/vN followed by a line feed, and no tag is a prefix of another",
+    "no tag begins with \"{\": a legacy scan attestation signs bare JSON, so a tagged input can never equal a legacy input",
+    "the verifier chooses the tag from the accepted type; it is never read from the payload",
+    "the version inside a tag changes only when the construction of the signing input or digest preimage changes; it is independent of attestationVersion and bundleVersion",
+    "a key has one purpose, and the purpose is read from the key set, never from the attestation"
+  ],
+  "signingDomains": [
+    {
+      "attestationType": "agentverify.profile-assessment",
+      "name": "profile-assessment",
+      "signingTag": "agentverify-attestation/profile-assessment/v1\n",
+      "keyPurpose": "agentverify-profile-v1",
+      "attestationVersions": [
+        "1.0.0"
+      ]
+    }
+  ],
+  "digestDomains": [
+    {
+      "name": "assessment",
+      "scheme": "avassess-sha256",
+      "tag": "agentverify-assessment-digest/v1\n"
+    },
+    {
+      "name": "package",
+      "scheme": "avpkg-sha256",
+      "tag": "agentverify-skill-package-digest/v1\n"
+    }
+  ],
+  "legacyScanAttestation": {
+    "attestationType": null,
+    "signingTag": null,
+    "keyPurpose": null
+  },
+  "tagsHex": [
+    {
+      "tag": "agentverify-attestation/profile-assessment/v1\n",
+      "hex": "6167656e747665726966792d6174746573746174696f6e2f70726f66696c652d6173736573736d656e742f76310a"
+    },
+    {
+      "tag": "agentverify-assessment-digest/v1\n",
+      "hex": "6167656e747665726966792d6173736573736d656e742d6469676573742f76310a"
+    },
+    {
+      "tag": "agentverify-skill-package-digest/v1\n",
+      "hex": "6167656e747665726966792d736b696c6c2d7061636b6167652d6469676573742f76310a"
+    }
+  ],
+  "independentVersions": {
+    "attestationVersion": "1.0.0",
+    "bundleVersion": "1.0.0",
+    "keySetVersion": "1.0.0",
+    "signingTagVersion": "v1",
+    "assessmentDigestTagVersion": "v1",
+    "packageDigestTagVersion": "v1"
+  }
+}

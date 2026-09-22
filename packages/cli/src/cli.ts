@@ -4,8 +4,9 @@ import { readFileSync, readdirSync, statSync, appendFileSync, writeFileSync } fr
 import { join, relative, extname } from 'path'
 import { scan } from './sdk'
 import type { ScanResult } from './types'
+import { PackageError, SUPPORTED_ASSESSMENT_SCHEMA, SUPPORTED_PROFILES, buildPackage, displayPath, formatAssessment, postProfile, safeText, serializeRequest } from './profile'
 
-const VERSION = '1.4.0'
+const VERSION = '1.5.0'
 const API_URL = process.env.AGENTVERIFY_API_URL ?? 'https://agentverify-api.agentverify.workers.dev/v1/scan'
 const A2SPA_DOCS_URL = 'https://aimodularity.com/A2SPA/docs'
 
@@ -70,6 +71,8 @@ function parseArgs(argv: string[]): {
   version: boolean
   policy: string
   summaryFile: string
+  /** Every `--profile` value seen, in order. Empty when the flag is absent, which is the only case existing users produce. */
+  profiles: string[]
 } {
   const args = argv.slice(2)
   const result = {
@@ -85,6 +88,7 @@ function parseArgs(argv: string[]): {
     version: false,
     policy: '',
     summaryFile: '',
+    profiles: [] as string[],
   }
 
   if (result.command === '--help' || result.command === '-h') {
@@ -107,6 +111,10 @@ function parseArgs(argv: string[]): {
     else if (arg === '--allow-not-assessed') result.allowNotAssessed = true
     else if (arg === '--policy') result.policy = args[++i] ?? ''
     else if (arg === '--summary-file') result.summaryFile = args[++i] ?? ''
+    // `--profile <id>` and `--profile=<id>`. Unknown flags are otherwise ignored here, so `--profile=...` MUST be
+    // recognised explicitly: silently ignoring it would run an ordinary scan when a profile assessment was asked for.
+    else if (arg === '--profile') result.profiles.push(args[++i] ?? '')
+    else if (arg.startsWith('--profile=')) result.profiles.push(arg.slice('--profile='.length))
     else if (arg === '--help' || arg === '-h') result.help = true
     else if (arg === '--version' || arg === '-v') result.version = true
     else if (!arg.startsWith('-')) result.dir = arg
@@ -142,6 +150,11 @@ ${c.bold}Options:${c.reset}
                 in addition to the scanner's own verdict (e.g. financial-agent)
   --summary-file <path>
                 Write results as JSON to this path (in addition to any other output)
+  --profile <id>
+                (alpha) Assess a directory against an assessment profile instead of
+                scanning files individually. Supported: ${SUPPORTED_PROFILES.join(', ')}
+                Takes a directory; not combinable with --file, --ci, --policy,
+                --allow-not-assessed, --markdown or --summary-file.
   --version, -v Print version
   --help, -h    Show this help message
 
@@ -161,11 +174,19 @@ ${c.bold}Examples:${c.reset}
   ${c.gray}# Markdown summary for pull requests${c.reset}
   agentverify scan . --key av_your_key --markdown
 
+  ${c.gray}# Assess a skill directory against a profile (alpha); --json prints the service's response${c.reset}
+  agentverify scan ./my-skill --profile ${SUPPORTED_PROFILES[0]} --key av_your_key
+
 ${c.bold}Exit codes (--ci):${c.reset}
   0   All scanned files verified
   1   NOT VERIFIED — a security/verification check failed
   2   NOT ASSESSED — insufficient evidence for a verdict (see --allow-not-assessed)
   3   Execution error — the scan itself could not run (bad key, network, missing file)
+
+${c.bold}Exit codes (--profile):${c.reset}
+  0   The assessment completed. Control and check statuses (including GAP_IDENTIFIED)
+      do not affect the exit code.
+  3   Usage or execution error — nothing was assessed
 
 ${c.bold}Get your API key:${c.reset}
   https://aimodularity.com/agentverify/dashboard
@@ -437,6 +458,103 @@ async function runScan(args: ReturnType<typeof parseArgs>) {
   }
 }
 
+// ── Profile assessment path (`--profile`). Entirely separate from runScan(): when --profile is absent none of this runs. ──
+
+const PROFILE_TIMEOUT_MS = 60_000
+
+/** A malformed invocation. Written to stderr only, before any file is read or any request is made. */
+function profileUsageError(message: string): void {
+  console.error(`\n${c.red}Error:${c.reset} ${message}`)
+  console.error(`Run ${c.cyan}agentverify --help${c.reset} for usage\n`)
+  process.exitCode = EXIT_EXECUTION_ERROR
+}
+
+/** An execution failure: a JSON object on stdout with --json, plain text on stderr otherwise. */
+function profileFailure(json: boolean, message: string, detail: Record<string, unknown> = {}): void {
+  if (json) write(JSON.stringify({ error: message, ...detail }, null, 2))
+  else console.error(`\n${c.red}Error:${c.reset} ${safeText(message)}\n`)
+  process.exitCode = EXIT_EXECUTION_ERROR
+}
+
+async function runProfile(args: ReturnType<typeof parseArgs>): Promise<void> {
+  // 1. Usage checks: deterministic, and complete before any file is read or any network call is made.
+  if (args.profiles.length > 1) return profileUsageError('--profile was given more than once.')
+  const profile = args.profiles[0]
+  if (profile === '') return profileUsageError(`--profile requires a value. Supported profiles: ${SUPPORTED_PROFILES.join(', ')}`)
+  if (!(SUPPORTED_PROFILES as readonly string[]).includes(profile)) {
+    return profileUsageError(`Unknown profile ${JSON.stringify(safeText(profile))}. Supported profiles: ${SUPPORTED_PROFILES.join(', ')}`)
+  }
+  const conflicts: string[] = []
+  if (args.file) conflicts.push('--file')
+  if (args.ci) conflicts.push('--ci')
+  if (args.allowNotAssessed) conflicts.push('--allow-not-assessed')
+  if (args.policy) conflicts.push('--policy')
+  if (args.markdown) conflicts.push('--markdown')
+  if (args.summaryFile) conflicts.push('--summary-file')
+  if (conflicts.length > 0) return profileUsageError(`--profile cannot be combined with ${conflicts.join(', ')}. A profile assessment takes a directory and reports its own result.`)
+
+  if (!args.key) {
+    console.error(`\n${c.red}Error:${c.reset} API key required\n`)
+    console.error(`  Set with --key av_your_key or AGENTVERIFY_API_KEY env var.`)
+    console.error(`  Get your key at https://aimodularity.com/agentverify/dashboard/\n`)
+    process.exitCode = EXIT_EXECUTION_ERROR
+    return
+  }
+
+  // 2. Package the directory. The CLI only builds the file list; the service decides whether it is acceptable.
+  let built
+  try {
+    built = buildPackage(args.dir)
+  } catch (e) {
+    return profileFailure(args.json, e instanceof PackageError ? e.message : `Could not read the package: ${e instanceof Error ? e.message : String(e)}`)
+  }
+
+  // Anything left out of the package is always visible: in the human report, or on stderr so --json stdout stays pure JSON.
+  if (args.json && built.skipped.length > 0) {
+    console.error(`Note: ${built.skipped.length} entries were skipped from the package and not sent: ${built.skipped.slice(0, 20).map(s => `${displayPath(s.path)} (${s.reason})`).join(', ')}${built.skipped.length > 20 ? `, and ${built.skipped.length - 20} more` : ''}`)
+  }
+
+  // 3. Send it exactly as the service contract expects, and print what comes back.
+  const result = await postProfile(API_URL, args.key, serializeRequest(profile, built.files), PROFILE_TIMEOUT_MS)
+  if (result.kind === 'failure') return profileFailure(args.json, result.message)
+
+  const body = result.json
+  const isObject = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v)
+
+  if (result.status !== 200) {
+    if (isObject(body) && typeof body.error === 'string') {
+      if (args.json) {
+        write(JSON.stringify(body, null, 2)) // the service's error, verbatim
+      } else {
+        console.error(`\n${c.red}Error:${c.reset} ${safeText(body.error)} (HTTP ${result.status})`)
+        const rejection = body.rejection
+        if (isObject(rejection)) console.error(`  rejection: ${safeText(String(rejection.code ?? ''))}: ${safeText(String(rejection.message ?? ''))}${typeof rejection.path === 'string' ? ` (${JSON.stringify(safeText(rejection.path))})` : ''}`)
+        if (Array.isArray(body.supportedProfiles)) console.error(`  supported profiles: ${body.supportedProfiles.map(p => safeText(String(p))).join(', ')}`)
+        console.error('')
+      }
+      process.exitCode = EXIT_EXECUTION_ERROR
+      return
+    }
+    return profileFailure(args.json, `Unexpected response from the service (HTTP ${result.status})`, { status: result.status })
+  }
+
+  if (!isObject(body) || typeof body.profile !== 'string' || !isObject(body.assessment)) {
+    return profileFailure(args.json, 'The service returned a response that is not a profile assessment', { status: result.status })
+  }
+
+  if (args.json) {
+    // The service's response, verbatim: no remapping, no prose. Key order is preserved.
+    write(JSON.stringify(body, null, 2))
+    return
+  }
+
+  const schema = (body.assessment as Record<string, unknown>).schemaVersion
+  if (schema !== SUPPORTED_ASSESSMENT_SCHEMA) {
+    return profileFailure(false, `This CLI prints assessment schema ${SUPPORTED_ASSESSMENT_SCHEMA}, but the service returned ${JSON.stringify(safeText(String(schema)))}. Update the CLI, or use --json to receive the raw response.`)
+  }
+  for (const line of formatAssessment(body, built.skipped)) write(line)
+}
+
 async function main() {
   const args = parseArgs(process.argv)
 
@@ -451,7 +569,8 @@ async function main() {
   }
 
   if (args.command === 'scan') {
-    await runScan(args)
+    if (args.profiles.length > 0) await runProfile(args)
+    else await runScan(args)
   } else {
     console.error(`\n${c.red}Unknown command: ${args.command}${c.reset}`)
     console.error(`Run ${c.cyan}agentverify --help${c.reset} for usage\n`)

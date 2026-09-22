@@ -1,0 +1,347 @@
+{
+  "vectorSet": "agentverify-profile-attestation-conformance",
+  "version": "4.0.0",
+  "supersedes": "vector set v3 (frozen, unchanged; v4 is a NEW set, not a patch of v3)",
+  "note": "CONFORMANCE VECTOR. Synthetic data and throwaway keys: nothing here is a real customer, scan, key or credential. Do not treat any key in this file as an Agent Verify signing key.",
+  "purpose": "THE ONE STRICT CANONICAL TIMESTAMP PARSER, tested directly. The canonical form is YYYY-MM-DDTHH:MM:SS.mmmZ (24 characters, UTC). It does not use Date.parse or a Date round trip: the calendar is validated by arithmetic (Gregorian leap years; 24:00 and :60 are not admitted; years 0001-9999) so an impossible date is never rolled forward into a real one. Every timestamp in the bundle, the key set and the policy clock goes through it.",
+  "valid": [
+    {
+      "ts": "0001-01-01T00:00:00.000Z",
+      "epochMs": -62135596800000,
+      "note": "epochMs computed by the independent oracle new Date(ts).getTime(), valid for canonical ISO text"
+    },
+    {
+      "ts": "1970-01-01T00:00:00.000Z",
+      "epochMs": 0,
+      "note": "epochMs computed by the independent oracle new Date(ts).getTime(), valid for canonical ISO text"
+    },
+    {
+      "ts": "1969-12-31T23:59:59.999Z",
+      "epochMs": -1,
+      "note": "epochMs computed by the independent oracle new Date(ts).getTime(), valid for canonical ISO text"
+    },
+    {
+      "ts": "2000-02-29T00:00:00.000Z",
+      "epochMs": 951782400000,
+      "note": "epochMs computed by the independent oracle new Date(ts).getTime(), valid for canonical ISO text"
+    },
+    {
+      "ts": "2024-02-29T23:59:59.999Z",
+      "epochMs": 1709251199999,
+      "note": "epochMs computed by the independent oracle new Date(ts).getTime(), valid for canonical ISO text"
+    },
+    {
+      "ts": "2026-01-15T12:00:00.000Z",
+      "epochMs": 1768478400000,
+      "note": "epochMs computed by the independent oracle new Date(ts).getTime(), valid for canonical ISO text"
+    },
+    {
+      "ts": "2026-12-31T23:59:59.999Z",
+      "epochMs": 1798761599999,
+      "note": "epochMs computed by the independent oracle new Date(ts).getTime(), valid for canonical ISO text"
+    },
+    {
+      "ts": "2100-03-01T00:00:00.000Z",
+      "epochMs": 4107542400000,
+      "note": "epochMs computed by the independent oracle new Date(ts).getTime(), valid for canonical ISO text"
+    },
+    {
+      "ts": "2038-01-19T03:14:07.000Z",
+      "epochMs": 2147483647000,
+      "note": "epochMs computed by the independent oracle new Date(ts).getTime(), valid for canonical ISO text"
+    },
+    {
+      "ts": "9999-12-31T23:59:59.999Z",
+      "epochMs": 253402300799999,
+      "note": "epochMs computed by the independent oracle new Date(ts).getTime(), valid for canonical ISO text"
+    },
+    {
+      "ts": "1900-02-28T12:00:00.000Z",
+      "epochMs": -2203934400000,
+      "note": "epochMs computed by the independent oracle new Date(ts).getTime(), valid for canonical ISO text"
+    },
+    {
+      "ts": "1600-02-29T00:00:00.000Z",
+      "epochMs": -11670998400000,
+      "note": "epochMs computed by the independent oracle new Date(ts).getTime(), valid for canonical ISO text"
+    }
+  ],
+  "invalid": [
+    {
+      "name": "feb-30",
+      "ts": "2026-02-30T00:00:00.000Z"
+    },
+    {
+      "name": "feb-29-common-year",
+      "ts": "2025-02-29T00:00:00.000Z"
+    },
+    {
+      "name": "feb-29-1900",
+      "ts": "1900-02-29T00:00:00.000Z"
+    },
+    {
+      "name": "feb-29-2100",
+      "ts": "2100-02-29T00:00:00.000Z"
+    },
+    {
+      "name": "apr-31",
+      "ts": "2026-04-31T00:00:00.000Z"
+    },
+    {
+      "name": "jun-31",
+      "ts": "2026-06-31T00:00:00.000Z"
+    },
+    {
+      "name": "sep-31",
+      "ts": "2026-09-31T00:00:00.000Z"
+    },
+    {
+      "name": "nov-31",
+      "ts": "2026-11-31T00:00:00.000Z"
+    },
+    {
+      "name": "jan-32",
+      "ts": "2026-01-32T00:00:00.000Z"
+    },
+    {
+      "name": "month-13",
+      "ts": "2026-13-01T00:00:00.000Z"
+    },
+    {
+      "name": "month-00",
+      "ts": "2026-00-01T00:00:00.000Z"
+    },
+    {
+      "name": "day-00",
+      "ts": "2026-01-00T00:00:00.000Z"
+    },
+    {
+      "name": "hour-24",
+      "ts": "2026-01-15T24:00:00.000Z"
+    },
+    {
+      "name": "hour-24-with-minutes",
+      "ts": "2026-01-15T24:30:00.000Z"
+    },
+    {
+      "name": "minute-60",
+      "ts": "2026-01-15T12:60:00.000Z"
+    },
+    {
+      "name": "second-60",
+      "ts": "2026-01-15T12:00:60.000Z"
+    },
+    {
+      "name": "leap-second",
+      "ts": "2016-12-31T23:59:60.000Z"
+    },
+    {
+      "name": "year-0000",
+      "ts": "0000-06-15T00:00:00.000Z"
+    },
+    {
+      "name": "no-milliseconds",
+      "ts": "2026-01-15T12:00:00Z"
+    },
+    {
+      "name": "one-fraction-digit",
+      "ts": "2026-01-15T12:00:00.0Z"
+    },
+    {
+      "name": "four-fraction-digits",
+      "ts": "2026-01-15T12:00:00.0000Z"
+    },
+    {
+      "name": "offset-z-replaced",
+      "ts": "2026-01-15T12:00:00.000+00:00"
+    },
+    {
+      "name": "offset-minus",
+      "ts": "2026-01-15T12:00:00.000-05:00"
+    },
+    {
+      "name": "lowercase-t",
+      "ts": "2026-01-15t12:00:00.000Z"
+    },
+    {
+      "name": "lowercase-z",
+      "ts": "2026-01-15T12:00:00.000z"
+    },
+    {
+      "name": "space",
+      "ts": "2026-01-15 12:00:00.000Z"
+    },
+    {
+      "name": "date-only",
+      "ts": "2026-01-15"
+    },
+    {
+      "name": "empty",
+      "ts": ""
+    },
+    {
+      "name": "leading-space",
+      "ts": " 2026-01-15T12:00:00.000Z"
+    },
+    {
+      "name": "trailing-space",
+      "ts": "2026-01-15T12:00:00.000Z "
+    },
+    {
+      "name": "trailing-newline",
+      "ts": "2026-01-15T12:00:00.000Z\n"
+    },
+    {
+      "name": "expanded-year",
+      "ts": "+002026-01-15T12:00:00.000Z"
+    },
+    {
+      "name": "negative-year",
+      "ts": "-000001-01-15T12:00:00.000Z"
+    },
+    {
+      "name": "fullwidth-digits",
+      "ts": "２０２６-01-15T12:00:00.000Z"
+    },
+    {
+      "name": "arabic-indic-digits",
+      "ts": "٢٠٢٦-01-15T12:00:00.000Z"
+    },
+    {
+      "name": "slashes",
+      "ts": "2026/01/15T12:00:00.000Z"
+    },
+    {
+      "name": "week-date",
+      "ts": "2026-W03-4T12:00:00.000Z"
+    },
+    {
+      "name": "ordinal-date",
+      "ts": "2026-015T12:00:00.000Z"
+    },
+    {
+      "name": "basic-format",
+      "ts": "20260115T120000.000Z"
+    },
+    {
+      "name": "comma-fraction",
+      "ts": "2026-01-15T12:00:00,000Z"
+    },
+    {
+      "name": "plus-in-digit-field",
+      "ts": "2026-+1-15T12:00:00.000Z"
+    },
+    {
+      "name": "hex-digit-field",
+      "ts": "2026-0x-15T12:00:00.000Z"
+    },
+    {
+      "name": "wrong-first-date-separator-only",
+      "ts": "2026.01-15T12:00:00.000Z"
+    },
+    {
+      "name": "wrong-second-date-separator-only",
+      "ts": "2026-01.15T12:00:00.000Z"
+    },
+    {
+      "name": "wrong-first-time-separator-only",
+      "ts": "2026-01-15T12.00:00.000Z"
+    },
+    {
+      "name": "wrong-second-time-separator-only",
+      "ts": "2026-01-15T12:00.00.000Z"
+    },
+    {
+      "name": "nondigit-year",
+      "ts": "20x6-01-15T12:00:00.000Z"
+    },
+    {
+      "name": "nondigit-month",
+      "ts": "2026-x1-15T12:00:00.000Z"
+    },
+    {
+      "name": "nondigit-day",
+      "ts": "2026-01-1xT12:00:00.000Z"
+    },
+    {
+      "name": "nondigit-hour",
+      "ts": "2026-01-15Tx2:00:00.000Z"
+    },
+    {
+      "name": "nondigit-minute",
+      "ts": "2026-01-15T12:x0:00.000Z"
+    },
+    {
+      "name": "nondigit-second",
+      "ts": "2026-01-15T12:00:x0.000Z"
+    },
+    {
+      "name": "nondigit-fraction",
+      "ts": "2026-01-15T12:00:00.00xZ"
+    },
+    {
+      "name": "colon-in-digit-field",
+      "ts": "2026-01-15T12:00:0:.000Z"
+    },
+    {
+      "name": "space-in-digit-field",
+      "ts": "2026-01-15T12:00: 0.000Z"
+    },
+    {
+      "name": "minus-in-digit-field",
+      "ts": "2026-01-15T12:-0:00.000Z"
+    },
+    {
+      "name": "tab-separator",
+      "ts": "2026-01-15\t12:00:00.000Z"
+    },
+    {
+      "name": "wrong-date-separator",
+      "ts": "2026.01.15T12:00:00.000Z"
+    },
+    {
+      "name": "wrong-time-separator",
+      "ts": "2026-01-15T12.00.00.000Z"
+    },
+    {
+      "name": "wrong-fraction-separator",
+      "ts": "2026-01-15T12:00:00:000Z"
+    },
+    {
+      "name": "wrong-terminator",
+      "ts": "2026-01-15T12:00:00.000Y"
+    },
+    {
+      "name": "embedded-nul",
+      "ts": "2026-01-15T12:00:00.000\u0000"
+    },
+    {
+      "name": "long-garbage",
+      "ts": "xxxxxxxxxxxxxxxxxxxxxxxx"
+    }
+  ],
+  "notStrings": [
+    {
+      "name": "undefined"
+    },
+    {
+      "name": "null"
+    },
+    {
+      "name": "number"
+    },
+    {
+      "name": "object"
+    },
+    {
+      "name": "array"
+    },
+    {
+      "name": "boolean"
+    }
+  ],
+  "epochRange": {
+    "firstMs": -62135596800000,
+    "lastMs": 253402300799999
+  }
+}

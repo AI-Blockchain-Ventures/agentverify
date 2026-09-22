@@ -9,6 +9,16 @@ BILLING_SUCCESS_URL = "https://aimodularity.com/agentverify/dashboard/?billing=s
 BILLING_CANCEL_URL = "https://aimodularity.com/agentverify/pricing/?billing=cancel"
 BILLING_ENABLED = "true"
 ATTESTATION_ISSUER = "agentverify-prod"
+# Profile-attestation signing (workers/api/src/profileAttestationSigning.ts) -- a separate, domain-separated
+# key/purpose/issuer from the legacy ATTESTATION_ISSUER above; see docs/profile-attestation-production-
+# checklist.md. Non-secret: safe as a plain var, same as ATTESTATION_ISSUER. PROFILE_ATTESTATION_KEY_PURPOSE
+# is a fixed protocol constant (must equal packages/scanner/src/profileAttestation.ts's PROFILE_KEY_PURPOSE
+# exactly) -- it is not a naming choice. The PRIVATE KEY itself is never set here: it is a `wrangler secret`
+# (see the checklist). PROFILE_ATTESTATION_EXPECTED_KEY_ID is intentionally NOT set below: it can only be
+# filled in correctly once the actual production key exists and its keyId has been derived and published
+# (checklist step 4); leaving it unset until then is the safe state, not an oversight.
+PROFILE_ATTESTATION_ISSUER = "agentverify-profile-prod"
+PROFILE_ATTESTATION_KEY_PURPOSE = "agentverify-profile-v1"
 
 [[d1_databases]]
 binding = "BILLING_DB"

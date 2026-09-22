@@ -1,0 +1,425 @@
+{
+  "vectorSet": "agentverify-profile-attestation-conformance",
+  "version": "3.0.0",
+  "supersedes": "vector set v2 (frozen, unchanged; v3 is a NEW set, not a patch of v2)",
+  "note": "CONFORMANCE VECTOR. Synthetic data and throwaway keys: nothing here is a real customer, scan, key or credential. Do not treat any key in this file as an Agent Verify signing key.",
+  "purpose": "The signer-side ADMISSION predicate, as a pure verification-side function. A signing service must run it on the assessment it just generated AFTER generation and BEFORE any private-key operation, and must refuse to sign anything not admitted (see docs/attestation-profile-design.md, section \"Product signing boundary\"). Admitted means: canonicalizes under the signed-content numeric profile within the shared depth limit (measured from the BUNDLE root) AND is SUPPORTED (exact schema + pinned profile definition). This file specifies the predicate; it implements no signing.",
+  "baseAssessment": "assessment-schema.v3.json#/base",
+  "cases": [
+    {
+      "name": "base",
+      "description": "The synthetic base assessment is admitted.",
+      "patch": [],
+      "expected": {
+        "admitted": true
+      }
+    },
+    {
+      "name": "fraction",
+      "description": "A fractional number (0.5) in a fact: refused before any digest or signature.",
+      "patch": [
+        {
+          "op": "replace",
+          "path": "/evidence/0/facts",
+          "value": {
+            "a": {
+              "$ieeeHex": "3fe0000000000000"
+            }
+          }
+        }
+      ],
+      "expected": {
+        "admitted": false,
+        "reason": "assessment.not-canonicalizable:JCS_NUMBER_NOT_ADMITTED"
+      }
+    },
+    {
+      "name": "negative-zero",
+      "description": "Negative zero.",
+      "patch": [
+        {
+          "op": "replace",
+          "path": "/evidence/0/facts",
+          "value": {
+            "a": {
+              "$ieeeHex": "8000000000000000"
+            }
+          }
+        }
+      ],
+      "expected": {
+        "admitted": false,
+        "reason": "assessment.not-canonicalizable:JCS_NUMBER_NOT_ADMITTED"
+      }
+    },
+    {
+      "name": "two-to-the-53",
+      "description": "2^53.",
+      "patch": [
+        {
+          "op": "replace",
+          "path": "/evidence/0/facts",
+          "value": {
+            "a": {
+              "$ieeeHex": "4340000000000000"
+            }
+          }
+        }
+      ],
+      "expected": {
+        "admitted": false,
+        "reason": "assessment.not-canonicalizable:JCS_NUMBER_NOT_ADMITTED"
+      }
+    },
+    {
+      "name": "1e21",
+      "description": "1e21.",
+      "patch": [
+        {
+          "op": "replace",
+          "path": "/evidence/0/facts",
+          "value": {
+            "a": {
+              "$ieeeHex": "444b1ae4d6e2ef50"
+            }
+          }
+        }
+      ],
+      "expected": {
+        "admitted": false,
+        "reason": "assessment.not-canonicalizable:JCS_NUMBER_NOT_ADMITTED"
+      }
+    },
+    {
+      "name": "nan",
+      "description": "NaN.",
+      "patch": [
+        {
+          "op": "replace",
+          "path": "/evidence/0/facts",
+          "value": {
+            "a": {
+              "$ieeeHex": "7ff8000000000000"
+            }
+          }
+        }
+      ],
+      "expected": {
+        "admitted": false,
+        "reason": "assessment.not-canonicalizable:JCS_NON_FINITE"
+      }
+    },
+    {
+      "name": "infinity",
+      "description": "Infinity.",
+      "patch": [
+        {
+          "op": "replace",
+          "path": "/evidence/0/facts",
+          "value": {
+            "a": {
+              "$ieeeHex": "7ff0000000000000"
+            }
+          }
+        }
+      ],
+      "expected": {
+        "admitted": false,
+        "reason": "assessment.not-canonicalizable:JCS_NON_FINITE"
+      }
+    },
+    {
+      "name": "depth-at-limit-but-not-schema-valid",
+      "description": "Absolute depth 64 (62 nested arrays under an unknown top-level field): canonicalizes, but the exact schema refuses the unknown field.",
+      "patch": [
+        {
+          "op": "add",
+          "path": "/deep",
+          "value": {
+            "$nested": 62
+          }
+        }
+      ],
+      "expected": {
+        "admitted": false,
+        "reason": "assessment.schema.top-level"
+      }
+    },
+    {
+      "name": "depth-fits-alone-but-not-embedded",
+      "description": "The v2 GAP: 63 nested arrays reach depth 64 measured from the assessment alone, but 65 measured from the bundle root, where the assessment actually lives. v3 measures from the bundle root, so it is refused here and could not be parsed inside its bundle either.",
+      "patch": [
+        {
+          "op": "add",
+          "path": "/deep",
+          "value": {
+            "$nested": 63
+          }
+        }
+      ],
+      "expected": {
+        "admitted": false,
+        "reason": "assessment.not-canonicalizable:JCS_TOO_DEEP"
+      }
+    },
+    {
+      "name": "depth-way-over",
+      "description": "200 nested arrays.",
+      "patch": [
+        {
+          "op": "add",
+          "path": "/deep",
+          "value": {
+            "$nested": 200
+          }
+        }
+      ],
+      "expected": {
+        "admitted": false,
+        "reason": "assessment.not-canonicalizable:JCS_TOO_DEEP"
+      }
+    },
+    {
+      "name": "schema-unknown-field",
+      "description": "An unknown field: canonicalizable but not schema-valid.",
+      "patch": [
+        {
+          "op": "add",
+          "path": "/extra",
+          "value": "x"
+        }
+      ],
+      "expected": {
+        "admitted": false,
+        "reason": "assessment.schema.top-level"
+      }
+    },
+    {
+      "name": "coverage-inconsistent",
+      "description": "Inconsistent coverage.",
+      "patch": [
+        {
+          "op": "replace",
+          "path": "/controls/0/coverage/total",
+          "value": 2
+        }
+      ],
+      "expected": {
+        "admitted": false,
+        "reason": "assessment.schema.coverage"
+      }
+    },
+    {
+      "name": "unsupported-schema",
+      "description": "An unsupported schema version.",
+      "patch": [
+        {
+          "op": "replace",
+          "path": "/schemaVersion",
+          "value": "1.2.0"
+        }
+      ],
+      "expected": {
+        "admitted": false,
+        "reason": "UNSUPPORTED_SCHEMA"
+      }
+    },
+    {
+      "name": "unknown-profile",
+      "description": "A profile id outside the closed registry.",
+      "patch": [
+        {
+          "op": "replace",
+          "path": "/profile/profileId",
+          "value": "some-other-profile"
+        }
+      ],
+      "expected": {
+        "admitted": false,
+        "reason": "UNSUPPORTED_PROFILE"
+      }
+    },
+    {
+      "name": "unknown-profile-version",
+      "description": "A profile version outside the registry.",
+      "patch": [
+        {
+          "op": "replace",
+          "path": "/profile/agentverifyProfileVersion",
+          "value": "9.9.9"
+        }
+      ],
+      "expected": {
+        "admitted": false,
+        "reason": "UNSUPPORTED_PROFILE_VERSION"
+      }
+    },
+    {
+      "name": "definition.framework",
+      "description": "Pinned profile value differs (framework): a signer must not sign it.",
+      "patch": [
+        {
+          "op": "replace",
+          "path": "/profile/framework",
+          "value": "OTHER_FRAMEWORK"
+        },
+        {
+          "op": "replace",
+          "path": "/controls/0/framework",
+          "value": "OTHER_FRAMEWORK"
+        },
+        {
+          "op": "replace",
+          "path": "/controls/1/framework",
+          "value": "OTHER_FRAMEWORK"
+        },
+        {
+          "op": "replace",
+          "path": "/controls/2/framework",
+          "value": "OTHER_FRAMEWORK"
+        }
+      ],
+      "expected": {
+        "admitted": false,
+        "reason": "profile.framework"
+      }
+    },
+    {
+      "name": "definition.upstream-repo",
+      "description": "Pinned profile value differs (upstream-repo): a signer must not sign it.",
+      "patch": [
+        {
+          "op": "replace",
+          "path": "/profile/upstreamRepo",
+          "value": "example/other-repo"
+        }
+      ],
+      "expected": {
+        "admitted": false,
+        "reason": "profile.upstream.repo"
+      }
+    },
+    {
+      "name": "definition.upstream-commit",
+      "description": "Pinned profile value differs (upstream-commit): a signer must not sign it.",
+      "patch": [
+        {
+          "op": "replace",
+          "path": "/profile/upstreamCommit",
+          "value": "ffffffffffffffffffffffffffffffffffffffff"
+        }
+      ],
+      "expected": {
+        "admitted": false,
+        "reason": "profile.upstream.commit"
+      }
+    },
+    {
+      "name": "definition.upstream-license",
+      "description": "Pinned profile value differs (upstream-license): a signer must not sign it.",
+      "patch": [
+        {
+          "op": "replace",
+          "path": "/profile/upstreamLicense",
+          "value": "MIT"
+        }
+      ],
+      "expected": {
+        "admitted": false,
+        "reason": "profile.upstream.license"
+      }
+    },
+    {
+      "name": "definition.upstream-status",
+      "description": "Pinned profile value differs (upstream-status): a signer must not sign it.",
+      "patch": [
+        {
+          "op": "replace",
+          "path": "/profile/upstreamStatus",
+          "value": "final"
+        }
+      ],
+      "expected": {
+        "admitted": false,
+        "reason": "profile.upstream.status"
+      }
+    },
+    {
+      "name": "definition.implemented-controls-subset",
+      "description": "Pinned profile value differs (implemented-controls-subset): a signer must not sign it.",
+      "patch": [
+        {
+          "op": "replace",
+          "path": "/profile/implementedControls",
+          "value": [
+            "AST02",
+            "AST03"
+          ]
+        },
+        {
+          "op": "remove",
+          "path": "/controls/2"
+        }
+      ],
+      "expected": {
+        "admitted": false,
+        "reason": "profile.implemented-controls"
+      }
+    },
+    {
+      "name": "definition.implemented-controls-reordered",
+      "description": "Pinned profile value differs (implemented-controls-reordered): a signer must not sign it.",
+      "patch": [
+        {
+          "op": "replace",
+          "path": "/profile/implementedControls",
+          "value": [
+            "AST03",
+            "AST02",
+            "AST04"
+          ]
+        },
+        {
+          "op": "swap",
+          "path": "/controls",
+          "i": 0,
+          "j": 1
+        }
+      ],
+      "expected": {
+        "admitted": false,
+        "reason": "profile.implemented-controls"
+      }
+    },
+    {
+      "name": "definition.not-implemented-controls-missing-one",
+      "description": "Pinned profile value differs (not-implemented-controls-missing-one): a signer must not sign it.",
+      "patch": [
+        {
+          "op": "remove",
+          "path": "/notImplementedControls/6"
+        }
+      ],
+      "expected": {
+        "admitted": false,
+        "reason": "profile.not-implemented-controls"
+      }
+    },
+    {
+      "name": "definition.not-implemented-controls-reordered",
+      "description": "Pinned profile value differs (not-implemented-controls-reordered): a signer must not sign it.",
+      "patch": [
+        {
+          "op": "swap",
+          "path": "/notImplementedControls",
+          "i": 0,
+          "j": 1
+        }
+      ],
+      "expected": {
+        "admitted": false,
+        "reason": "profile.not-implemented-controls"
+      }
+    }
+  ]
+}

@@ -193,7 +193,7 @@ export function Settings({ onNavigate }: { onNavigate?: (tab: DashboardTab) => v
       <section style={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)' }} className="rounded-3xl p-6 shadow-xl shadow-black/5">
         <h2 style={{ color: 'var(--text-primary)' }} className="text-lg font-semibold">About</h2>
         <div style={{ color: 'var(--text-muted)' }} className="mt-3 space-y-1 text-sm">
-          <p>Agent Verify v1.4.0</p>
+          <p>Agent Verify v1.5.0</p>
           <p>AI agent security reports and execution-trust guidance</p>
           <p>Powered by A2SPA — AI Blockchain Ventures LLC</p>
           <a href="https://github.com/AI-Blockchain-Ventures/agentverify" target="_blank" rel="noreferrer" className="inline-block text-[color:var(--accent-purple-text)] hover:underline">

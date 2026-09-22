@@ -1,0 +1,816 @@
+{
+  "vectorSet": "agentverify-profile-attestation-conformance",
+  "version": "3.0.0",
+  "supersedes": "vector set v2 (frozen, unchanged; v3 is a NEW set, not a patch of v2)",
+  "note": "CONFORMANCE VECTOR. Synthetic data and throwaway keys: nothing here is a real customer, scan, key or credential. Do not treat any key in this file as an Agent Verify signing key.",
+  "purpose": "Frozen scan attestations (attestationVersion 1.0.0, no attestationType). They must verify with exactly these results in the scanner, the web port and the CI stub for as long as the product exists. They freeze the EXISTING behaviour; they change nothing about it. Both the low-S and high-S forms of the same attestation are pinned deliberately: the low-S rule does NOT apply to legacy attestations.",
+  "publicKeys": {
+    "legacy": {
+      "key_ops": [
+        "verify"
+      ],
+      "ext": true,
+      "kty": "EC",
+      "x": "gpKdQCmPTIIDUmB9dJWGHd-UmqqcZj7aG-KTMO40JjU",
+      "y": "wzgbGQiUlwk98wIxQ8JmEFYkSsfNoV4RS1FlJRQRxRE",
+      "crv": "P-256"
+    },
+    "legacyOther": {
+      "key_ops": [
+        "verify"
+      ],
+      "ext": true,
+      "kty": "EC",
+      "x": "FF_sFVS5bdHuVl3QMhKSYQudTy8b5Eo7BDcEfcKOKHg",
+      "y": "l8W7FUjUFMp65GNO-2tey1GC1psL-FDqdDslrtsF3as",
+      "crv": "P-256"
+    }
+  },
+  "attestations": {
+    "base": {
+      "form": "low-s",
+      "attestation": {
+        "payload": {
+          "attestationVersion": "1.0.0",
+          "artifactHash": "78fdf3f8fc4ee1cc033305e2ff85d724cacc77cff1157c84455c9edf54d6629e",
+          "artifactHashAlgorithm": "SHA-256",
+          "artifactFingerprintVersion": "1.0.0",
+          "scanId": "conformance-scan-0001",
+          "reportHash": "7fce309f39106e46f7079d4a0441b0f28122a21caabe6d771c78ff268400f524",
+          "verdict": "REVIEW",
+          "score": 42,
+          "scannerVersion": "1.4.0",
+          "rulesetVersion": "1.4.0",
+          "schemaVersion": "1.3.0",
+          "issuedAt": "2026-01-15T12:00:00.000Z",
+          "issuer": "agentverify-conformance"
+        },
+        "signature": "iI9L74SxTj/j0zaEW98A76mfDX44ln8bqplNwEoaWn8kdUX8r9STniozoIaE85zn9qfdPT0//lq6gCmBnBRkSw==",
+        "algorithm": "ECDSA-P256-SHA256",
+        "publicKey": {
+          "key_ops": [
+            "verify"
+          ],
+          "ext": true,
+          "kty": "EC",
+          "x": "gpKdQCmPTIIDUmB9dJWGHd-UmqqcZj7aG-KTMO40JjU",
+          "y": "wzgbGQiUlwk98wIxQ8JmEFYkSsfNoV4RS1FlJRQRxRE",
+          "crv": "P-256"
+        }
+      },
+      "canonicalText": "{\"artifactFingerprintVersion\":\"1.0.0\",\"artifactHash\":\"78fdf3f8fc4ee1cc033305e2ff85d724cacc77cff1157c84455c9edf54d6629e\",\"artifactHashAlgorithm\":\"SHA-256\",\"attestationVersion\":\"1.0.0\",\"issuedAt\":\"2026-01-15T12:00:00.000Z\",\"issuer\":\"agentverify-conformance\",\"reportHash\":\"7fce309f39106e46f7079d4a0441b0f28122a21caabe6d771c78ff268400f524\",\"rulesetVersion\":\"1.4.0\",\"scanId\":\"conformance-scan-0001\",\"scannerVersion\":\"1.4.0\",\"schemaVersion\":\"1.3.0\",\"score\":42,\"verdict\":\"REVIEW\"}",
+      "canonicalSha256": "197acd39f1a9bbe0e4d0bde01df9786363aa949769451f2580b3ff624426a76e"
+    },
+    "baseHighS": {
+      "form": "high-s",
+      "attestation": {
+        "payload": {
+          "attestationVersion": "1.0.0",
+          "artifactHash": "78fdf3f8fc4ee1cc033305e2ff85d724cacc77cff1157c84455c9edf54d6629e",
+          "artifactHashAlgorithm": "SHA-256",
+          "artifactFingerprintVersion": "1.0.0",
+          "scanId": "conformance-scan-0001",
+          "reportHash": "7fce309f39106e46f7079d4a0441b0f28122a21caabe6d771c78ff268400f524",
+          "verdict": "REVIEW",
+          "score": 42,
+          "scannerVersion": "1.4.0",
+          "rulesetVersion": "1.4.0",
+          "schemaVersion": "1.3.0",
+          "issuedAt": "2026-01-15T12:00:00.000Z",
+          "issuer": "agentverify-conformance"
+        },
+        "signature": "iI9L74SxTj/j0zaEW98A76mfDX44ln8bqplNwEoaWn/biroCUCtsYtXMX3l7DGMXxj8dcGnXoCo5OaFBYE7BBg==",
+        "algorithm": "ECDSA-P256-SHA256",
+        "publicKey": {
+          "key_ops": [
+            "verify"
+          ],
+          "ext": true,
+          "kty": "EC",
+          "x": "gpKdQCmPTIIDUmB9dJWGHd-UmqqcZj7aG-KTMO40JjU",
+          "y": "wzgbGQiUlwk98wIxQ8JmEFYkSsfNoV4RS1FlJRQRxRE",
+          "crv": "P-256"
+        }
+      },
+      "canonicalText": "{\"artifactFingerprintVersion\":\"1.0.0\",\"artifactHash\":\"78fdf3f8fc4ee1cc033305e2ff85d724cacc77cff1157c84455c9edf54d6629e\",\"artifactHashAlgorithm\":\"SHA-256\",\"attestationVersion\":\"1.0.0\",\"issuedAt\":\"2026-01-15T12:00:00.000Z\",\"issuer\":\"agentverify-conformance\",\"reportHash\":\"7fce309f39106e46f7079d4a0441b0f28122a21caabe6d771c78ff268400f524\",\"rulesetVersion\":\"1.4.0\",\"scanId\":\"conformance-scan-0001\",\"scannerVersion\":\"1.4.0\",\"schemaVersion\":\"1.3.0\",\"score\":42,\"verdict\":\"REVIEW\"}",
+      "canonicalSha256": "197acd39f1a9bbe0e4d0bde01df9786363aa949769451f2580b3ff624426a76e"
+    },
+    "withPolicy": {
+      "form": "low-s",
+      "attestation": {
+        "payload": {
+          "attestationVersion": "1.0.0",
+          "artifactHash": "78fdf3f8fc4ee1cc033305e2ff85d724cacc77cff1157c84455c9edf54d6629e",
+          "artifactHashAlgorithm": "SHA-256",
+          "artifactFingerprintVersion": "1.0.0",
+          "scanId": "conformance-scan-0001",
+          "reportHash": "7fce309f39106e46f7079d4a0441b0f28122a21caabe6d771c78ff268400f524",
+          "verdict": "REVIEW",
+          "score": 42,
+          "scannerVersion": "1.4.0",
+          "rulesetVersion": "1.4.0",
+          "schemaVersion": "1.3.0",
+          "issuedAt": "2026-01-15T12:00:00.000Z",
+          "issuer": "agentverify-conformance",
+          "policyProfile": "conformance-policy",
+          "policyResult": "FAIL"
+        },
+        "signature": "BqJoSGcQAVJkVKZIWo4H7L2s2eM360cCK5179gQSpNcDT3yiFZAExkCzpR4r03xDBM/tvxfQFbFrz1kSiDxflA==",
+        "algorithm": "ECDSA-P256-SHA256",
+        "publicKey": {
+          "key_ops": [
+            "verify"
+          ],
+          "ext": true,
+          "kty": "EC",
+          "x": "gpKdQCmPTIIDUmB9dJWGHd-UmqqcZj7aG-KTMO40JjU",
+          "y": "wzgbGQiUlwk98wIxQ8JmEFYkSsfNoV4RS1FlJRQRxRE",
+          "crv": "P-256"
+        }
+      },
+      "canonicalText": "{\"artifactFingerprintVersion\":\"1.0.0\",\"artifactHash\":\"78fdf3f8fc4ee1cc033305e2ff85d724cacc77cff1157c84455c9edf54d6629e\",\"artifactHashAlgorithm\":\"SHA-256\",\"attestationVersion\":\"1.0.0\",\"issuedAt\":\"2026-01-15T12:00:00.000Z\",\"issuer\":\"agentverify-conformance\",\"policyProfile\":\"conformance-policy\",\"policyResult\":\"FAIL\",\"reportHash\":\"7fce309f39106e46f7079d4a0441b0f28122a21caabe6d771c78ff268400f524\",\"rulesetVersion\":\"1.4.0\",\"scanId\":\"conformance-scan-0001\",\"scannerVersion\":\"1.4.0\",\"schemaVersion\":\"1.3.0\",\"score\":42,\"verdict\":\"REVIEW\"}",
+      "canonicalSha256": "3e372d3022a3bad9becd02516ff3c73060489be36b3fb4179cfc8de831947c90"
+    },
+    "withPolicyHighS": {
+      "form": "high-s",
+      "attestation": {
+        "payload": {
+          "attestationVersion": "1.0.0",
+          "artifactHash": "78fdf3f8fc4ee1cc033305e2ff85d724cacc77cff1157c84455c9edf54d6629e",
+          "artifactHashAlgorithm": "SHA-256",
+          "artifactFingerprintVersion": "1.0.0",
+          "scanId": "conformance-scan-0001",
+          "reportHash": "7fce309f39106e46f7079d4a0441b0f28122a21caabe6d771c78ff268400f524",
+          "verdict": "REVIEW",
+          "score": 42,
+          "scannerVersion": "1.4.0",
+          "rulesetVersion": "1.4.0",
+          "schemaVersion": "1.3.0",
+          "issuedAt": "2026-01-15T12:00:00.000Z",
+          "issuer": "agentverify-conformance",
+          "policyProfile": "conformance-policy",
+          "policyResult": "FAIL"
+        },
+        "signature": "BqJoSGcQAVJkVKZIWo4H7L2s2eM360cCK5179gQSpNf8sINc6m/7Or9MWuHULIO8uBcM7o9HiNOH6nGwdCbFvQ==",
+        "algorithm": "ECDSA-P256-SHA256",
+        "publicKey": {
+          "key_ops": [
+            "verify"
+          ],
+          "ext": true,
+          "kty": "EC",
+          "x": "gpKdQCmPTIIDUmB9dJWGHd-UmqqcZj7aG-KTMO40JjU",
+          "y": "wzgbGQiUlwk98wIxQ8JmEFYkSsfNoV4RS1FlJRQRxRE",
+          "crv": "P-256"
+        }
+      },
+      "canonicalText": "{\"artifactFingerprintVersion\":\"1.0.0\",\"artifactHash\":\"78fdf3f8fc4ee1cc033305e2ff85d724cacc77cff1157c84455c9edf54d6629e\",\"artifactHashAlgorithm\":\"SHA-256\",\"attestationVersion\":\"1.0.0\",\"issuedAt\":\"2026-01-15T12:00:00.000Z\",\"issuer\":\"agentverify-conformance\",\"policyProfile\":\"conformance-policy\",\"policyResult\":\"FAIL\",\"reportHash\":\"7fce309f39106e46f7079d4a0441b0f28122a21caabe6d771c78ff268400f524\",\"rulesetVersion\":\"1.4.0\",\"scanId\":\"conformance-scan-0001\",\"scannerVersion\":\"1.4.0\",\"schemaVersion\":\"1.3.0\",\"score\":42,\"verdict\":\"REVIEW\"}",
+      "canonicalSha256": "3e372d3022a3bad9becd02516ff3c73060489be36b3fb4179cfc8de831947c90"
+    },
+    "taggedSignature": {
+      "form": "low-s",
+      "attestation": {
+        "payload": {
+          "attestationVersion": "1.0.0",
+          "artifactHash": "78fdf3f8fc4ee1cc033305e2ff85d724cacc77cff1157c84455c9edf54d6629e",
+          "artifactHashAlgorithm": "SHA-256",
+          "artifactFingerprintVersion": "1.0.0",
+          "scanId": "conformance-scan-0001",
+          "reportHash": "7fce309f39106e46f7079d4a0441b0f28122a21caabe6d771c78ff268400f524",
+          "verdict": "REVIEW",
+          "score": 42,
+          "scannerVersion": "1.4.0",
+          "rulesetVersion": "1.4.0",
+          "schemaVersion": "1.3.0",
+          "issuedAt": "2026-01-15T12:00:00.000Z",
+          "issuer": "agentverify-conformance"
+        },
+        "signature": "71Sgk7V8y3hJKvNmZ8k5BBFK1r0fPPesYp5hYojXjqFsQcHLYdmI2mfyxkVow+jYbzqWWQmLiBmmdeq+CVFPXg==",
+        "algorithm": "ECDSA-P256-SHA256",
+        "publicKey": {
+          "key_ops": [
+            "verify"
+          ],
+          "ext": true,
+          "kty": "EC",
+          "x": "gpKdQCmPTIIDUmB9dJWGHd-UmqqcZj7aG-KTMO40JjU",
+          "y": "wzgbGQiUlwk98wIxQ8JmEFYkSsfNoV4RS1FlJRQRxRE",
+          "crv": "P-256"
+        }
+      },
+      "canonicalText": "{\"artifactFingerprintVersion\":\"1.0.0\",\"artifactHash\":\"78fdf3f8fc4ee1cc033305e2ff85d724cacc77cff1157c84455c9edf54d6629e\",\"artifactHashAlgorithm\":\"SHA-256\",\"attestationVersion\":\"1.0.0\",\"issuedAt\":\"2026-01-15T12:00:00.000Z\",\"issuer\":\"agentverify-conformance\",\"reportHash\":\"7fce309f39106e46f7079d4a0441b0f28122a21caabe6d771c78ff268400f524\",\"rulesetVersion\":\"1.4.0\",\"scanId\":\"conformance-scan-0001\",\"scannerVersion\":\"1.4.0\",\"schemaVersion\":\"1.3.0\",\"score\":42,\"verdict\":\"REVIEW\"}",
+      "canonicalSha256": "197acd39f1a9bbe0e4d0bde01df9786363aa949769451f2580b3ff624426a76e"
+    }
+  },
+  "cases": [
+    {
+      "name": "valid.base",
+      "description": "A scan attestation with no policy fields (low-S signature).",
+      "from": "base",
+      "expected": {
+        "status": "VALID"
+      }
+    },
+    {
+      "name": "valid.with-policy",
+      "description": "A scan attestation with policyProfile and policyResult (low-S).",
+      "from": "withPolicy",
+      "expected": {
+        "status": "VALID"
+      }
+    },
+    {
+      "name": "valid.low-s",
+      "description": "DELIBERATE: a low-S signature verifies under legacy semantics.",
+      "from": "base",
+      "expected": {
+        "status": "VALID"
+      }
+    },
+    {
+      "name": "valid.high-s",
+      "description": "DELIBERATE: the (r, n - s) twin of the SAME signature also verifies under legacy semantics. The low-S rule applies to the profile-attestation type only; legacy verification is unchanged.",
+      "from": "baseHighS",
+      "expected": {
+        "status": "VALID"
+      }
+    },
+    {
+      "name": "valid.with-policy.high-s",
+      "description": "The same for an attestation with policy fields.",
+      "from": "withPolicyHighS",
+      "expected": {
+        "status": "VALID"
+      }
+    },
+    {
+      "name": "valid.expected-key-matches",
+      "description": "Verified against the expected public key it embeds.",
+      "from": "base",
+      "expectedPublicKey": "legacy",
+      "expected": {
+        "status": "VALID"
+      }
+    },
+    {
+      "name": "valid.high-s.expected-key-matches",
+      "description": "A high-S legacy signature verified against the expected key.",
+      "from": "baseHighS",
+      "expectedPublicKey": "legacy",
+      "expected": {
+        "status": "VALID"
+      }
+    },
+    {
+      "name": "tamper.artifactHash",
+      "description": "artifactHash changed after signing",
+      "from": "base",
+      "patch": [
+        {
+          "op": "replace",
+          "path": "/payload/artifactHash",
+          "value": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      ],
+      "expected": {
+        "status": "INVALID_SIGNATURE"
+      }
+    },
+    {
+      "name": "tamper.scanId",
+      "description": "scanId changed after signing",
+      "from": "base",
+      "patch": [
+        {
+          "op": "replace",
+          "path": "/payload/scanId",
+          "value": "conformance-scan-0002"
+        }
+      ],
+      "expected": {
+        "status": "INVALID_SIGNATURE"
+      }
+    },
+    {
+      "name": "tamper.reportHash",
+      "description": "reportHash changed after signing",
+      "from": "base",
+      "patch": [
+        {
+          "op": "replace",
+          "path": "/payload/reportHash",
+          "value": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+        }
+      ],
+      "expected": {
+        "status": "INVALID_SIGNATURE"
+      }
+    },
+    {
+      "name": "tamper.verdict",
+      "description": "verdict changed after signing",
+      "from": "base",
+      "patch": [
+        {
+          "op": "replace",
+          "path": "/payload/verdict",
+          "value": "PASS"
+        }
+      ],
+      "expected": {
+        "status": "INVALID_SIGNATURE"
+      }
+    },
+    {
+      "name": "tamper.score",
+      "description": "score changed after signing",
+      "from": "base",
+      "patch": [
+        {
+          "op": "replace",
+          "path": "/payload/score",
+          "value": 43
+        }
+      ],
+      "expected": {
+        "status": "INVALID_SIGNATURE"
+      }
+    },
+    {
+      "name": "tamper.scannerVersion",
+      "description": "scannerVersion changed after signing",
+      "from": "base",
+      "patch": [
+        {
+          "op": "replace",
+          "path": "/payload/scannerVersion",
+          "value": "1.4.1"
+        }
+      ],
+      "expected": {
+        "status": "INVALID_SIGNATURE"
+      }
+    },
+    {
+      "name": "tamper.rulesetVersion",
+      "description": "rulesetVersion changed after signing",
+      "from": "base",
+      "patch": [
+        {
+          "op": "replace",
+          "path": "/payload/rulesetVersion",
+          "value": "1.4.1"
+        }
+      ],
+      "expected": {
+        "status": "INVALID_SIGNATURE"
+      }
+    },
+    {
+      "name": "tamper.schemaVersion",
+      "description": "schemaVersion changed after signing",
+      "from": "base",
+      "patch": [
+        {
+          "op": "replace",
+          "path": "/payload/schemaVersion",
+          "value": "1.3.1"
+        }
+      ],
+      "expected": {
+        "status": "INVALID_SIGNATURE"
+      }
+    },
+    {
+      "name": "tamper.artifactHashAlgorithm",
+      "description": "artifactHashAlgorithm changed after signing",
+      "from": "base",
+      "patch": [
+        {
+          "op": "replace",
+          "path": "/payload/artifactHashAlgorithm",
+          "value": "SHA-512"
+        }
+      ],
+      "expected": {
+        "status": "INVALID_SIGNATURE"
+      }
+    },
+    {
+      "name": "tamper.artifactFingerprintVersion",
+      "description": "artifactFingerprintVersion changed after signing",
+      "from": "base",
+      "patch": [
+        {
+          "op": "replace",
+          "path": "/payload/artifactFingerprintVersion",
+          "value": "1.0.1"
+        }
+      ],
+      "expected": {
+        "status": "INVALID_SIGNATURE"
+      }
+    },
+    {
+      "name": "tamper.issuedAt",
+      "description": "issuedAt changed after signing",
+      "from": "base",
+      "patch": [
+        {
+          "op": "replace",
+          "path": "/payload/issuedAt",
+          "value": "2026-01-15T12:00:01.000Z"
+        }
+      ],
+      "expected": {
+        "status": "INVALID_SIGNATURE"
+      }
+    },
+    {
+      "name": "tamper.issuer",
+      "description": "issuer changed after signing",
+      "from": "base",
+      "patch": [
+        {
+          "op": "replace",
+          "path": "/payload/issuer",
+          "value": "agentverify-conformance-other"
+        }
+      ],
+      "expected": {
+        "status": "INVALID_SIGNATURE"
+      }
+    },
+    {
+      "name": "tamper.high-s.verdict",
+      "description": "A high-S legacy signature over a changed payload still fails: legacy accepts the twin form, not a wrong message.",
+      "from": "baseHighS",
+      "patch": [
+        {
+          "op": "replace",
+          "path": "/payload/verdict",
+          "value": "PASS"
+        }
+      ],
+      "expected": {
+        "status": "INVALID_SIGNATURE"
+      }
+    },
+    {
+      "name": "tamper.policyResult",
+      "description": "policyResult flipped",
+      "from": "withPolicy",
+      "patch": [
+        {
+          "op": "replace",
+          "path": "/payload/policyResult",
+          "value": "PASS"
+        }
+      ],
+      "expected": {
+        "status": "INVALID_SIGNATURE"
+      }
+    },
+    {
+      "name": "tamper.policyProfile",
+      "description": "policyProfile changed",
+      "from": "withPolicy",
+      "patch": [
+        {
+          "op": "replace",
+          "path": "/payload/policyProfile",
+          "value": "other-policy"
+        }
+      ],
+      "expected": {
+        "status": "INVALID_SIGNATURE"
+      }
+    },
+    {
+      "name": "tamper.policy-removed",
+      "description": "policy fields removed",
+      "from": "withPolicy",
+      "patch": [
+        {
+          "op": "remove",
+          "path": "/payload/policyResult"
+        },
+        {
+          "op": "remove",
+          "path": "/payload/policyProfile"
+        }
+      ],
+      "expected": {
+        "status": "INVALID_SIGNATURE"
+      }
+    },
+    {
+      "name": "tamper.policy-added",
+      "description": "policy fields added",
+      "from": "base",
+      "patch": [
+        {
+          "op": "add",
+          "path": "/payload/policyProfile",
+          "value": "conformance-policy"
+        },
+        {
+          "op": "add",
+          "path": "/payload/policyResult",
+          "value": "PASS"
+        }
+      ],
+      "expected": {
+        "status": "INVALID_SIGNATURE"
+      }
+    },
+    {
+      "name": "tamper.unknown-field-added",
+      "description": "an unknown payload field added (the legacy signature covers every field present)",
+      "from": "base",
+      "patch": [
+        {
+          "op": "add",
+          "path": "/payload/extra",
+          "value": "x"
+        }
+      ],
+      "expected": {
+        "status": "INVALID_SIGNATURE"
+      }
+    },
+    {
+      "name": "tamper.signature-bit-flipped",
+      "description": "one bit of the signature flipped",
+      "from": "base",
+      "patch": [
+        {
+          "op": "replace",
+          "path": "/signature",
+          "value": "iI9L74SxTj/j0zeEW98A76mfDX44ln8bqplNwEoaWn8kdUX8r9STniozoIaE85zn9qfdPT0//lq6gCmBnBRkSw=="
+        }
+      ],
+      "expected": {
+        "status": "INVALID_SIGNATURE"
+      }
+    },
+    {
+      "name": "tamper.signature-zeros",
+      "description": "a well-formed but wrong signature (64 zero bytes)",
+      "from": "base",
+      "patch": [
+        {
+          "op": "replace",
+          "path": "/signature",
+          "value": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=="
+        }
+      ],
+      "expected": {
+        "status": "INVALID_SIGNATURE"
+      }
+    },
+    {
+      "name": "tamper.embedded-key-swapped",
+      "description": "the embedded key replaced by another key",
+      "from": "base",
+      "patch": [
+        {
+          "op": "replace",
+          "path": "/publicKey",
+          "value": {
+            "key_ops": [
+              "verify"
+            ],
+            "ext": true,
+            "kty": "EC",
+            "x": "FF_sFVS5bdHuVl3QMhKSYQudTy8b5Eo7BDcEfcKOKHg",
+            "y": "l8W7FUjUFMp65GNO-2tey1GC1psL-FDqdDslrtsF3as",
+            "crv": "P-256"
+          }
+        }
+      ],
+      "expected": {
+        "status": "INVALID_SIGNATURE"
+      }
+    },
+    {
+      "name": "expected-key.mismatch",
+      "description": "the embedded key is not the expected key",
+      "from": "base",
+      "expectedPublicKey": "legacyOther",
+      "expected": {
+        "status": "INVALID_SIGNATURE"
+      }
+    },
+    {
+      "name": "version.unsupported",
+      "description": "attestationVersion 1.0.1",
+      "from": "base",
+      "patch": [
+        {
+          "op": "replace",
+          "path": "/payload/attestationVersion",
+          "value": "1.0.1"
+        }
+      ],
+      "expected": {
+        "status": "UNSUPPORTED_VERSION"
+      }
+    },
+    {
+      "name": "version.unsupported-checked-before-signature",
+      "description": "attestationVersion 2.0.0 is UNSUPPORTED_VERSION even though the signature would also fail",
+      "from": "base",
+      "patch": [
+        {
+          "op": "replace",
+          "path": "/payload/attestationVersion",
+          "value": "2.0.0"
+        }
+      ],
+      "expected": {
+        "status": "UNSUPPORTED_VERSION"
+      }
+    },
+    {
+      "name": "malformed.missing-verdict",
+      "description": "verdict removed",
+      "from": "base",
+      "patch": [
+        {
+          "op": "remove",
+          "path": "/payload/verdict"
+        }
+      ],
+      "expected": {
+        "status": "MALFORMED"
+      }
+    },
+    {
+      "name": "malformed.missing-score",
+      "description": "score removed",
+      "from": "base",
+      "patch": [
+        {
+          "op": "remove",
+          "path": "/payload/score"
+        }
+      ],
+      "expected": {
+        "status": "MALFORMED"
+      }
+    },
+    {
+      "name": "malformed.missing-issuedAt",
+      "description": "issuedAt removed",
+      "from": "base",
+      "patch": [
+        {
+          "op": "remove",
+          "path": "/payload/issuedAt"
+        }
+      ],
+      "expected": {
+        "status": "MALFORMED"
+      }
+    },
+    {
+      "name": "malformed.missing-artifactHash",
+      "description": "artifactHash removed",
+      "from": "base",
+      "patch": [
+        {
+          "op": "remove",
+          "path": "/payload/artifactHash"
+        }
+      ],
+      "expected": {
+        "status": "MALFORMED"
+      }
+    },
+    {
+      "name": "malformed.missing-issuer",
+      "description": "issuer removed",
+      "from": "base",
+      "patch": [
+        {
+          "op": "remove",
+          "path": "/payload/issuer"
+        }
+      ],
+      "expected": {
+        "status": "MALFORMED"
+      }
+    },
+    {
+      "name": "malformed.null-verdict",
+      "description": "verdict is null",
+      "from": "base",
+      "patch": [
+        {
+          "op": "replace",
+          "path": "/payload/verdict",
+          "value": null
+        }
+      ],
+      "expected": {
+        "status": "MALFORMED"
+      }
+    },
+    {
+      "name": "malformed.algorithm",
+      "description": "algorithm ES256",
+      "from": "base",
+      "patch": [
+        {
+          "op": "replace",
+          "path": "/algorithm",
+          "value": "ES256"
+        }
+      ],
+      "expected": {
+        "status": "MALFORMED"
+      }
+    },
+    {
+      "name": "malformed.signature-empty",
+      "description": "empty signature",
+      "from": "base",
+      "patch": [
+        {
+          "op": "replace",
+          "path": "/signature",
+          "value": ""
+        }
+      ],
+      "expected": {
+        "status": "MALFORMED"
+      }
+    },
+    {
+      "name": "malformed.signature-not-base64",
+      "description": "signature that is not base64",
+      "from": "base",
+      "patch": [
+        {
+          "op": "replace",
+          "path": "/signature",
+          "value": "!!!not-base64!!!"
+        }
+      ],
+      "expected": {
+        "status": "MALFORMED"
+      }
+    },
+    {
+      "name": "malformed.publicKey-missing",
+      "description": "embedded key removed",
+      "from": "base",
+      "patch": [
+        {
+          "op": "remove",
+          "path": "/publicKey"
+        }
+      ],
+      "expected": {
+        "status": "MALFORMED"
+      }
+    },
+    {
+      "name": "malformed.publicKey-garbage",
+      "description": "embedded key that is not a key",
+      "from": "base",
+      "patch": [
+        {
+          "op": "replace",
+          "path": "/publicKey",
+          "value": {
+            "kty": "EC",
+            "crv": "P-256",
+            "x": "AAAA",
+            "y": "AAAA"
+          }
+        }
+      ],
+      "expected": {
+        "status": "MALFORMED"
+      }
+    },
+    {
+      "name": "cross-type.tagged-signature",
+      "description": "A signature over the TAGGED (profile-style) input does not verify as a legacy attestation, even with the right key.",
+      "from": "taggedSignature",
+      "expected": {
+        "status": "INVALID_SIGNATURE"
+      }
+    },
+    {
+      "name": "cross-type.profile-attestation-is-malformed",
+      "description": "The legacy verifier given a profile attestation fails closed: the required scan fields are absent. (The attestation object is taken from bundles.v3.json, B1.)",
+      "fromBundle": "B1",
+      "expected": {
+        "status": "MALFORMED"
+      }
+    }
+  ]
+}

@@ -1,6 +1,6 @@
 {
   "name": "agentverify",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "private": true,
   "workspaces": [
     "apps/*",
@@ -18,6 +18,12 @@
     "private:build:scanner": "npm run build --workspace=packages/scanner",
     "private:test:scanner": "npm run test --workspace=packages/scanner",
     "test:worker": "npm run test --workspace=workers/api",
+    "test:conformance": "node --test conformance/test/jcs.test.mjs conformance/test/profileAttestation.test.mjs conformance/test/legacyAttestation.test.mjs conformance/test/vectorHygiene.test.mjs conformance/test/domains.test.mjs",
+    "test:conformance:v3": "node --test conformance/v3/test/jcs.test.mjs conformance/v3/test/limits.test.mjs conformance/v3/test/timestamp.test.mjs conformance/v3/test/policy.test.mjs conformance/v3/test/assessment.test.mjs conformance/v3/test/profileAttestation.test.mjs conformance/v3/test/legacyAttestation.test.mjs conformance/v3/test/vectorHygiene.test.mjs conformance/v3/test/domains.test.mjs conformance/v3/test/docs.test.mjs",
+    "test:conformance:v4": "node --test conformance/v4/test/jcs.test.mjs conformance/v4/test/limits.test.mjs conformance/v4/test/timestamp.test.mjs conformance/v4/test/policy.test.mjs conformance/v4/test/assessment.test.mjs conformance/v4/test/profileAttestation.test.mjs conformance/v4/test/legacyAttestation.test.mjs conformance/v4/test/vectorHygiene.test.mjs conformance/v4/test/domains.test.mjs conformance/v4/test/docs.test.mjs",
+    "test:conformance:v3:post-authorization": "node conformance/implementation/run-v3-post-authorization.mjs",
+    "test:conformance:v4:post-authorization": "node conformance/implementation/run-v4-post-authorization.mjs",
+    "test:implementation-gate": "node --test conformance/implementation/postAuthorizationGate.test.mjs",
     "test:rules": "npx firebase-tools@13 emulators:exec --only firestore --project agentverify-rules-test \"node firestore-tests/rules.test.mjs\"",
     "lint": "npm run lint --workspace=apps/web",
     "review": "node scripts/review.mjs",

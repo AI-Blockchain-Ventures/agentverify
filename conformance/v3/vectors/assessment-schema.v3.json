@@ -1,0 +1,1616 @@
+{
+  "vectorSet": "agentverify-profile-attestation-conformance",
+  "version": "3.0.0",
+  "supersedes": "vector set v2 (frozen, unchanged; v3 is a NEW set, not a patch of v2)",
+  "note": "CONFORMANCE VECTOR. Synthetic data and throwaway keys: nothing here is a real customer, scan, key or credential. Do not treat any key in this file as an Agent Verify signing key.",
+  "purpose": "The exact schema of a profile assessment, schema version 1.1.0. A case is the synthetic base assessment with a patch applied (values written { \"$ieeeHex\": \"<16 hex digits>\" } are rebuilt as the exact IEEE-754 double before validation). expected is null (valid) or the first problem, by stable code.",
+  "schemaVersion": "1.1.0",
+  "enums": {
+    "confidence": [
+      "high",
+      "medium",
+      "low"
+    ],
+    "severity": [
+      "high",
+      "medium",
+      "low"
+    ],
+    "polarity": [
+      "gap",
+      "positive",
+      "context"
+    ],
+    "axis": [
+      "manifest",
+      "tools",
+      "network",
+      "shell",
+      "filesystem",
+      "identity",
+      "sensitive",
+      "dependencies",
+      "lockfile",
+      "execution-config",
+      "sbom",
+      "metadata"
+    ],
+    "provenance": [
+      "DECLARED",
+      "STATICALLY_OBSERVED",
+      "RECOMPUTED",
+      "CRYPTOGRAPHICALLY_VERIFIED",
+      "BEHAVIORALLY_OBSERVED",
+      "EXTERNAL_EVIDENCE",
+      "INFERRED"
+    ],
+    "upstreamSeverity": [
+      "Critical",
+      "High",
+      "Medium"
+    ],
+    "checkStatus": [
+      "EVIDENCE_OBSERVED",
+      "GAP_IDENTIFIED",
+      "NOT_ASSESSED"
+    ]
+  },
+  "controlStatusRule": "any check GAP_IDENTIFIED => GAP_IDENTIFIED; otherwise any NOT_ASSESSED => NOT_ASSESSED; otherwise EVIDENCE_OBSERVED. There is no \"passed\" status.",
+  "problemCodes": [
+    "assessment.schema.top-level",
+    "assessment.schema.schema-version",
+    "assessment.schema.profile",
+    "assessment.schema.profile.implemented-controls",
+    "assessment.schema.controls",
+    "assessment.schema.control",
+    "assessment.schema.checks",
+    "assessment.schema.check",
+    "assessment.schema.coverage",
+    "assessment.schema.control-status",
+    "assessment.schema.evidence",
+    "assessment.schema.evidence.duplicate-id",
+    "assessment.schema.evidence-reference",
+    "assessment.schema.unmapped-evidence",
+    "assessment.schema.not-implemented",
+    "assessment.schema.package",
+    "assessment.schema.notes"
+  ],
+  "base": {
+    "schemaVersion": "1.1.0",
+    "profile": {
+      "profileId": "owasp-agentic-skills-2026",
+      "framework": "OWASP_AGENTIC_SKILLS_TOP_10",
+      "upstreamRepo": "OWASP/www-project-agentic-skills-top-10",
+      "upstreamCommit": "d6f7d7d0de314f52a83a85d1828e06ab096e595c",
+      "upstreamStatus": "public-review",
+      "upstreamLicense": "CC-BY-SA-4.0",
+      "agentverifyProfileVersion": "1.0.0-alpha.1",
+      "implementedControls": [
+        "AST02",
+        "AST03",
+        "AST04"
+      ],
+      "scannerVersion": "1.4.0",
+      "assessmentEngineVersion": "1.0.1",
+      "riskRubricVersion": "1.0.0",
+      "keyAllowlistVersion": "1.0.0",
+      "normalizationVersion": "1.0.0"
+    },
+    "controls": [
+      {
+        "controlId": "AST02",
+        "framework": "OWASP_AGENTIC_SKILLS_TOP_10",
+        "title": "Synthetic control AST02",
+        "upstreamSeverity": "High",
+        "status": "EVIDENCE_OBSERVED",
+        "confidence": "medium",
+        "explanation": "Synthetic explanation for AST02.",
+        "coverage": {
+          "total": 1,
+          "evidenceObserved": 1,
+          "gapIdentified": 0,
+          "notAssessed": 0
+        },
+        "checks": [
+          {
+            "checkId": "2.1",
+            "title": "Synthetic check 2.1",
+            "status": "EVIDENCE_OBSERVED",
+            "confidence": "medium",
+            "explanation": "Synthetic.",
+            "provenance": [
+              "STATICALLY_OBSERVED"
+            ],
+            "supportingEvidenceIds": [
+              "ev-0001"
+            ]
+          }
+        ]
+      },
+      {
+        "controlId": "AST03",
+        "framework": "OWASP_AGENTIC_SKILLS_TOP_10",
+        "title": "Synthetic control AST03",
+        "upstreamSeverity": "High",
+        "status": "GAP_IDENTIFIED",
+        "confidence": "medium",
+        "explanation": "Synthetic explanation for AST03.",
+        "coverage": {
+          "total": 1,
+          "evidenceObserved": 0,
+          "gapIdentified": 1,
+          "notAssessed": 0
+        },
+        "checks": [
+          {
+            "checkId": "3.1",
+            "title": "Synthetic check 3.1",
+            "status": "GAP_IDENTIFIED",
+            "confidence": "medium",
+            "explanation": "Synthetic.",
+            "provenance": [
+              "STATICALLY_OBSERVED"
+            ],
+            "supportingEvidenceIds": [
+              "ev-0002"
+            ]
+          }
+        ]
+      },
+      {
+        "controlId": "AST04",
+        "framework": "OWASP_AGENTIC_SKILLS_TOP_10",
+        "title": "Synthetic control AST04",
+        "upstreamSeverity": "High",
+        "status": "EVIDENCE_OBSERVED",
+        "confidence": "medium",
+        "explanation": "Synthetic explanation for AST04.",
+        "coverage": {
+          "total": 1,
+          "evidenceObserved": 1,
+          "gapIdentified": 0,
+          "notAssessed": 0
+        },
+        "checks": [
+          {
+            "checkId": "4.1",
+            "title": "Synthetic check 4.1",
+            "status": "EVIDENCE_OBSERVED",
+            "confidence": "medium",
+            "explanation": "Synthetic.",
+            "provenance": [
+              "STATICALLY_OBSERVED"
+            ],
+            "supportingEvidenceIds": [
+              "ev-0003"
+            ]
+          }
+        ]
+      }
+    ],
+    "notImplementedControls": [
+      "AST01",
+      "AST05",
+      "AST06",
+      "AST07",
+      "AST08",
+      "AST09",
+      "AST10"
+    ],
+    "evidence": [
+      {
+        "id": "ev-0001",
+        "kind": "conformance.example-positive",
+        "axis": "manifest",
+        "polarity": "positive",
+        "severity": "low",
+        "confidence": "high",
+        "provenance": [
+          "STATICALLY_OBSERVED"
+        ],
+        "summary": "Synthetic positive observation for AST02.",
+        "expected": "n/a",
+        "remediation": "n/a",
+        "facts": {
+          "present": true,
+          "count": 3
+        },
+        "locations": [
+          {
+            "file": "SKILL.md",
+            "line": 2
+          }
+        ]
+      },
+      {
+        "id": "ev-0002",
+        "kind": "conformance.example-gap",
+        "axis": "filesystem",
+        "polarity": "gap",
+        "severity": "high",
+        "confidence": "medium",
+        "provenance": [
+          "STATICALLY_OBSERVED",
+          "INFERRED"
+        ],
+        "summary": "Synthetic gap on a non-ASCII path: résumé 🙂",
+        "expected": "n/a",
+        "remediation": "n/a",
+        "facts": {
+          "printablePercent": 98,
+          "note": "quote \" backslash \\ slash / tab\t newline\n"
+        },
+        "locations": [
+          {
+            "file": "docs/résumé-🙂.md",
+            "line": 1
+          },
+          {
+            "file": "src/index.js"
+          }
+        ]
+      },
+      {
+        "id": "ev-0003",
+        "kind": "conformance.example-context",
+        "axis": "network",
+        "polarity": "context",
+        "severity": "low",
+        "confidence": "low",
+        "provenance": [
+          "DECLARED"
+        ],
+        "summary": "Synthetic context item.",
+        "expected": "n/a",
+        "remediation": "n/a",
+        "facts": {
+          "hosts": [
+            "b.example.test",
+            "a.example.test"
+          ],
+          "empty": []
+        },
+        "locations": []
+      }
+    ],
+    "unmappedEvidenceIds": [],
+    "package": {
+      "digest": "avpkg-sha256:9fc4448c2e85c812c981cfd961939a23acf5d74b52888cbb26814dcb78390ac0",
+      "fileCount": 3,
+      "manifestFiles": [
+        "SKILL.md"
+      ]
+    },
+    "notes": [
+      "Synthetic assessment for conformance vectors. Not scanner output."
+    ]
+  },
+  "cases": [
+    {
+      "name": "valid.base",
+      "patch": [],
+      "expected": null
+    },
+    {
+      "name": "top.unknown-field",
+      "patch": [
+        {
+          "op": "add",
+          "path": "/extra",
+          "value": "x"
+        }
+      ],
+      "expected": "assessment.schema.top-level"
+    },
+    {
+      "name": "top.missing-notes",
+      "patch": [
+        {
+          "op": "remove",
+          "path": "/notes"
+        }
+      ],
+      "expected": "assessment.schema.top-level"
+    },
+    {
+      "name": "top.missing-package",
+      "patch": [
+        {
+          "op": "remove",
+          "path": "/package"
+        }
+      ],
+      "expected": "assessment.schema.top-level"
+    },
+    {
+      "name": "schema-version.unsupported",
+      "patch": [
+        {
+          "op": "replace",
+          "path": "/schemaVersion",
+          "value": "1.2.0"
+        }
+      ],
+      "expected": "assessment.schema.schema-version"
+    },
+    {
+      "name": "profile.unknown-field",
+      "patch": [
+        {
+          "op": "add",
+          "path": "/profile/extra",
+          "value": "x"
+        }
+      ],
+      "expected": "assessment.schema.profile"
+    },
+    {
+      "name": "profile.missing-field",
+      "patch": [
+        {
+          "op": "remove",
+          "path": "/profile/scannerVersion"
+        }
+      ],
+      "expected": "assessment.schema.profile"
+    },
+    {
+      "name": "profile.id-uppercase",
+      "patch": [
+        {
+          "op": "replace",
+          "path": "/profile/profileId",
+          "value": "OWASP"
+        }
+      ],
+      "expected": "assessment.schema.profile"
+    },
+    {
+      "name": "profile.commit-short",
+      "patch": [
+        {
+          "op": "replace",
+          "path": "/profile/upstreamCommit",
+          "value": "d6f7d7d"
+        }
+      ],
+      "expected": "assessment.schema.profile"
+    },
+    {
+      "name": "profile.commit-uppercase",
+      "patch": [
+        {
+          "op": "replace",
+          "path": "/profile/upstreamCommit",
+          "value": "D6F7D7D0DE314F52A83A85D1828E06AB096E595C"
+        }
+      ],
+      "expected": "assessment.schema.profile"
+    },
+    {
+      "name": "profile.version-not-semver",
+      "patch": [
+        {
+          "op": "replace",
+          "path": "/profile/agentverifyProfileVersion",
+          "value": "latest"
+        }
+      ],
+      "expected": "assessment.schema.profile"
+    },
+    {
+      "name": "profile.interpretation-version-not-semver",
+      "patch": [
+        {
+          "op": "replace",
+          "path": "/profile/riskRubricVersion",
+          "value": "v1"
+        }
+      ],
+      "expected": "assessment.schema.profile"
+    },
+    {
+      "name": "profile.status-empty",
+      "patch": [
+        {
+          "op": "replace",
+          "path": "/profile/upstreamStatus",
+          "value": ""
+        }
+      ],
+      "expected": "assessment.schema.profile"
+    },
+    {
+      "name": "profile.implemented-empty",
+      "patch": [
+        {
+          "op": "replace",
+          "path": "/profile/implementedControls",
+          "value": []
+        }
+      ],
+      "expected": "assessment.schema.profile.implemented-controls"
+    },
+    {
+      "name": "profile.implemented-duplicate",
+      "patch": [
+        {
+          "op": "replace",
+          "path": "/profile/implementedControls",
+          "value": [
+            "AST02",
+            "AST02",
+            "AST04"
+          ]
+        }
+      ],
+      "expected": "assessment.schema.profile.implemented-controls"
+    },
+    {
+      "name": "profile.implemented-bad-id",
+      "patch": [
+        {
+          "op": "replace",
+          "path": "/profile/implementedControls",
+          "value": [
+            "ast02",
+            "AST03",
+            "AST04"
+          ]
+        }
+      ],
+      "expected": "assessment.schema.profile.implemented-controls"
+    },
+    {
+      "name": "profile.implemented-not-array",
+      "patch": [
+        {
+          "op": "replace",
+          "path": "/profile/implementedControls",
+          "value": "AST02"
+        }
+      ],
+      "expected": "assessment.schema.profile.implemented-controls"
+    },
+    {
+      "name": "controls.not-array",
+      "patch": [
+        {
+          "op": "replace",
+          "path": "/controls",
+          "value": {}
+        }
+      ],
+      "expected": "assessment.schema.controls"
+    },
+    {
+      "name": "controls.duplicate-control",
+      "patch": [
+        {
+          "op": "replace",
+          "path": "/controls/1/controlId",
+          "value": "AST02"
+        }
+      ],
+      "expected": "assessment.schema.controls"
+    },
+    {
+      "name": "controls.reordered-against-implemented",
+      "patch": [
+        {
+          "op": "swap",
+          "path": "/controls",
+          "i": 0,
+          "j": 1
+        }
+      ],
+      "expected": "assessment.schema.controls"
+    },
+    {
+      "name": "controls.one-missing",
+      "patch": [
+        {
+          "op": "remove",
+          "path": "/controls/2"
+        }
+      ],
+      "expected": "assessment.schema.controls"
+    },
+    {
+      "name": "controls.one-extra",
+      "patch": [
+        {
+          "op": "add",
+          "path": "/controls/-",
+          "value": {
+            "controlId": "AST05",
+            "framework": "OWASP_AGENTIC_SKILLS_TOP_10",
+            "title": "Synthetic control AST04",
+            "upstreamSeverity": "High",
+            "status": "EVIDENCE_OBSERVED",
+            "confidence": "medium",
+            "explanation": "Synthetic explanation for AST04.",
+            "coverage": {
+              "total": 1,
+              "evidenceObserved": 1,
+              "gapIdentified": 0,
+              "notAssessed": 0
+            },
+            "checks": [
+              {
+                "checkId": "4.1",
+                "title": "Synthetic check 4.1",
+                "status": "EVIDENCE_OBSERVED",
+                "confidence": "medium",
+                "explanation": "Synthetic.",
+                "provenance": [
+                  "STATICALLY_OBSERVED"
+                ],
+                "supportingEvidenceIds": [
+                  "ev-0003"
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "expected": "assessment.schema.controls"
+    },
+    {
+      "name": "control.unknown-field",
+      "patch": [
+        {
+          "op": "add",
+          "path": "/controls/0/extra",
+          "value": "x"
+        }
+      ],
+      "expected": "assessment.schema.control"
+    },
+    {
+      "name": "control.severity-case",
+      "patch": [
+        {
+          "op": "replace",
+          "path": "/controls/0/upstreamSeverity",
+          "value": "high"
+        }
+      ],
+      "expected": "assessment.schema.control"
+    },
+    {
+      "name": "control.framework-differs",
+      "patch": [
+        {
+          "op": "replace",
+          "path": "/controls/0/framework",
+          "value": "OTHER_FRAMEWORK"
+        }
+      ],
+      "expected": "assessment.schema.control"
+    },
+    {
+      "name": "control.title-empty",
+      "patch": [
+        {
+          "op": "replace",
+          "path": "/controls/0/title",
+          "value": ""
+        }
+      ],
+      "expected": "assessment.schema.control"
+    },
+    {
+      "name": "control.status-not-enum",
+      "patch": [
+        {
+          "op": "replace",
+          "path": "/controls/0/status",
+          "value": "PASS"
+        }
+      ],
+      "expected": "assessment.schema.control"
+    },
+    {
+      "name": "control.confidence-not-enum",
+      "patch": [
+        {
+          "op": "replace",
+          "path": "/controls/0/confidence",
+          "value": "certain"
+        }
+      ],
+      "expected": "assessment.schema.control"
+    },
+    {
+      "name": "control.bad-id",
+      "patch": [
+        {
+          "op": "replace",
+          "path": "/controls/0/controlId",
+          "value": "ast02"
+        }
+      ],
+      "expected": "assessment.schema.control"
+    },
+    {
+      "name": "checks.empty",
+      "patch": [
+        {
+          "op": "replace",
+          "path": "/controls/0/checks",
+          "value": []
+        }
+      ],
+      "expected": "assessment.schema.checks"
+    },
+    {
+      "name": "checks.not-array",
+      "patch": [
+        {
+          "op": "replace",
+          "path": "/controls/0/checks",
+          "value": {}
+        }
+      ],
+      "expected": "assessment.schema.checks"
+    },
+    {
+      "name": "check.unknown-field",
+      "patch": [
+        {
+          "op": "add",
+          "path": "/controls/0/checks/0/extra",
+          "value": "x"
+        }
+      ],
+      "expected": "assessment.schema.check"
+    },
+    {
+      "name": "check.status-not-enum",
+      "patch": [
+        {
+          "op": "replace",
+          "path": "/controls/0/checks/0/status",
+          "value": "PASS"
+        }
+      ],
+      "expected": "assessment.schema.check"
+    },
+    {
+      "name": "check.duplicate-id",
+      "patch": [
+        {
+          "op": "add",
+          "path": "/controls/0/checks/-",
+          "value": {
+            "checkId": "2.1",
+            "title": "Synthetic check 2.1",
+            "status": "EVIDENCE_OBSERVED",
+            "confidence": "medium",
+            "explanation": "Synthetic.",
+            "provenance": [
+              "STATICALLY_OBSERVED"
+            ],
+            "supportingEvidenceIds": [
+              "ev-0001"
+            ]
+          }
+        }
+      ],
+      "expected": "assessment.schema.check"
+    },
+    {
+      "name": "check.provenance-not-enum",
+      "patch": [
+        {
+          "op": "replace",
+          "path": "/controls/0/checks/0/provenance",
+          "value": [
+            "GUESSED"
+          ]
+        }
+      ],
+      "expected": "assessment.schema.check"
+    },
+    {
+      "name": "check.provenance-duplicate",
+      "patch": [
+        {
+          "op": "replace",
+          "path": "/controls/0/checks/0/provenance",
+          "value": [
+            "DECLARED",
+            "DECLARED"
+          ]
+        }
+      ],
+      "expected": "assessment.schema.check"
+    },
+    {
+      "name": "check.evidence-ids-duplicate",
+      "patch": [
+        {
+          "op": "replace",
+          "path": "/controls/0/checks/0/supportingEvidenceIds",
+          "value": [
+            "ev-0001",
+            "ev-0001"
+          ]
+        }
+      ],
+      "expected": "assessment.schema.check"
+    },
+    {
+      "name": "check.evidence-id-empty",
+      "patch": [
+        {
+          "op": "replace",
+          "path": "/controls/0/checks/0/supportingEvidenceIds",
+          "value": [
+            ""
+          ]
+        }
+      ],
+      "expected": "assessment.schema.check"
+    },
+    {
+      "name": "check.id-empty",
+      "patch": [
+        {
+          "op": "replace",
+          "path": "/controls/0/checks/0/checkId",
+          "value": ""
+        }
+      ],
+      "expected": "assessment.schema.check"
+    },
+    {
+      "name": "check.title-empty",
+      "patch": [
+        {
+          "op": "replace",
+          "path": "/controls/0/checks/0/title",
+          "value": ""
+        }
+      ],
+      "expected": "assessment.schema.check"
+    },
+    {
+      "name": "check.explanation-not-string",
+      "patch": [
+        {
+          "op": "replace",
+          "path": "/controls/0/checks/0/explanation",
+          "value": 7
+        }
+      ],
+      "expected": "assessment.schema.check"
+    },
+    {
+      "name": "check.confidence-not-enum",
+      "patch": [
+        {
+          "op": "replace",
+          "path": "/controls/0/checks/0/confidence",
+          "value": "certain"
+        }
+      ],
+      "expected": "assessment.schema.check"
+    },
+    {
+      "name": "control.explanation-not-string",
+      "patch": [
+        {
+          "op": "replace",
+          "path": "/controls/0/explanation",
+          "value": 7
+        }
+      ],
+      "expected": "assessment.schema.control"
+    },
+    {
+      "name": "valid.control-with-gap-and-not-assessed-checks",
+      "patch": [
+        {
+          "op": "add",
+          "path": "/controls/0/checks/-",
+          "value": {
+            "checkId": "2.2",
+            "title": "Synthetic check 2.2",
+            "status": "NOT_ASSESSED",
+            "confidence": "medium",
+            "explanation": "Synthetic.",
+            "provenance": [],
+            "supportingEvidenceIds": []
+          }
+        },
+        {
+          "op": "add",
+          "path": "/controls/0/checks/-",
+          "value": {
+            "checkId": "2.3",
+            "title": "Synthetic check 2.3",
+            "status": "GAP_IDENTIFIED",
+            "confidence": "medium",
+            "explanation": "Synthetic.",
+            "provenance": [
+              "STATICALLY_OBSERVED"
+            ],
+            "supportingEvidenceIds": [
+              "ev-0002"
+            ]
+          }
+        },
+        {
+          "op": "replace",
+          "path": "/controls/0/coverage",
+          "value": {
+            "total": 3,
+            "evidenceObserved": 1,
+            "gapIdentified": 1,
+            "notAssessed": 1
+          }
+        },
+        {
+          "op": "replace",
+          "path": "/controls/0/status",
+          "value": "GAP_IDENTIFIED"
+        }
+      ],
+      "expected": null
+    },
+    {
+      "name": "valid.control-with-only-not-assessed-and-observed-checks",
+      "patch": [
+        {
+          "op": "add",
+          "path": "/controls/0/checks/-",
+          "value": {
+            "checkId": "2.2",
+            "title": "Synthetic check 2.2",
+            "status": "NOT_ASSESSED",
+            "confidence": "medium",
+            "explanation": "Synthetic.",
+            "provenance": [],
+            "supportingEvidenceIds": []
+          }
+        },
+        {
+          "op": "replace",
+          "path": "/controls/0/coverage",
+          "value": {
+            "total": 2,
+            "evidenceObserved": 1,
+            "gapIdentified": 0,
+            "notAssessed": 1
+          }
+        },
+        {
+          "op": "replace",
+          "path": "/controls/0/status",
+          "value": "NOT_ASSESSED"
+        }
+      ],
+      "expected": null
+    },
+    {
+      "name": "control-status.gap-present-but-shown-as-not-assessed",
+      "patch": [
+        {
+          "op": "add",
+          "path": "/controls/0/checks/-",
+          "value": {
+            "checkId": "2.2",
+            "title": "Synthetic check 2.2",
+            "status": "NOT_ASSESSED",
+            "confidence": "medium",
+            "explanation": "Synthetic.",
+            "provenance": [],
+            "supportingEvidenceIds": []
+          }
+        },
+        {
+          "op": "add",
+          "path": "/controls/0/checks/-",
+          "value": {
+            "checkId": "2.3",
+            "title": "Synthetic check 2.3",
+            "status": "GAP_IDENTIFIED",
+            "confidence": "medium",
+            "explanation": "Synthetic.",
+            "provenance": [
+              "STATICALLY_OBSERVED"
+            ],
+            "supportingEvidenceIds": [
+              "ev-0002"
+            ]
+          }
+        },
+        {
+          "op": "replace",
+          "path": "/controls/0/coverage",
+          "value": {
+            "total": 3,
+            "evidenceObserved": 1,
+            "gapIdentified": 1,
+            "notAssessed": 1
+          }
+        },
+        {
+          "op": "replace",
+          "path": "/controls/0/status",
+          "value": "GAP_IDENTIFIED"
+        },
+        {
+          "op": "replace",
+          "path": "/controls/0/status",
+          "value": "NOT_ASSESSED"
+        }
+      ],
+      "expected": "assessment.schema.control-status"
+    },
+    {
+      "name": "control-status.gap-present-but-shown-as-observed",
+      "patch": [
+        {
+          "op": "add",
+          "path": "/controls/0/checks/-",
+          "value": {
+            "checkId": "2.2",
+            "title": "Synthetic check 2.2",
+            "status": "NOT_ASSESSED",
+            "confidence": "medium",
+            "explanation": "Synthetic.",
+            "provenance": [],
+            "supportingEvidenceIds": []
+          }
+        },
+        {
+          "op": "add",
+          "path": "/controls/0/checks/-",
+          "value": {
+            "checkId": "2.3",
+            "title": "Synthetic check 2.3",
+            "status": "GAP_IDENTIFIED",
+            "confidence": "medium",
+            "explanation": "Synthetic.",
+            "provenance": [
+              "STATICALLY_OBSERVED"
+            ],
+            "supportingEvidenceIds": [
+              "ev-0002"
+            ]
+          }
+        },
+        {
+          "op": "replace",
+          "path": "/controls/0/coverage",
+          "value": {
+            "total": 3,
+            "evidenceObserved": 1,
+            "gapIdentified": 1,
+            "notAssessed": 1
+          }
+        },
+        {
+          "op": "replace",
+          "path": "/controls/0/status",
+          "value": "GAP_IDENTIFIED"
+        },
+        {
+          "op": "replace",
+          "path": "/controls/0/status",
+          "value": "EVIDENCE_OBSERVED"
+        }
+      ],
+      "expected": "assessment.schema.control-status"
+    },
+    {
+      "name": "control-status.not-assessed-present-but-shown-as-observed",
+      "patch": [
+        {
+          "op": "add",
+          "path": "/controls/0/checks/-",
+          "value": {
+            "checkId": "2.2",
+            "title": "Synthetic check 2.2",
+            "status": "NOT_ASSESSED",
+            "confidence": "medium",
+            "explanation": "Synthetic.",
+            "provenance": [],
+            "supportingEvidenceIds": []
+          }
+        },
+        {
+          "op": "replace",
+          "path": "/controls/0/coverage",
+          "value": {
+            "total": 2,
+            "evidenceObserved": 1,
+            "gapIdentified": 0,
+            "notAssessed": 1
+          }
+        },
+        {
+          "op": "replace",
+          "path": "/controls/0/status",
+          "value": "NOT_ASSESSED"
+        },
+        {
+          "op": "replace",
+          "path": "/controls/0/status",
+          "value": "EVIDENCE_OBSERVED"
+        }
+      ],
+      "expected": "assessment.schema.control-status"
+    },
+    {
+      "name": "control-status.not-assessed-present-but-shown-as-gap",
+      "patch": [
+        {
+          "op": "add",
+          "path": "/controls/0/checks/-",
+          "value": {
+            "checkId": "2.2",
+            "title": "Synthetic check 2.2",
+            "status": "NOT_ASSESSED",
+            "confidence": "medium",
+            "explanation": "Synthetic.",
+            "provenance": [],
+            "supportingEvidenceIds": []
+          }
+        },
+        {
+          "op": "replace",
+          "path": "/controls/0/coverage",
+          "value": {
+            "total": 2,
+            "evidenceObserved": 1,
+            "gapIdentified": 0,
+            "notAssessed": 1
+          }
+        },
+        {
+          "op": "replace",
+          "path": "/controls/0/status",
+          "value": "NOT_ASSESSED"
+        },
+        {
+          "op": "replace",
+          "path": "/controls/0/status",
+          "value": "GAP_IDENTIFIED"
+        }
+      ],
+      "expected": "assessment.schema.control-status"
+    },
+    {
+      "name": "evidence-reference.unresolved",
+      "patch": [
+        {
+          "op": "replace",
+          "path": "/controls/0/checks/0/supportingEvidenceIds",
+          "value": [
+            "ev-9999"
+          ]
+        }
+      ],
+      "expected": "assessment.schema.evidence-reference"
+    },
+    {
+      "name": "coverage.total-wrong",
+      "patch": [
+        {
+          "op": "replace",
+          "path": "/controls/0/coverage/total",
+          "value": 2
+        }
+      ],
+      "expected": "assessment.schema.coverage"
+    },
+    {
+      "name": "coverage.observed-wrong",
+      "patch": [
+        {
+          "op": "replace",
+          "path": "/controls/0/coverage/evidenceObserved",
+          "value": 0
+        },
+        {
+          "op": "replace",
+          "path": "/controls/0/coverage/notAssessed",
+          "value": 1
+        }
+      ],
+      "expected": "assessment.schema.coverage"
+    },
+    {
+      "name": "coverage.unknown-field",
+      "patch": [
+        {
+          "op": "add",
+          "path": "/controls/0/coverage/extra",
+          "value": 1
+        }
+      ],
+      "expected": "assessment.schema.coverage"
+    },
+    {
+      "name": "coverage.negative",
+      "patch": [
+        {
+          "op": "replace",
+          "path": "/controls/0/coverage/gapIdentified",
+          "value": -1
+        }
+      ],
+      "expected": "assessment.schema.coverage"
+    },
+    {
+      "name": "coverage.string-count",
+      "patch": [
+        {
+          "op": "replace",
+          "path": "/controls/0/coverage/total",
+          "value": "1"
+        }
+      ],
+      "expected": "assessment.schema.coverage"
+    },
+    {
+      "name": "coverage.fractional-count",
+      "patch": [
+        {
+          "op": "replace",
+          "path": "/controls/0/coverage/total",
+          "value": {
+            "$ieeeHex": "3fe0000000000000"
+          }
+        }
+      ],
+      "expected": "assessment.schema.coverage"
+    },
+    {
+      "name": "control-status.gap-shown-as-observed",
+      "patch": [
+        {
+          "op": "replace",
+          "path": "/controls/1/status",
+          "value": "EVIDENCE_OBSERVED"
+        }
+      ],
+      "expected": "assessment.schema.control-status"
+    },
+    {
+      "name": "control-status.observed-shown-as-gap",
+      "patch": [
+        {
+          "op": "replace",
+          "path": "/controls/0/status",
+          "value": "GAP_IDENTIFIED"
+        }
+      ],
+      "expected": "assessment.schema.control-status"
+    },
+    {
+      "name": "control-status.observed-shown-as-not-assessed",
+      "patch": [
+        {
+          "op": "replace",
+          "path": "/controls/0/status",
+          "value": "NOT_ASSESSED"
+        }
+      ],
+      "expected": "assessment.schema.control-status"
+    },
+    {
+      "name": "evidence.not-array",
+      "patch": [
+        {
+          "op": "replace",
+          "path": "/evidence",
+          "value": {}
+        }
+      ],
+      "expected": "assessment.schema.evidence"
+    },
+    {
+      "name": "evidence.unknown-field",
+      "patch": [
+        {
+          "op": "add",
+          "path": "/evidence/0/extra",
+          "value": "x"
+        }
+      ],
+      "expected": "assessment.schema.evidence"
+    },
+    {
+      "name": "evidence.axis-not-enum",
+      "patch": [
+        {
+          "op": "replace",
+          "path": "/evidence/0/axis",
+          "value": "network2"
+        }
+      ],
+      "expected": "assessment.schema.evidence"
+    },
+    {
+      "name": "evidence.polarity-not-enum",
+      "patch": [
+        {
+          "op": "replace",
+          "path": "/evidence/0/polarity",
+          "value": "good"
+        }
+      ],
+      "expected": "assessment.schema.evidence"
+    },
+    {
+      "name": "evidence.severity-not-enum",
+      "patch": [
+        {
+          "op": "replace",
+          "path": "/evidence/0/severity",
+          "value": "critical"
+        }
+      ],
+      "expected": "assessment.schema.evidence"
+    },
+    {
+      "name": "evidence.kind-empty",
+      "patch": [
+        {
+          "op": "replace",
+          "path": "/evidence/0/kind",
+          "value": ""
+        }
+      ],
+      "expected": "assessment.schema.evidence"
+    },
+    {
+      "name": "evidence.summary-not-string",
+      "patch": [
+        {
+          "op": "replace",
+          "path": "/evidence/0/summary",
+          "value": 7
+        }
+      ],
+      "expected": "assessment.schema.evidence"
+    },
+    {
+      "name": "evidence.facts-nested-object",
+      "patch": [
+        {
+          "op": "replace",
+          "path": "/evidence/0/facts",
+          "value": {
+            "a": {
+              "b": 1
+            }
+          }
+        }
+      ],
+      "expected": "assessment.schema.evidence"
+    },
+    {
+      "name": "evidence.facts-null",
+      "patch": [
+        {
+          "op": "replace",
+          "path": "/evidence/0/facts",
+          "value": {
+            "a": null
+          }
+        }
+      ],
+      "expected": "assessment.schema.evidence"
+    },
+    {
+      "name": "evidence.facts-fraction",
+      "patch": [
+        {
+          "op": "replace",
+          "path": "/evidence/0/facts",
+          "value": {
+            "a": {
+              "$ieeeHex": "3fe0000000000000"
+            }
+          }
+        }
+      ],
+      "expected": "assessment.schema.evidence"
+    },
+    {
+      "name": "evidence.facts-negative-zero",
+      "patch": [
+        {
+          "op": "replace",
+          "path": "/evidence/0/facts",
+          "value": {
+            "a": {
+              "$ieeeHex": "8000000000000000"
+            }
+          }
+        }
+      ],
+      "expected": "assessment.schema.evidence"
+    },
+    {
+      "name": "evidence.facts-unsafe-integer",
+      "patch": [
+        {
+          "op": "replace",
+          "path": "/evidence/0/facts",
+          "value": {
+            "a": {
+              "$ieeeHex": "4340000000000000"
+            }
+          }
+        }
+      ],
+      "expected": "assessment.schema.evidence"
+    },
+    {
+      "name": "evidence.facts-mixed-array",
+      "patch": [
+        {
+          "op": "replace",
+          "path": "/evidence/0/facts",
+          "value": {
+            "a": [
+              "x",
+              1
+            ]
+          }
+        }
+      ],
+      "expected": "assessment.schema.evidence"
+    },
+    {
+      "name": "evidence.location-line-zero",
+      "patch": [
+        {
+          "op": "replace",
+          "path": "/evidence/0/locations/0/line",
+          "value": 0
+        }
+      ],
+      "expected": "assessment.schema.evidence"
+    },
+    {
+      "name": "evidence.location-line-string",
+      "patch": [
+        {
+          "op": "replace",
+          "path": "/evidence/0/locations/0/line",
+          "value": "2"
+        }
+      ],
+      "expected": "assessment.schema.evidence"
+    },
+    {
+      "name": "evidence.location-unknown-field",
+      "patch": [
+        {
+          "op": "add",
+          "path": "/evidence/0/locations/0/extra",
+          "value": "x"
+        }
+      ],
+      "expected": "assessment.schema.evidence"
+    },
+    {
+      "name": "evidence.location-file-empty",
+      "patch": [
+        {
+          "op": "replace",
+          "path": "/evidence/0/locations/0/file",
+          "value": ""
+        }
+      ],
+      "expected": "assessment.schema.evidence"
+    },
+    {
+      "name": "evidence.provenance-not-enum",
+      "patch": [
+        {
+          "op": "replace",
+          "path": "/evidence/0/provenance",
+          "value": [
+            "GUESSED"
+          ]
+        }
+      ],
+      "expected": "assessment.schema.evidence"
+    },
+    {
+      "name": "evidence.duplicate-id",
+      "patch": [
+        {
+          "op": "replace",
+          "path": "/evidence/1/id",
+          "value": "ev-0001"
+        }
+      ],
+      "expected": "assessment.schema.evidence.duplicate-id"
+    },
+    {
+      "name": "unmapped.unresolved",
+      "patch": [
+        {
+          "op": "replace",
+          "path": "/unmappedEvidenceIds",
+          "value": [
+            "ev-9999"
+          ]
+        }
+      ],
+      "expected": "assessment.schema.unmapped-evidence"
+    },
+    {
+      "name": "unmapped.duplicate",
+      "patch": [
+        {
+          "op": "replace",
+          "path": "/unmappedEvidenceIds",
+          "value": [
+            "ev-0001",
+            "ev-0001"
+          ]
+        }
+      ],
+      "expected": "assessment.schema.unmapped-evidence"
+    },
+    {
+      "name": "unmapped.not-array",
+      "patch": [
+        {
+          "op": "replace",
+          "path": "/unmappedEvidenceIds",
+          "value": "ev-0001"
+        }
+      ],
+      "expected": "assessment.schema.unmapped-evidence"
+    },
+    {
+      "name": "not-implemented.overlaps-implemented",
+      "patch": [
+        {
+          "op": "replace",
+          "path": "/notImplementedControls",
+          "value": [
+            "AST01",
+            "AST02",
+            "AST05",
+            "AST06",
+            "AST07",
+            "AST08",
+            "AST09",
+            "AST10"
+          ]
+        }
+      ],
+      "expected": "assessment.schema.not-implemented"
+    },
+    {
+      "name": "not-implemented.duplicate",
+      "patch": [
+        {
+          "op": "replace",
+          "path": "/notImplementedControls",
+          "value": [
+            "AST01",
+            "AST01"
+          ]
+        }
+      ],
+      "expected": "assessment.schema.not-implemented"
+    },
+    {
+      "name": "not-implemented.bad-id",
+      "patch": [
+        {
+          "op": "replace",
+          "path": "/notImplementedControls",
+          "value": [
+            "ast01"
+          ]
+        }
+      ],
+      "expected": "assessment.schema.not-implemented"
+    },
+    {
+      "name": "not-implemented.not-array",
+      "patch": [
+        {
+          "op": "replace",
+          "path": "/notImplementedControls",
+          "value": "AST01"
+        }
+      ],
+      "expected": "assessment.schema.not-implemented"
+    },
+    {
+      "name": "package.digest-prefix",
+      "patch": [
+        {
+          "op": "replace",
+          "path": "/package/digest",
+          "value": "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+        }
+      ],
+      "expected": "assessment.schema.package"
+    },
+    {
+      "name": "package.file-count-negative",
+      "patch": [
+        {
+          "op": "replace",
+          "path": "/package/fileCount",
+          "value": -1
+        }
+      ],
+      "expected": "assessment.schema.package"
+    },
+    {
+      "name": "package.file-count-string",
+      "patch": [
+        {
+          "op": "replace",
+          "path": "/package/fileCount",
+          "value": "3"
+        }
+      ],
+      "expected": "assessment.schema.package"
+    },
+    {
+      "name": "package.manifest-not-array",
+      "patch": [
+        {
+          "op": "replace",
+          "path": "/package/manifestFiles",
+          "value": "SKILL.md"
+        }
+      ],
+      "expected": "assessment.schema.package"
+    },
+    {
+      "name": "package.unknown-field",
+      "patch": [
+        {
+          "op": "add",
+          "path": "/package/extra",
+          "value": 1
+        }
+      ],
+      "expected": "assessment.schema.package"
+    },
+    {
+      "name": "notes.not-array",
+      "patch": [
+        {
+          "op": "replace",
+          "path": "/notes",
+          "value": "x"
+        }
+      ],
+      "expected": "assessment.schema.notes"
+    },
+    {
+      "name": "notes.item-not-string",
+      "patch": [
+        {
+          "op": "replace",
+          "path": "/notes",
+          "value": [
+            7
+          ]
+        }
+      ],
+      "expected": "assessment.schema.notes"
+    }
+  ]
+}

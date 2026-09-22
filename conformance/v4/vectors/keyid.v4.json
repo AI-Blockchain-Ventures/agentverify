@@ -1,0 +1,341 @@
+{
+  "vectorSet": "agentverify-profile-attestation-conformance",
+  "version": "4.0.0",
+  "supersedes": "vector set v3 (frozen, unchanged; v4 is a NEW set, not a patch of v3)",
+  "note": "CONFORMANCE VECTOR. Synthetic data and throwaway keys: nothing here is a real customer, scan, key or credential. Do not treat any key in this file as an Agent Verify signing key.",
+  "formula": "keyId = base64url( SHA-256( JCS of the required members, lexicographic ) ). EC: {crv,kty,x,y}. RSA: {e,kty,n}. Nothing else (no use, kid, purpose, key_ops, ext) ever affects it.",
+  "thumbprints": [
+    {
+      "name": "RFC 7638 section 3.1 example (RSA)",
+      "source": "RFC 7638 3.1",
+      "jwk": {
+        "kty": "RSA",
+        "n": "0vx7agoebGcQSuuPiLJXZptN9nndrQmbXEps2aiAFbWhM78LhWx4cbbfAAtVT86zwu1RK7aPFFxuhDR1L6tSoc_BJECPebWKRXjBZCiFV4n3oknjhMstn64tZ_2W-5JsGY4Hc5n9yBXArwl93lqt7_RN5w6Cf0h4QyQ5v-65YGjQR0_FDW2QvzqY368QQMicAtaSqzs8KJZgnYb9c7d0zgdAZHzu6qMQvRL5hajrn1n91CbOpbISD08qNLyrdkt-bFTWhAI4vMQFh6WeZu0fM4lFd2NcRwr3XPksINHaQ-G_xBniIqbw0Ls1jF44-csFCur-kEgU8awapJzKnqDKgw",
+        "e": "AQAB",
+        "alg": "RS256",
+        "kid": "2011-04-29"
+      },
+      "thumbprint": "NzbLsXh8uDCcd-6MNwXF4W_7noWXFZAfHkxZsRGC9Xs",
+      "independent": "published in the RFC"
+    },
+    {
+      "name": "RFC 7515 appendix A.3 key (EC P-256)",
+      "source": "RFC 7515 A.3 (key only; the thumbprint is computed, not published)",
+      "jwk": {
+        "kty": "EC",
+        "crv": "P-256",
+        "x": "f83OJ3D2xF1Bg8vub9tLe1gHMzV76e8Tus9uPHvRVEU",
+        "y": "x_FEzRu9m36HLN_tue659LNpXW6pCyStikYjKIWI5a0"
+      },
+      "thumbprint": "oKIywvGUpTVTyxMQ3bwIIeQUudfr_CkLMjCE19ECD-U",
+      "independent": "recomputed in the test by a second method (manual string, node:crypto)"
+    },
+    {
+      "name": "throwaway profile key",
+      "jwk": {
+        "kty": "EC",
+        "crv": "P-256",
+        "x": "x3UQEWSgNs-4duleoECuVtzMbBlWAk8pr5HtJY6eV0M",
+        "y": "aI6bla1h9SEhzTPAjBSADt20gKjcXt4HLV2RglfTsOc"
+      },
+      "thumbprint": "FMYhod4OH0p6QOqU3cXJ14Xti7m31Wagh29IkpFG2uo"
+    },
+    {
+      "name": "throwaway rotated key",
+      "jwk": {
+        "kty": "EC",
+        "crv": "P-256",
+        "x": "ZMqmf88NgZ3aeDa0lqdvcCNtPIj7Y1Ki5BZ0u1ZyO84",
+        "y": "als2UHqCj08rtzEf_JOQ4n2fLr2dk4drIgSG9TRHzqc"
+      },
+      "thumbprint": "zC8yIznc_59RQp7-fWJywhd-y-Mv3a_k3tTw8SjDIHM"
+    },
+    {
+      "name": "throwaway attacker key",
+      "jwk": {
+        "kty": "EC",
+        "crv": "P-256",
+        "x": "A32vvlaKjBPQKtb7nfkjBDb-bd_cnkKsq5Q4Zucs6xs",
+        "y": "ussbX-haq85EJ7Yq6bZl6JQTbcmRGn2YTYASX9Ga9Q0"
+      },
+      "thumbprint": "PIti4pwS-aNtvpPgE3euIs5Zxf9JBUM4NmxAlWsaW4c"
+    },
+    {
+      "name": "extra members do not change the thumbprint (use, kid, ext, key_ops)",
+      "jwk": {
+        "kty": "EC",
+        "crv": "P-256",
+        "x": "x3UQEWSgNs-4duleoECuVtzMbBlWAk8pr5HtJY6eV0M",
+        "y": "aI6bla1h9SEhzTPAjBSADt20gKjcXt4HLV2RglfTsOc",
+        "use": "sig",
+        "kid": "anything",
+        "ext": true,
+        "key_ops": [
+          "verify"
+        ]
+      },
+      "thumbprint": "FMYhod4OH0p6QOqU3cXJ14Xti7m31Wagh29IkpFG2uo"
+    },
+    {
+      "name": "a key-set purpose is not a JWK member and cannot change the thumbprint",
+      "jwk": {
+        "kty": "EC",
+        "crv": "P-256",
+        "x": "x3UQEWSgNs-4duleoECuVtzMbBlWAk8pr5HtJY6eV0M",
+        "y": "aI6bla1h9SEhzTPAjBSADt20gKjcXt4HLV2RglfTsOc",
+        "purpose": "agentverify-profile-v1"
+      },
+      "thumbprint": "FMYhod4OH0p6QOqU3cXJ14Xti7m31Wagh29IkpFG2uo"
+    }
+  ],
+  "jwkChecks": [
+    {
+      "name": "exact four members",
+      "jwk": {
+        "kty": "EC",
+        "crv": "P-256",
+        "x": "x3UQEWSgNs-4duleoECuVtzMbBlWAk8pr5HtJY6eV0M",
+        "y": "aI6bla1h9SEhzTPAjBSADt20gKjcXt4HLV2RglfTsOc"
+      },
+      "expected": {
+        "ok": true
+      }
+    },
+    {
+      "name": "private material",
+      "jwk": {
+        "kty": "EC",
+        "crv": "P-256",
+        "x": "x3UQEWSgNs-4duleoECuVtzMbBlWAk8pr5HtJY6eV0M",
+        "y": "aI6bla1h9SEhzTPAjBSADt20gKjcXt4HLV2RglfTsOc",
+        "d": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+      },
+      "expected": {
+        "ok": false,
+        "integrity": "MALFORMED",
+        "reasonCode": "jwk.private-key-material"
+      }
+    },
+    {
+      "name": "extra member",
+      "jwk": {
+        "kty": "EC",
+        "crv": "P-256",
+        "x": "x3UQEWSgNs-4duleoECuVtzMbBlWAk8pr5HtJY6eV0M",
+        "y": "aI6bla1h9SEhzTPAjBSADt20gKjcXt4HLV2RglfTsOc",
+        "ext": true
+      },
+      "expected": {
+        "ok": false,
+        "integrity": "MALFORMED",
+        "reasonCode": "jwk.members"
+      }
+    },
+    {
+      "name": "purpose member",
+      "jwk": {
+        "kty": "EC",
+        "crv": "P-256",
+        "x": "x3UQEWSgNs-4duleoECuVtzMbBlWAk8pr5HtJY6eV0M",
+        "y": "aI6bla1h9SEhzTPAjBSADt20gKjcXt4HLV2RglfTsOc",
+        "purpose": "agentverify-profile-v1"
+      },
+      "expected": {
+        "ok": false,
+        "integrity": "MALFORMED",
+        "reasonCode": "jwk.members"
+      }
+    },
+    {
+      "name": "missing y",
+      "jwk": {
+        "kty": "EC",
+        "crv": "P-256",
+        "x": "x3UQEWSgNs-4duleoECuVtzMbBlWAk8pr5HtJY6eV0M"
+      },
+      "expected": {
+        "ok": false,
+        "integrity": "MALFORMED",
+        "reasonCode": "jwk.members"
+      }
+    },
+    {
+      "name": "P-384",
+      "jwk": {
+        "kty": "EC",
+        "crv": "P-384",
+        "x": "x3UQEWSgNs-4duleoECuVtzMbBlWAk8pr5HtJY6eV0M",
+        "y": "aI6bla1h9SEhzTPAjBSADt20gKjcXt4HLV2RglfTsOc"
+      },
+      "expected": {
+        "ok": false,
+        "integrity": "UNSUPPORTED_ALGORITHM",
+        "reasonCode": "jwk.not-p256"
+      }
+    },
+    {
+      "name": "RSA",
+      "jwk": {
+        "kty": "RSA",
+        "crv": "P-256",
+        "x": "x3UQEWSgNs-4duleoECuVtzMbBlWAk8pr5HtJY6eV0M",
+        "y": "aI6bla1h9SEhzTPAjBSADt20gKjcXt4HLV2RglfTsOc"
+      },
+      "expected": {
+        "ok": false,
+        "integrity": "UNSUPPORTED_ALGORITHM",
+        "reasonCode": "jwk.not-p256"
+      }
+    },
+    {
+      "name": "coordinate with padding",
+      "jwk": {
+        "kty": "EC",
+        "crv": "P-256",
+        "x": "x3UQEWSgNs-4duleoECuVtzMbBlWAk8pr5HtJY6eV0M=",
+        "y": "aI6bla1h9SEhzTPAjBSADt20gKjcXt4HLV2RglfTsOc"
+      },
+      "expected": {
+        "ok": false,
+        "integrity": "MALFORMED",
+        "reasonCode": "jwk.coordinates"
+      }
+    },
+    {
+      "name": "coordinate too short",
+      "jwk": {
+        "kty": "EC",
+        "crv": "P-256",
+        "x": "x3UQEWSgNs-4duleoECuVtzMbBlWAk8pr5HtJY6eV0M",
+        "y": "AAAA"
+      },
+      "expected": {
+        "ok": false,
+        "integrity": "MALFORMED",
+        "reasonCode": "jwk.coordinates"
+      }
+    },
+    {
+      "name": "coordinate with a character outside the base64url alphabet",
+      "jwk": {
+        "kty": "EC",
+        "crv": "P-256",
+        "x": "x3UQEWSgNs-4duleoECuVtzMbBlWAk8pr5HtJY6eV0+",
+        "y": "aI6bla1h9SEhzTPAjBSADt20gKjcXt4HLV2RglfTsOc"
+      },
+      "expected": {
+        "ok": false,
+        "integrity": "MALFORMED",
+        "reasonCode": "jwk.coordinates"
+      }
+    },
+    {
+      "name": "x: non-canonical spelling of the same 32 bytes (trailing bits set)",
+      "jwk": {
+        "kty": "EC",
+        "crv": "P-256",
+        "x": "x3UQEWSgNs-4duleoECuVtzMbBlWAk8pr5HtJY6eV0N",
+        "y": "aI6bla1h9SEhzTPAjBSADt20gKjcXt4HLV2RglfTsOc"
+      },
+      "expected": {
+        "ok": false,
+        "integrity": "MALFORMED",
+        "reasonCode": "jwk.coordinates"
+      }
+    },
+    {
+      "name": "y: non-canonical spelling of the same 32 bytes (trailing bits set)",
+      "jwk": {
+        "kty": "EC",
+        "crv": "P-256",
+        "x": "x3UQEWSgNs-4duleoECuVtzMbBlWAk8pr5HtJY6eV0M",
+        "y": "aI6bla1h9SEhzTPAjBSADt20gKjcXt4HLV2RglfTsOd"
+      },
+      "expected": {
+        "ok": false,
+        "integrity": "MALFORMED",
+        "reasonCode": "jwk.coordinates"
+      }
+    },
+    {
+      "name": "x = p (canonical 32-byte spelling, not below the field prime)",
+      "jwk": {
+        "kty": "EC",
+        "crv": "P-256",
+        "x": "_____wAAAAEAAAAAAAAAAAAAAAD_______________8",
+        "y": "aI6bla1h9SEhzTPAjBSADt20gKjcXt4HLV2RglfTsOc"
+      },
+      "expected": {
+        "ok": false,
+        "integrity": "MALFORMED",
+        "reasonCode": "jwk.coordinate-range"
+      }
+    },
+    {
+      "name": "x = 2^256 - 1",
+      "jwk": {
+        "kty": "EC",
+        "crv": "P-256",
+        "x": "__________________________________________8",
+        "y": "aI6bla1h9SEhzTPAjBSADt20gKjcXt4HLV2RglfTsOc"
+      },
+      "expected": {
+        "ok": false,
+        "integrity": "MALFORMED",
+        "reasonCode": "jwk.coordinate-range"
+      }
+    },
+    {
+      "name": "y = p",
+      "jwk": {
+        "kty": "EC",
+        "crv": "P-256",
+        "x": "x3UQEWSgNs-4duleoECuVtzMbBlWAk8pr5HtJY6eV0M",
+        "y": "_____wAAAAEAAAAAAAAAAAAAAAD_______________8"
+      },
+      "expected": {
+        "ok": false,
+        "integrity": "MALFORMED",
+        "reasonCode": "jwk.coordinate-range"
+      }
+    },
+    {
+      "name": "x = p - 1 (in range; the curve check, not this one, refuses it later)",
+      "jwk": {
+        "kty": "EC",
+        "crv": "P-256",
+        "x": "_____wAAAAEAAAAAAAAAAAAAAAD_______________4",
+        "y": "aI6bla1h9SEhzTPAjBSADt20gKjcXt4HLV2RglfTsOc"
+      },
+      "expected": {
+        "ok": true
+      }
+    },
+    {
+      "name": "not an object",
+      "jwk": "key",
+      "expected": {
+        "ok": false,
+        "integrity": "MALFORMED",
+        "reasonCode": "jwk.shape"
+      }
+    }
+  ],
+  "aliasing": {
+    "description": "One public key must have ONE accepted keyId. These two JWKs decode to the same point; only the canonical one is accepted, so only its thumbprint can ever be a keyId.",
+    "canonical": {
+      "kty": "EC",
+      "crv": "P-256",
+      "x": "x3UQEWSgNs-4duleoECuVtzMbBlWAk8pr5HtJY6eV0M",
+      "y": "aI6bla1h9SEhzTPAjBSADt20gKjcXt4HLV2RglfTsOc"
+    },
+    "alias": {
+      "kty": "EC",
+      "crv": "P-256",
+      "x": "x3UQEWSgNs-4duleoECuVtzMbBlWAk8pr5HtJY6eV0N",
+      "y": "aI6bla1h9SEhzTPAjBSADt20gKjcXt4HLV2RglfTsOc"
+    },
+    "sameBytes": true,
+    "differentThumbprints": true
+  }
+}

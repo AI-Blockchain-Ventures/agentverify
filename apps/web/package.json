@@ -1,6 +1,6 @@
 {
   "name": "web",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -9,7 +9,7 @@
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
-    "test:unit": "node test/comparisonAndGrouping.test.mjs && node test/firebaseConfigGuard.test.mjs && node test/billingNavigation.test.mjs && node test/complianceMapping.test.mjs && node test/sixViewContract.test.mjs",
+    "test:unit": "node test/comparisonAndGrouping.test.mjs && node test/firebaseConfigGuard.test.mjs && node test/billingNavigation.test.mjs && node test/complianceMapping.test.mjs && node test/sixViewContract.test.mjs && node test/conformanceLegacy.test.mjs && node test/owaspProfile.test.mjs",
     "test:e2e": "playwright test"
   },
   "dependencies": {

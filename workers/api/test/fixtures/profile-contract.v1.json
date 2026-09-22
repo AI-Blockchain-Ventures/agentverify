@@ -1,0 +1,31 @@
+{
+  "contractVersion": "1.0.0",
+  "note": "The frozen PUBLIC contract of a /v1/scan request that carries an explicit `profile`. Additive changes pass; renaming, removing or retyping anything here is a breaking change. Deliberately NOT frozen: whether a profile assessment consumes monthly scan quota (a commercial decision that is still open), and the numeric rate limit.",
+  "profileId": "owasp-agentic-skills-2026",
+  "supportedProfiles": ["owasp-agentic-skills-2026"],
+  "assessmentSchemaVersion": "1.1.0",
+  "success": {
+    "status": 200,
+    "keys": ["assessment", "attestation", "profile", "saved"],
+    "types": { "profile": "string", "assessment": "object", "attestation": "null", "saved": "false" }
+  },
+  "errors": {
+    "unauthenticated": { "status": 401, "keys": ["error"], "error": "Invalid or unauthorized Agent Verify API key" },
+    "invalidJson": { "status": 400, "keys": ["error"], "error": "Invalid JSON body" },
+    "invalidUtf8": { "status": 400, "keys": ["error"], "error": "Request body must be valid UTF-8" },
+    "bodyTooLarge": { "status": 413, "keys": ["error"], "error": "Request body too large" },
+    "unknownProfile": { "status": 400, "keys": ["error", "supportedProfiles"], "error": "Unknown or invalid profile" },
+    "malformedRequest": { "status": 400, "keys": ["error"] },
+    "tooManyFiles": { "status": 413, "keys": ["error"] },
+    "packageSizeRejected": { "status": 413, "keys": ["error", "rejection"], "error": "Package rejected" },
+    "packageRejected": { "status": 422, "keys": ["error", "rejection"], "error": "Package rejected" },
+    "rateLimited": { "status": 429, "keys": ["error"], "error": "Too many profile assessments this hour. Try again later." },
+    "internal": { "status": 500, "keys": ["error"], "error": "Profile assessment failed" }
+  },
+  "rejection": {
+    "keys": ["code", "message"],
+    "optionalKeys": ["path"],
+    "sizeCodes": ["file_too_large", "package_too_large", "too_many_files"]
+  },
+  "limits": { "maxFiles": 500, "maxRequestBodyBytes": 33554432 }
+}

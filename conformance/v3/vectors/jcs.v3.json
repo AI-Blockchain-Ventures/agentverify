@@ -1,0 +1,1841 @@
+{
+  "vectorSet": "agentverify-profile-attestation-conformance",
+  "version": "3.0.0",
+  "supersedes": "vector set v2 (frozen, unchanged; v3 is a NEW set, not a patch of v2)",
+  "note": "CONFORMANCE VECTOR. Synthetic data and throwaway keys: nothing here is a real customer, scan, key or credential. Do not treat any key in this file as an Agent Verify signing key.",
+  "numericProfile": {
+    "id": "agentverify-signed-content-numbers/v1",
+    "statement": "The Agent Verify signed-content numeric profile. NOT RFC 8785. The rule is about the exact mathematical VALUE: a signed number is an integer with |n| <= 2^53 - 1 that is not negative zero. Spellings of the same exact safe integer (98, 98.0, 9.8e1) are the same number, and JCS then canonicalizes it as 98. A token is evaluated exactly, with arbitrary-precision integer arithmetic, and never through a double: 9007199254740993.0 is refused (not rounded to ...992), 1e-400 is refused (not turned into 0), 0.1 is refused. A naturally fractional quantity is a scaled integer under an explicit name (for example printablePercent). The parser (numberTokenProblem), the canonicalizer admission check and the signer pre-check (numberProblem) implement the same rule."
+  },
+  "canonical": [
+    {
+      "name": "rfc8785-section-3.2.3-example",
+      "description": "The worked example from RFC 8785 section 3.2.3 (hand-written expected output).",
+      "mode": "generic-rfc8785",
+      "input": "{\"numbers\": [333333333.33333329, 1E30, 4.50, 2e-3, 0.000000000000000000000000001], \"string\": \"\\u20ac$\\u000F\\u000aA'\\u0042\\u0022\\u005c\\\\\\\"/\", \"literals\": [null, true, false]}",
+      "canonical": "{\"literals\":[null,true,false],\"numbers\":[333333333.3333333,1e+30,4.5,0.002,1e-27],\"string\":\"€$\\u000f\\nA'B\\\"\\\\\\\\\\\"/\"}",
+      "canonicalSha256": "2d5e01a318d0f0879ab568c4be289c8b1f64ef8921a53c6277d5e069978baacb"
+    },
+    {
+      "name": "utf16-key-order",
+      "description": "RFC 8785 section 3.2.3 key sorting: by UTF-16 code units, so U+1F600 (D83D) sorts BEFORE U+FB33 even though its code point is larger.",
+      "mode": "generic-rfc8785",
+      "input": "{\"€ Euro Sign\":\"€ Euro Sign\",\"\\r Carriage Return\":\"\\r Carriage Return\",\"דּ Hebrew Letter Dalet With Dagesh\":\"דּ Hebrew Letter Dalet With Dagesh\",\"1 One\":\"1 One\",\"😀 Emoji: Grinning Face\":\"😀 Emoji: Grinning Face\",\"\u0080 Control\":\"\u0080 Control\",\"ö Latin Small Letter O With Diaeresis\":\"ö Latin Small Letter O With Diaeresis\"}",
+      "canonical": "{\"\\r Carriage Return\":\"\\r Carriage Return\",\"1 One\":\"1 One\",\"\u0080 Control\":\"\u0080 Control\",\"ö Latin Small Letter O With Diaeresis\":\"ö Latin Small Letter O With Diaeresis\",\"€ Euro Sign\":\"€ Euro Sign\",\"😀 Emoji: Grinning Face\":\"😀 Emoji: Grinning Face\",\"דּ Hebrew Letter Dalet With Dagesh\":\"דּ Hebrew Letter Dalet With Dagesh\"}",
+      "canonicalSha256": "b8473608a110c604312aef5034e9e136d992ce54cfb760cec34f84fc07e2366d"
+    },
+    {
+      "name": "whitespace-removed",
+      "description": "Insignificant whitespace is removed.",
+      "mode": "generic-rfc8785",
+      "input": " {\n \"b\" : [ 1 , 2 ] ,\t\"a\" : { } } ",
+      "canonical": "{\"a\":{},\"b\":[1,2]}",
+      "canonicalSha256": "4b42ac649a6785637796cda3552634658d54c4c3fccd17337b11d34ba6f1361e"
+    },
+    {
+      "name": "empty-containers",
+      "description": "Empty containers.",
+      "mode": "generic-rfc8785",
+      "input": "{\"a\":[],\"b\":{},\"c\":[[],{}]}",
+      "canonical": "{\"a\":[],\"b\":{},\"c\":[[],{}]}",
+      "canonicalSha256": "62872cef8308d8aeb4a9c2eaa2d567ba2b9a3b2e982c8d2b9d17c68366b52d00"
+    },
+    {
+      "name": "negative-zero",
+      "description": "Generic JCS: -0 serializes as 0. (The signed-content profile REJECTS negative zero.)",
+      "mode": "generic-rfc8785",
+      "input": "[-0, 0, -0.0]",
+      "canonical": "[0,0,0]",
+      "canonicalSha256": "2a08979e8002252124e861b2816490b04fe03b6b779f9287fb7c25652bbc4052"
+    },
+    {
+      "name": "exponent-forms",
+      "description": "Generic JCS: 1e21 and friends use the ECMAScript form. (Not admitted in signed content.)",
+      "mode": "generic-rfc8785",
+      "input": "[1e21, 1E+21, 1e-7, 0.000001, 1.2345678901234568e20, 1e0]",
+      "canonical": "[1e+21,1e+21,1e-7,0.000001,123456789012345680000,1]",
+      "canonicalSha256": "33949fae3ce394aec03dccfafd0147afeaf7692c0141d70e5a81c982569ece20"
+    },
+    {
+      "name": "integers",
+      "description": "Integers, including the largest safe integer.",
+      "mode": "generic-rfc8785",
+      "input": "[0, 1, -1, 100, 9007199254740991, -9007199254740991]",
+      "canonical": "[0,1,-1,100,9007199254740991,-9007199254740991]",
+      "canonicalSha256": "cecb14fda7587793b82136b82aa3417ac20b232245c8be5d20dd7dde92b62c13"
+    },
+    {
+      "name": "decimals",
+      "description": "Generic JCS: shortest round-trip decimals. (Not admitted in signed content.)",
+      "mode": "generic-rfc8785",
+      "input": "[0.98, 4.50, 0.1, 0.30000000000000004, 1.7976931348623157e308]",
+      "canonical": "[0.98,4.5,0.1,0.30000000000000004,1.7976931348623157e+308]",
+      "canonicalSha256": "9257350c21e78910a8f3331ba9db223dbe3db6f14abc2fe7c704380da3f373e8"
+    },
+    {
+      "name": "string-escapes",
+      "description": "Only the required escapes; control characters as lowercase \\u00xx; DEL, U+2028 and non-ASCII are literal.",
+      "mode": "generic-rfc8785",
+      "input": "[\"\\u0000\\u001f\\b\\t\\n\\f\\r\\\"\\\\\\/ \\u007f\\u2028\\u00e9\\ud83d\\ude00\"]",
+      "canonical": "[\"\\u0000\\u001f\\b\\t\\n\\f\\r\\\"\\\\/ \u007f\u2028é😀\"]",
+      "canonicalSha256": "f125c7685210682633fece35ee7382192d92caa89e64e0db8e754cb195f7a8f4"
+    },
+    {
+      "name": "nested",
+      "description": "Nested objects sort at every level.",
+      "mode": "generic-rfc8785",
+      "input": "{\"z\":{\"b\":1,\"a\":{\"d\":1,\"c\":2}},\"y\":[{\"b\":1,\"a\":2}]}",
+      "canonical": "{\"y\":[{\"a\":2,\"b\":1}],\"z\":{\"a\":{\"c\":2,\"d\":1},\"b\":1}}",
+      "canonicalSha256": "29c1e31a5dda3b768695c7f903e8984364ac8c4eb9f7b34170f9df4d7afc097c"
+    },
+    {
+      "name": "literals",
+      "description": "true, false, null.",
+      "mode": "generic-rfc8785",
+      "input": "{\"t\":true,\"f\":false,\"n\":null}",
+      "canonical": "{\"f\":false,\"n\":null,\"t\":true}",
+      "canonicalSha256": "22e00dc2f7b01420f940fbdbfbdf34fa0667cc6500186495023ba37722cbd05e"
+    },
+    {
+      "name": "escaped-key-same-as-literal",
+      "description": "A key written with an escape is the same key.",
+      "mode": "generic-rfc8785",
+      "input": "{\"\\u0061\":1}",
+      "canonical": "{\"a\":1}",
+      "canonicalSha256": "015abd7f5cc57a2dd94b7590f04ad8084273905ee33ec5cebeae62276a97f862"
+    },
+    {
+      "name": "depth-64-accepted",
+      "description": "Nesting of exactly 64 arrays is accepted.",
+      "mode": "generic-rfc8785",
+      "input": "[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]",
+      "canonical": "[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]",
+      "canonicalSha256": "b3ff3b51ce17ef2a2a68203329ff0e73738c07df874044149c283b28841a0035"
+    }
+  ],
+  "keyOrder": {
+    "input": "{\"€ Euro Sign\":\"€ Euro Sign\",\"\\r Carriage Return\":\"\\r Carriage Return\",\"דּ Hebrew Letter Dalet With Dagesh\":\"דּ Hebrew Letter Dalet With Dagesh\",\"1 One\":\"1 One\",\"😀 Emoji: Grinning Face\":\"😀 Emoji: Grinning Face\",\"\u0080 Control\":\"\u0080 Control\",\"ö Latin Small Letter O With Diaeresis\":\"ö Latin Small Letter O With Diaeresis\"}",
+    "expectedOrder": [
+      "\r Carriage Return",
+      "1 One",
+      "\u0080 Control",
+      "ö Latin Small Letter O With Diaeresis",
+      "€ Euro Sign",
+      "😀 Emoji: Grinning Face",
+      "דּ Hebrew Letter Dalet With Dagesh"
+    ]
+  },
+  "numbers": [
+    {
+      "ieeeHex": "0000000000000000",
+      "expected": "0"
+    },
+    {
+      "ieeeHex": "8000000000000000",
+      "expected": "0"
+    },
+    {
+      "ieeeHex": "0000000000000001",
+      "expected": "5e-324"
+    },
+    {
+      "ieeeHex": "8000000000000001",
+      "expected": "-5e-324"
+    },
+    {
+      "ieeeHex": "7fefffffffffffff",
+      "expected": "1.7976931348623157e+308"
+    },
+    {
+      "ieeeHex": "ffefffffffffffff",
+      "expected": "-1.7976931348623157e+308"
+    },
+    {
+      "ieeeHex": "4340000000000000",
+      "expected": "9007199254740992"
+    },
+    {
+      "ieeeHex": "c340000000000000",
+      "expected": "-9007199254740992"
+    },
+    {
+      "ieeeHex": "4430000000000000",
+      "expected": "295147905179352830000"
+    },
+    {
+      "ieeeHex": "7fffffffffffffff",
+      "expected": null,
+      "error": "JCS_NON_FINITE"
+    },
+    {
+      "ieeeHex": "7ff0000000000000",
+      "expected": null,
+      "error": "JCS_NON_FINITE"
+    },
+    {
+      "ieeeHex": "fff0000000000000",
+      "expected": null,
+      "error": "JCS_NON_FINITE"
+    },
+    {
+      "ieeeHex": "44b52d02c7e14af5",
+      "expected": "9.999999999999997e+22"
+    },
+    {
+      "ieeeHex": "44b52d02c7e14af6",
+      "expected": "1e+23"
+    },
+    {
+      "ieeeHex": "44b52d02c7e14af7",
+      "expected": "1.0000000000000001e+23"
+    },
+    {
+      "ieeeHex": "444b1ae4d6e2ef4e",
+      "expected": "999999999999999700000"
+    },
+    {
+      "ieeeHex": "444b1ae4d6e2ef4f",
+      "expected": "999999999999999900000"
+    },
+    {
+      "ieeeHex": "444b1ae4d6e2ef50",
+      "expected": "1e+21"
+    },
+    {
+      "ieeeHex": "3eb0c6f7a0b5ed8c",
+      "expected": "9.999999999999997e-7"
+    },
+    {
+      "ieeeHex": "3eb0c6f7a0b5ed8d",
+      "expected": "0.000001"
+    },
+    {
+      "ieeeHex": "41b3de4355555553",
+      "expected": "333333333.3333332"
+    },
+    {
+      "ieeeHex": "41b3de4355555554",
+      "expected": "333333333.33333325"
+    },
+    {
+      "ieeeHex": "41b3de4355555555",
+      "expected": "333333333.3333333"
+    },
+    {
+      "ieeeHex": "41b3de4355555556",
+      "expected": "333333333.3333334"
+    },
+    {
+      "ieeeHex": "41b3de4355555557",
+      "expected": "333333333.33333343"
+    },
+    {
+      "ieeeHex": "becbf647612f3696",
+      "expected": "-0.0000033333333333333333"
+    },
+    {
+      "ieeeHex": "43143ff3c1cb0959",
+      "expected": "1424953923781206.2"
+    }
+  ],
+  "parseRejections": [
+    {
+      "name": "duplicate-key",
+      "text": "{\"a\":1,\"a\":2}",
+      "code": "JSON_DUPLICATE_KEY"
+    },
+    {
+      "name": "duplicate-key-nested",
+      "text": "{\"o\":{\"a\":1,\"a\":1}}",
+      "code": "JSON_DUPLICATE_KEY"
+    },
+    {
+      "name": "duplicate-key-escape",
+      "text": "{\"a\":1,\"\\u0061\":2}",
+      "code": "JSON_DUPLICATE_KEY"
+    },
+    {
+      "name": "duplicate-key-proto",
+      "text": "{\"__proto__\":1,\"__proto__\":2}",
+      "code": "JSON_DUPLICATE_KEY"
+    },
+    {
+      "name": "lone-high-surrogate-escape",
+      "text": "\"\\ud800\"",
+      "code": "JSON_ILL_FORMED_STRING"
+    },
+    {
+      "name": "lone-low-surrogate-escape",
+      "text": "\"\\udc00\"",
+      "code": "JSON_ILL_FORMED_STRING"
+    },
+    {
+      "name": "reversed-surrogate-pair",
+      "text": "\"\\udc00\\ud800\"",
+      "code": "JSON_ILL_FORMED_STRING"
+    },
+    {
+      "name": "lone-surrogate-in-key",
+      "text": "{\"\\ud800\":1}",
+      "code": "JSON_ILL_FORMED_STRING"
+    },
+    {
+      "name": "nan",
+      "text": "[NaN]",
+      "code": "JSON_SYNTAX"
+    },
+    {
+      "name": "infinity",
+      "text": "[Infinity]",
+      "code": "JSON_SYNTAX"
+    },
+    {
+      "name": "leading-zero",
+      "text": "[01]",
+      "code": "JSON_SYNTAX"
+    },
+    {
+      "name": "plus-sign",
+      "text": "[+1]",
+      "code": "JSON_SYNTAX"
+    },
+    {
+      "name": "trailing-dot",
+      "text": "[1.]",
+      "code": "JSON_SYNTAX"
+    },
+    {
+      "name": "bare-dot",
+      "text": "[.5]",
+      "code": "JSON_SYNTAX"
+    },
+    {
+      "name": "hex",
+      "text": "[0x10]",
+      "code": "JSON_SYNTAX"
+    },
+    {
+      "name": "trailing-comma-array",
+      "text": "[1,]",
+      "code": "JSON_SYNTAX"
+    },
+    {
+      "name": "trailing-comma-object",
+      "text": "{\"a\":1,}",
+      "code": "JSON_SYNTAX"
+    },
+    {
+      "name": "single-quotes",
+      "text": "{'a':1}",
+      "code": "JSON_SYNTAX"
+    },
+    {
+      "name": "unquoted-key",
+      "text": "{a:1}",
+      "code": "JSON_SYNTAX"
+    },
+    {
+      "name": "comment",
+      "text": "[1 /* x */]",
+      "code": "JSON_SYNTAX"
+    },
+    {
+      "name": "raw-control-char",
+      "text": "\"a\u0001b\"",
+      "code": "JSON_SYNTAX"
+    },
+    {
+      "name": "raw-newline-in-string",
+      "text": "\"a\nb\"",
+      "code": "JSON_SYNTAX"
+    },
+    {
+      "name": "bad-escape",
+      "text": "\"\\x\"",
+      "code": "JSON_SYNTAX"
+    },
+    {
+      "name": "short-unicode-escape",
+      "text": "\"\\u12\"",
+      "code": "JSON_SYNTAX"
+    },
+    {
+      "name": "unterminated-string",
+      "text": "\"abc",
+      "code": "JSON_SYNTAX"
+    },
+    {
+      "name": "empty",
+      "text": "",
+      "code": "JSON_SYNTAX"
+    },
+    {
+      "name": "whitespace-only",
+      "text": "  ",
+      "code": "JSON_SYNTAX"
+    },
+    {
+      "name": "bom",
+      "text": "\ufeff{}",
+      "code": "JSON_BOM"
+    },
+    {
+      "name": "trailing-content",
+      "text": "{} x",
+      "code": "JSON_TRAILING"
+    },
+    {
+      "name": "two-values",
+      "text": "{}{}",
+      "code": "JSON_TRAILING"
+    },
+    {
+      "name": "vertical-tab-whitespace",
+      "text": "[1,\u000b2]",
+      "code": "JSON_SYNTAX"
+    },
+    {
+      "name": "nbsp-whitespace",
+      "text": "[1,\u00a02]",
+      "code": "JSON_SYNTAX"
+    },
+    {
+      "name": "depth-65",
+      "text": "[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]",
+      "code": "JSON_TOO_DEEP"
+    },
+    {
+      "name": "depth-65-objects",
+      "text": "{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":{\"a\":1}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}",
+      "code": "JSON_TOO_DEEP"
+    }
+  ],
+  "numberProfile": {
+    "admittedSpellings": [
+      {
+        "value": 98,
+        "spellings": [
+          "98",
+          "98.0",
+          "98.000",
+          "9.8e1",
+          "9.8E+1",
+          "98e0",
+          "0.98e2",
+          "980e-1",
+          "9800e-2"
+        ],
+        "canonical": "98"
+      },
+      {
+        "value": 0,
+        "spellings": [
+          "0",
+          "0.0",
+          "0e5",
+          "0.000",
+          "0e0"
+        ],
+        "canonical": "0"
+      },
+      {
+        "value": 1,
+        "spellings": [
+          "1",
+          "1.0",
+          "1e0",
+          "10e-1",
+          "100e-2",
+          "0.1e1",
+          "0.00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001e1001",
+          "100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000e-1010",
+          "1e0000000000000000000000000000000000",
+          "1e-0000000000000000000000000000000000",
+          "1.00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+        ],
+        "canonical": "1"
+      },
+      {
+        "value": 100000,
+        "spellings": [
+          "100000",
+          "1e5",
+          "1e+5",
+          "1E5",
+          "10e4",
+          "0.1e6",
+          "1e00000000000000000000000000000000005",
+          "1e+00000000000000000000000000000000000000005"
+        ],
+        "canonical": "100000"
+      },
+      {
+        "value": -98,
+        "spellings": [
+          "-98",
+          "-98.0",
+          "-9.8e1",
+          "-980e-1"
+        ],
+        "canonical": "-98"
+      },
+      {
+        "value": 100,
+        "spellings": [
+          "100",
+          "1e2",
+          "1E2",
+          "1.0e2",
+          "10e1",
+          "1000e-1"
+        ],
+        "canonical": "100"
+      },
+      {
+        "value": 9007199254740991,
+        "spellings": [
+          "9007199254740991",
+          "9007199254740991.0",
+          "9.007199254740991e15",
+          "900719925474099.1e1",
+          "90071992547409910e-1"
+        ],
+        "canonical": "9007199254740991"
+      },
+      {
+        "value": -9007199254740991,
+        "spellings": [
+          "-9007199254740991",
+          "-9007199254740991.0",
+          "-9.007199254740991e15"
+        ],
+        "canonical": "-9007199254740991"
+      }
+    ],
+    "admitted": [
+      "[0,1,-1,98,100,9007199254740991,-9007199254740991]",
+      "{\"count\":3,\"line\":12,\"printablePercent\":98}",
+      "[[],{\"a\":[7]}]",
+      "[98.0,9.8e1,0.98e2]"
+    ],
+    "rejectedTexts": [
+      {
+        "name": "decimal",
+        "text": "[0.5]",
+        "code": "JSON_NUMBER_NOT_INTEGRAL"
+      },
+      {
+        "name": "decimal-98",
+        "text": "[0.98]",
+        "code": "JSON_NUMBER_NOT_INTEGRAL"
+      },
+      {
+        "name": "negative-decimal",
+        "text": "[-0.5]",
+        "code": "JSON_NUMBER_NOT_INTEGRAL"
+      },
+      {
+        "name": "fraction-by-exponent",
+        "text": "[98e-1]",
+        "code": "JSON_NUMBER_NOT_INTEGRAL"
+      },
+      {
+        "name": "fraction-half",
+        "text": "[98.5]",
+        "code": "JSON_NUMBER_NOT_INTEGRAL"
+      },
+      {
+        "name": "fraction-half-exponent",
+        "text": "[9.85e1]",
+        "code": "JSON_NUMBER_NOT_INTEGRAL"
+      },
+      {
+        "name": "over-precise-decimal",
+        "text": "[0.1000000000000000055511151231257827]",
+        "code": "JSON_NUMBER_NOT_INTEGRAL"
+      },
+      {
+        "name": "double-noise",
+        "text": "[0.30000000000000004]",
+        "code": "JSON_NUMBER_NOT_INTEGRAL"
+      },
+      {
+        "name": "smallest-subnormal",
+        "text": "[5e-324]",
+        "code": "JSON_NUMBER_NOT_INTEGRAL"
+      },
+      {
+        "name": "tiny-decimal",
+        "text": "[1e-7]",
+        "code": "JSON_NUMBER_NOT_INTEGRAL"
+      },
+      {
+        "name": "fraction-beyond-2-53",
+        "text": "[9007199254740992.5]",
+        "code": "JSON_NUMBER_NOT_INTEGRAL"
+      },
+      {
+        "name": "underflow-to-zero",
+        "text": "[1e-400]",
+        "code": "JSON_NUMBER_NOT_INTEGRAL"
+      },
+      {
+        "name": "underflow-huge-exponent",
+        "text": "[1e-99999999999]",
+        "code": "JSON_NUMBER_NOT_INTEGRAL"
+      },
+      {
+        "name": "underflow-long-fraction",
+        "text": "[0.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001]",
+        "code": "JSON_NUMBER_NOT_INTEGRAL"
+      },
+      {
+        "name": "huge-exponent",
+        "text": "[1.5e300]",
+        "code": "JSON_NUMBER_UNSAFE_INTEGER"
+      },
+      {
+        "name": "1e21",
+        "text": "[1e21]",
+        "code": "JSON_NUMBER_UNSAFE_INTEGER"
+      },
+      {
+        "name": "1e23",
+        "text": "[1e23]",
+        "code": "JSON_NUMBER_UNSAFE_INTEGER"
+      },
+      {
+        "name": "overflow",
+        "text": "[1e999]",
+        "code": "JSON_NUMBER_UNSAFE_INTEGER"
+      },
+      {
+        "name": "overflow-huge-exponent",
+        "text": "[1e99999999999]",
+        "code": "JSON_NUMBER_UNSAFE_INTEGER"
+      },
+      {
+        "name": "unsafe-via-decimal",
+        "text": "[9007199254740993.0]",
+        "code": "JSON_NUMBER_UNSAFE_INTEGER"
+      },
+      {
+        "name": "unsafe-via-exponent",
+        "text": "[9.007199254740993e15]",
+        "code": "JSON_NUMBER_UNSAFE_INTEGER"
+      },
+      {
+        "name": "unsafe-2-53-via-decimal",
+        "text": "[9007199254740992.0]",
+        "code": "JSON_NUMBER_UNSAFE_INTEGER"
+      },
+      {
+        "name": "huge-via-decimal",
+        "text": "[123456789012345678901234567890.0]",
+        "code": "JSON_NUMBER_UNSAFE_INTEGER"
+      },
+      {
+        "name": "negative-zero",
+        "text": "[-0]",
+        "code": "JSON_NUMBER_NEGATIVE_ZERO"
+      },
+      {
+        "name": "negative-zero-decimal",
+        "text": "[-0.0]",
+        "code": "JSON_NUMBER_NEGATIVE_ZERO"
+      },
+      {
+        "name": "negative-zero-exponent",
+        "text": "[-0e5]",
+        "code": "JSON_NUMBER_NEGATIVE_ZERO"
+      },
+      {
+        "name": "negative-zero-long",
+        "text": "[-0.000]",
+        "code": "JSON_NUMBER_NEGATIVE_ZERO"
+      },
+      {
+        "name": "two-to-the-53",
+        "text": "[9007199254740992]",
+        "code": "JSON_NUMBER_UNSAFE_INTEGER"
+      },
+      {
+        "name": "two-to-the-53-plus-1",
+        "text": "[9007199254740993]",
+        "code": "JSON_NUMBER_UNSAFE_INTEGER"
+      },
+      {
+        "name": "negative-unsafe",
+        "text": "[-9007199254740992]",
+        "code": "JSON_NUMBER_UNSAFE_INTEGER"
+      },
+      {
+        "name": "twenty-digits",
+        "text": "[12345678901234567890]",
+        "code": "JSON_NUMBER_UNSAFE_INTEGER"
+      },
+      {
+        "name": "forty-digits",
+        "text": "[9999999999999999999999999999999999999999]",
+        "code": "JSON_NUMBER_UNSAFE_INTEGER"
+      },
+      {
+        "name": "five-hundred-digits",
+        "text": "[99999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999]",
+        "code": "JSON_NUMBER_UNSAFE_INTEGER"
+      },
+      {
+        "name": "dominant-exponent-positive",
+        "text": "[1e9999999999999999999999999999999999999999]",
+        "code": "JSON_NUMBER_UNSAFE_INTEGER"
+      },
+      {
+        "name": "dominant-exponent-negative",
+        "text": "[1e-9999999999999999999999999999999999999999]",
+        "code": "JSON_NUMBER_NOT_INTEGRAL"
+      },
+      {
+        "name": "exponent-with-leading-zeros-fraction",
+        "text": "[1e-00000000000000000000000000000000005]",
+        "code": "JSON_NUMBER_NOT_INTEGRAL"
+      },
+      {
+        "name": "long-exponent-still-unsafe",
+        "text": "[1e000000000000000000000000000000000017]",
+        "code": "JSON_NUMBER_UNSAFE_INTEGER"
+      },
+      {
+        "name": "zero-padded-fraction-not-integral",
+        "text": "[0.00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001e999]",
+        "code": "JSON_NUMBER_NOT_INTEGRAL"
+      }
+    ],
+    "genericCoercions": [
+      {
+        "name": "decimal",
+        "text": "[0.5]",
+        "genericCanonical": "[0.5]"
+      },
+      {
+        "name": "decimal-98",
+        "text": "[0.98]",
+        "genericCanonical": "[0.98]"
+      },
+      {
+        "name": "negative-decimal",
+        "text": "[-0.5]",
+        "genericCanonical": "[-0.5]"
+      },
+      {
+        "name": "fraction-by-exponent",
+        "text": "[98e-1]",
+        "genericCanonical": "[9.8]"
+      },
+      {
+        "name": "fraction-half",
+        "text": "[98.5]",
+        "genericCanonical": "[98.5]"
+      },
+      {
+        "name": "fraction-half-exponent",
+        "text": "[9.85e1]",
+        "genericCanonical": "[98.5]"
+      },
+      {
+        "name": "over-precise-decimal",
+        "text": "[0.1000000000000000055511151231257827]",
+        "genericCanonical": "[0.1]"
+      },
+      {
+        "name": "double-noise",
+        "text": "[0.30000000000000004]",
+        "genericCanonical": "[0.30000000000000004]"
+      },
+      {
+        "name": "smallest-subnormal",
+        "text": "[5e-324]",
+        "genericCanonical": "[5e-324]"
+      },
+      {
+        "name": "tiny-decimal",
+        "text": "[1e-7]",
+        "genericCanonical": "[1e-7]"
+      },
+      {
+        "name": "fraction-beyond-2-53",
+        "text": "[9007199254740992.5]",
+        "genericCanonical": "[9007199254740992]"
+      },
+      {
+        "name": "underflow-to-zero",
+        "text": "[1e-400]",
+        "genericCanonical": "[0]"
+      },
+      {
+        "name": "underflow-huge-exponent",
+        "text": "[1e-99999999999]",
+        "genericCanonical": "[0]"
+      },
+      {
+        "name": "underflow-long-fraction",
+        "text": "[0.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001]",
+        "genericCanonical": "[0]"
+      },
+      {
+        "name": "huge-exponent",
+        "text": "[1.5e300]",
+        "genericCanonical": "[1.5e+300]"
+      },
+      {
+        "name": "1e21",
+        "text": "[1e21]",
+        "genericCanonical": "[1e+21]"
+      },
+      {
+        "name": "1e23",
+        "text": "[1e23]",
+        "genericCanonical": "[1e+23]"
+      },
+      {
+        "name": "unsafe-via-decimal",
+        "text": "[9007199254740993.0]",
+        "genericCanonical": "[9007199254740992]"
+      },
+      {
+        "name": "unsafe-via-exponent",
+        "text": "[9.007199254740993e15]",
+        "genericCanonical": "[9007199254740992]"
+      },
+      {
+        "name": "unsafe-2-53-via-decimal",
+        "text": "[9007199254740992.0]",
+        "genericCanonical": "[9007199254740992]"
+      },
+      {
+        "name": "huge-via-decimal",
+        "text": "[123456789012345678901234567890.0]",
+        "genericCanonical": "[1.2345678901234568e+29]"
+      },
+      {
+        "name": "negative-zero",
+        "text": "[-0]",
+        "genericCanonical": "[0]"
+      },
+      {
+        "name": "negative-zero-decimal",
+        "text": "[-0.0]",
+        "genericCanonical": "[0]"
+      },
+      {
+        "name": "negative-zero-exponent",
+        "text": "[-0e5]",
+        "genericCanonical": "[0]"
+      },
+      {
+        "name": "negative-zero-long",
+        "text": "[-0.000]",
+        "genericCanonical": "[0]"
+      },
+      {
+        "name": "two-to-the-53",
+        "text": "[9007199254740992]",
+        "genericCanonical": "[9007199254740992]"
+      },
+      {
+        "name": "two-to-the-53-plus-1",
+        "text": "[9007199254740993]",
+        "genericCanonical": "[9007199254740992]"
+      },
+      {
+        "name": "negative-unsafe",
+        "text": "[-9007199254740992]",
+        "genericCanonical": "[-9007199254740992]"
+      },
+      {
+        "name": "twenty-digits",
+        "text": "[12345678901234567890]",
+        "genericCanonical": "[12345678901234567000]"
+      },
+      {
+        "name": "forty-digits",
+        "text": "[9999999999999999999999999999999999999999]",
+        "genericCanonical": "[1e+40]"
+      },
+      {
+        "name": "dominant-exponent-negative",
+        "text": "[1e-9999999999999999999999999999999999999999]",
+        "genericCanonical": "[0]"
+      },
+      {
+        "name": "exponent-with-leading-zeros-fraction",
+        "text": "[1e-00000000000000000000000000000000005]",
+        "genericCanonical": "[0.00001]"
+      },
+      {
+        "name": "long-exponent-still-unsafe",
+        "text": "[1e000000000000000000000000000000000017]",
+        "genericCanonical": "[100000000000000000]"
+      },
+      {
+        "name": "zero-padded-fraction-not-integral",
+        "text": "[0.00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001e999]",
+        "genericCanonical": "[0.01]"
+      }
+    ],
+    "admissionRejections": [
+      {
+        "builder": "fraction",
+        "reason": "NON_INTEGER",
+        "description": "the double 0.5"
+      },
+      {
+        "builder": "negative-zero",
+        "reason": "NEGATIVE_ZERO",
+        "description": "the double -0"
+      },
+      {
+        "builder": "two-to-the-53",
+        "reason": "UNSAFE_INTEGER",
+        "description": "the double 2^53"
+      },
+      {
+        "builder": "two-to-the-60",
+        "reason": "UNSAFE_INTEGER",
+        "description": "the double 2^60 (its JavaScript text, 1152921504606847000, is not the exact value 1152921504606846976 that other runtimes print)"
+      },
+      {
+        "builder": "1e21",
+        "reason": "UNSAFE_INTEGER",
+        "description": "the double 1e21"
+      },
+      {
+        "builder": "smallest-subnormal",
+        "reason": "NON_INTEGER",
+        "description": "the double 5e-324"
+      },
+      {
+        "builder": "max-double",
+        "reason": "UNSAFE_INTEGER",
+        "description": "Number.MAX_VALUE"
+      },
+      {
+        "builder": "negative-unsafe",
+        "reason": "UNSAFE_INTEGER",
+        "description": "the double -(2^53)"
+      }
+    ]
+  },
+  "adversarialNumbers": {
+    "note": "Long runs of zeros in the MIDDLE of integer, fractional and exponent forms. The token is rebuilt by adversarialToken(kind, N) (conformance/v3/test/helpers.mjs); expected is the exact value or the refusal. The v2 classifier was quadratic on these.",
+    "sizes": [
+      3,
+      14,
+      15,
+      16,
+      17,
+      1000,
+      100000
+    ],
+    "cases": [
+      {
+        "kind": "int-middle-zeros",
+        "N": 3,
+        "expected": {
+          "value": 10001
+        }
+      },
+      {
+        "kind": "int-middle-zeros",
+        "N": 14,
+        "expected": {
+          "value": 1000000000000001
+        }
+      },
+      {
+        "kind": "int-middle-zeros",
+        "N": 15,
+        "expected": {
+          "problem": "UNSAFE_INTEGER"
+        }
+      },
+      {
+        "kind": "int-middle-zeros",
+        "N": 16,
+        "expected": {
+          "problem": "UNSAFE_INTEGER"
+        }
+      },
+      {
+        "kind": "int-middle-zeros",
+        "N": 17,
+        "expected": {
+          "problem": "UNSAFE_INTEGER"
+        }
+      },
+      {
+        "kind": "int-middle-zeros",
+        "N": 1000,
+        "expected": {
+          "problem": "UNSAFE_INTEGER"
+        }
+      },
+      {
+        "kind": "int-middle-zeros",
+        "N": 100000,
+        "expected": {
+          "problem": "UNSAFE_INTEGER"
+        }
+      },
+      {
+        "kind": "int-trailing-zeros",
+        "N": 3,
+        "expected": {
+          "value": 1000
+        }
+      },
+      {
+        "kind": "int-trailing-zeros",
+        "N": 14,
+        "expected": {
+          "value": 100000000000000
+        }
+      },
+      {
+        "kind": "int-trailing-zeros",
+        "N": 15,
+        "expected": {
+          "value": 1000000000000000
+        }
+      },
+      {
+        "kind": "int-trailing-zeros",
+        "N": 16,
+        "expected": {
+          "problem": "UNSAFE_INTEGER"
+        }
+      },
+      {
+        "kind": "int-trailing-zeros",
+        "N": 17,
+        "expected": {
+          "problem": "UNSAFE_INTEGER"
+        }
+      },
+      {
+        "kind": "int-trailing-zeros",
+        "N": 1000,
+        "expected": {
+          "problem": "UNSAFE_INTEGER"
+        }
+      },
+      {
+        "kind": "int-trailing-zeros",
+        "N": 100000,
+        "expected": {
+          "problem": "UNSAFE_INTEGER"
+        }
+      },
+      {
+        "kind": "int-nines",
+        "N": 3,
+        "expected": {
+          "value": 999
+        }
+      },
+      {
+        "kind": "int-nines",
+        "N": 14,
+        "expected": {
+          "value": 99999999999999
+        }
+      },
+      {
+        "kind": "int-nines",
+        "N": 15,
+        "expected": {
+          "value": 999999999999999
+        }
+      },
+      {
+        "kind": "int-nines",
+        "N": 16,
+        "expected": {
+          "problem": "UNSAFE_INTEGER"
+        }
+      },
+      {
+        "kind": "int-nines",
+        "N": 17,
+        "expected": {
+          "problem": "UNSAFE_INTEGER"
+        }
+      },
+      {
+        "kind": "int-nines",
+        "N": 1000,
+        "expected": {
+          "problem": "UNSAFE_INTEGER"
+        }
+      },
+      {
+        "kind": "int-nines",
+        "N": 100000,
+        "expected": {
+          "problem": "UNSAFE_INTEGER"
+        }
+      },
+      {
+        "kind": "int-zeros-cancelled-by-exponent",
+        "N": 3,
+        "expected": {
+          "value": 1
+        }
+      },
+      {
+        "kind": "int-zeros-cancelled-by-exponent",
+        "N": 14,
+        "expected": {
+          "value": 1
+        }
+      },
+      {
+        "kind": "int-zeros-cancelled-by-exponent",
+        "N": 15,
+        "expected": {
+          "value": 1
+        }
+      },
+      {
+        "kind": "int-zeros-cancelled-by-exponent",
+        "N": 16,
+        "expected": {
+          "value": 1
+        }
+      },
+      {
+        "kind": "int-zeros-cancelled-by-exponent",
+        "N": 17,
+        "expected": {
+          "value": 1
+        }
+      },
+      {
+        "kind": "int-zeros-cancelled-by-exponent",
+        "N": 1000,
+        "expected": {
+          "value": 1
+        }
+      },
+      {
+        "kind": "int-zeros-cancelled-by-exponent",
+        "N": 100000,
+        "expected": {
+          "value": 1
+        }
+      },
+      {
+        "kind": "int-shifted",
+        "N": 3,
+        "expected": {
+          "value": 5
+        }
+      },
+      {
+        "kind": "int-shifted",
+        "N": 14,
+        "expected": {
+          "value": 5
+        }
+      },
+      {
+        "kind": "int-shifted",
+        "N": 15,
+        "expected": {
+          "value": 5
+        }
+      },
+      {
+        "kind": "int-shifted",
+        "N": 16,
+        "expected": {
+          "value": 5
+        }
+      },
+      {
+        "kind": "int-shifted",
+        "N": 17,
+        "expected": {
+          "value": 5
+        }
+      },
+      {
+        "kind": "int-shifted",
+        "N": 1000,
+        "expected": {
+          "value": 5
+        }
+      },
+      {
+        "kind": "int-shifted",
+        "N": 100000,
+        "expected": {
+          "value": 5
+        }
+      },
+      {
+        "kind": "frac-middle-zeros",
+        "N": 3,
+        "expected": {
+          "problem": "NON_INTEGER"
+        }
+      },
+      {
+        "kind": "frac-middle-zeros",
+        "N": 14,
+        "expected": {
+          "problem": "NON_INTEGER"
+        }
+      },
+      {
+        "kind": "frac-middle-zeros",
+        "N": 15,
+        "expected": {
+          "problem": "NON_INTEGER"
+        }
+      },
+      {
+        "kind": "frac-middle-zeros",
+        "N": 16,
+        "expected": {
+          "problem": "NON_INTEGER"
+        }
+      },
+      {
+        "kind": "frac-middle-zeros",
+        "N": 17,
+        "expected": {
+          "problem": "NON_INTEGER"
+        }
+      },
+      {
+        "kind": "frac-middle-zeros",
+        "N": 1000,
+        "expected": {
+          "problem": "NON_INTEGER"
+        }
+      },
+      {
+        "kind": "frac-middle-zeros",
+        "N": 100000,
+        "expected": {
+          "problem": "NON_INTEGER"
+        }
+      },
+      {
+        "kind": "frac-trailing-zeros",
+        "N": 3,
+        "expected": {
+          "value": 1
+        }
+      },
+      {
+        "kind": "frac-trailing-zeros",
+        "N": 14,
+        "expected": {
+          "value": 1
+        }
+      },
+      {
+        "kind": "frac-trailing-zeros",
+        "N": 15,
+        "expected": {
+          "value": 1
+        }
+      },
+      {
+        "kind": "frac-trailing-zeros",
+        "N": 16,
+        "expected": {
+          "value": 1
+        }
+      },
+      {
+        "kind": "frac-trailing-zeros",
+        "N": 17,
+        "expected": {
+          "value": 1
+        }
+      },
+      {
+        "kind": "frac-trailing-zeros",
+        "N": 1000,
+        "expected": {
+          "value": 1
+        }
+      },
+      {
+        "kind": "frac-trailing-zeros",
+        "N": 100000,
+        "expected": {
+          "value": 1
+        }
+      },
+      {
+        "kind": "frac-leading-zeros-shifted",
+        "N": 3,
+        "expected": {
+          "value": 1
+        }
+      },
+      {
+        "kind": "frac-leading-zeros-shifted",
+        "N": 14,
+        "expected": {
+          "value": 1
+        }
+      },
+      {
+        "kind": "frac-leading-zeros-shifted",
+        "N": 15,
+        "expected": {
+          "value": 1
+        }
+      },
+      {
+        "kind": "frac-leading-zeros-shifted",
+        "N": 16,
+        "expected": {
+          "value": 1
+        }
+      },
+      {
+        "kind": "frac-leading-zeros-shifted",
+        "N": 17,
+        "expected": {
+          "value": 1
+        }
+      },
+      {
+        "kind": "frac-leading-zeros-shifted",
+        "N": 1000,
+        "expected": {
+          "value": 1
+        }
+      },
+      {
+        "kind": "frac-leading-zeros-shifted",
+        "N": 100000,
+        "expected": {
+          "value": 1
+        }
+      },
+      {
+        "kind": "frac-only-zeros",
+        "N": 3,
+        "expected": {
+          "value": 0
+        }
+      },
+      {
+        "kind": "frac-only-zeros",
+        "N": 14,
+        "expected": {
+          "value": 0
+        }
+      },
+      {
+        "kind": "frac-only-zeros",
+        "N": 15,
+        "expected": {
+          "value": 0
+        }
+      },
+      {
+        "kind": "frac-only-zeros",
+        "N": 16,
+        "expected": {
+          "value": 0
+        }
+      },
+      {
+        "kind": "frac-only-zeros",
+        "N": 17,
+        "expected": {
+          "value": 0
+        }
+      },
+      {
+        "kind": "frac-only-zeros",
+        "N": 1000,
+        "expected": {
+          "value": 0
+        }
+      },
+      {
+        "kind": "frac-only-zeros",
+        "N": 100000,
+        "expected": {
+          "value": 0
+        }
+      },
+      {
+        "kind": "frac-nonzero-last",
+        "N": 3,
+        "expected": {
+          "problem": "NON_INTEGER"
+        }
+      },
+      {
+        "kind": "frac-nonzero-last",
+        "N": 14,
+        "expected": {
+          "problem": "NON_INTEGER"
+        }
+      },
+      {
+        "kind": "frac-nonzero-last",
+        "N": 15,
+        "expected": {
+          "problem": "NON_INTEGER"
+        }
+      },
+      {
+        "kind": "frac-nonzero-last",
+        "N": 16,
+        "expected": {
+          "problem": "NON_INTEGER"
+        }
+      },
+      {
+        "kind": "frac-nonzero-last",
+        "N": 17,
+        "expected": {
+          "problem": "NON_INTEGER"
+        }
+      },
+      {
+        "kind": "frac-nonzero-last",
+        "N": 1000,
+        "expected": {
+          "problem": "NON_INTEGER"
+        }
+      },
+      {
+        "kind": "frac-nonzero-last",
+        "N": 100000,
+        "expected": {
+          "problem": "NON_INTEGER"
+        }
+      },
+      {
+        "kind": "negative-zero-fraction",
+        "N": 3,
+        "expected": {
+          "problem": "NEGATIVE_ZERO"
+        }
+      },
+      {
+        "kind": "negative-zero-fraction",
+        "N": 14,
+        "expected": {
+          "problem": "NEGATIVE_ZERO"
+        }
+      },
+      {
+        "kind": "negative-zero-fraction",
+        "N": 15,
+        "expected": {
+          "problem": "NEGATIVE_ZERO"
+        }
+      },
+      {
+        "kind": "negative-zero-fraction",
+        "N": 16,
+        "expected": {
+          "problem": "NEGATIVE_ZERO"
+        }
+      },
+      {
+        "kind": "negative-zero-fraction",
+        "N": 17,
+        "expected": {
+          "problem": "NEGATIVE_ZERO"
+        }
+      },
+      {
+        "kind": "negative-zero-fraction",
+        "N": 1000,
+        "expected": {
+          "problem": "NEGATIVE_ZERO"
+        }
+      },
+      {
+        "kind": "negative-zero-fraction",
+        "N": 100000,
+        "expected": {
+          "problem": "NEGATIVE_ZERO"
+        }
+      },
+      {
+        "kind": "exp-leading-zeros-positive",
+        "N": 3,
+        "expected": {
+          "value": 100000
+        }
+      },
+      {
+        "kind": "exp-leading-zeros-positive",
+        "N": 14,
+        "expected": {
+          "value": 100000
+        }
+      },
+      {
+        "kind": "exp-leading-zeros-positive",
+        "N": 15,
+        "expected": {
+          "value": 100000
+        }
+      },
+      {
+        "kind": "exp-leading-zeros-positive",
+        "N": 16,
+        "expected": {
+          "value": 100000
+        }
+      },
+      {
+        "kind": "exp-leading-zeros-positive",
+        "N": 17,
+        "expected": {
+          "value": 100000
+        }
+      },
+      {
+        "kind": "exp-leading-zeros-positive",
+        "N": 1000,
+        "expected": {
+          "value": 100000
+        }
+      },
+      {
+        "kind": "exp-leading-zeros-positive",
+        "N": 100000,
+        "expected": {
+          "value": 100000
+        }
+      },
+      {
+        "kind": "exp-leading-zeros-negative",
+        "N": 3,
+        "expected": {
+          "problem": "NON_INTEGER"
+        }
+      },
+      {
+        "kind": "exp-leading-zeros-negative",
+        "N": 14,
+        "expected": {
+          "problem": "NON_INTEGER"
+        }
+      },
+      {
+        "kind": "exp-leading-zeros-negative",
+        "N": 15,
+        "expected": {
+          "problem": "NON_INTEGER"
+        }
+      },
+      {
+        "kind": "exp-leading-zeros-negative",
+        "N": 16,
+        "expected": {
+          "problem": "NON_INTEGER"
+        }
+      },
+      {
+        "kind": "exp-leading-zeros-negative",
+        "N": 17,
+        "expected": {
+          "problem": "NON_INTEGER"
+        }
+      },
+      {
+        "kind": "exp-leading-zeros-negative",
+        "N": 1000,
+        "expected": {
+          "problem": "NON_INTEGER"
+        }
+      },
+      {
+        "kind": "exp-leading-zeros-negative",
+        "N": 100000,
+        "expected": {
+          "problem": "NON_INTEGER"
+        }
+      },
+      {
+        "kind": "exp-zero-with-zero-run",
+        "N": 3,
+        "expected": {
+          "value": 0
+        }
+      },
+      {
+        "kind": "exp-zero-with-zero-run",
+        "N": 14,
+        "expected": {
+          "value": 0
+        }
+      },
+      {
+        "kind": "exp-zero-with-zero-run",
+        "N": 15,
+        "expected": {
+          "value": 0
+        }
+      },
+      {
+        "kind": "exp-zero-with-zero-run",
+        "N": 16,
+        "expected": {
+          "value": 0
+        }
+      },
+      {
+        "kind": "exp-zero-with-zero-run",
+        "N": 17,
+        "expected": {
+          "value": 0
+        }
+      },
+      {
+        "kind": "exp-zero-with-zero-run",
+        "N": 1000,
+        "expected": {
+          "value": 0
+        }
+      },
+      {
+        "kind": "exp-zero-with-zero-run",
+        "N": 100000,
+        "expected": {
+          "value": 0
+        }
+      },
+      {
+        "kind": "int-middle-zeros-negative-exponent",
+        "N": 3,
+        "expected": {
+          "problem": "NON_INTEGER"
+        }
+      },
+      {
+        "kind": "int-middle-zeros-negative-exponent",
+        "N": 14,
+        "expected": {
+          "problem": "NON_INTEGER"
+        }
+      },
+      {
+        "kind": "int-middle-zeros-negative-exponent",
+        "N": 15,
+        "expected": {
+          "problem": "NON_INTEGER"
+        }
+      },
+      {
+        "kind": "int-middle-zeros-negative-exponent",
+        "N": 16,
+        "expected": {
+          "problem": "NON_INTEGER"
+        }
+      },
+      {
+        "kind": "int-middle-zeros-negative-exponent",
+        "N": 17,
+        "expected": {
+          "problem": "NON_INTEGER"
+        }
+      },
+      {
+        "kind": "int-middle-zeros-negative-exponent",
+        "N": 1000,
+        "expected": {
+          "problem": "NON_INTEGER"
+        }
+      },
+      {
+        "kind": "int-middle-zeros-negative-exponent",
+        "N": 100000,
+        "expected": {
+          "problem": "NON_INTEGER"
+        }
+      }
+    ]
+  },
+  "depthModel": {
+    "maxJsonDepth": 64,
+    "rule": "ABSOLUTE depth from the bundle root: the bundle object is depth 1, the assessment root is depth 2, the payload root is depth 3. A container over 64 is refused by the parser AND by the canonicalizer (given baseDepth = the depth of the sub-object parent), so nothing that parses cannot be digested and nothing that digests cannot parse."
+  },
+  "valueRejections": [
+    {
+      "builder": "undefined-property",
+      "code": "JCS_UNDEFINED",
+      "description": "an object member whose value is undefined"
+    },
+    {
+      "builder": "undefined-array-item",
+      "code": "JCS_UNDEFINED",
+      "description": "an array item that is undefined"
+    },
+    {
+      "builder": "undefined-top-level",
+      "code": "JCS_UNDEFINED",
+      "description": "undefined itself"
+    },
+    {
+      "builder": "nan",
+      "code": "JCS_NON_FINITE",
+      "description": "NaN"
+    },
+    {
+      "builder": "infinity",
+      "code": "JCS_NON_FINITE",
+      "description": "Infinity"
+    },
+    {
+      "builder": "negative-infinity",
+      "code": "JCS_NON_FINITE",
+      "description": "-Infinity"
+    },
+    {
+      "builder": "function",
+      "code": "JCS_UNSUPPORTED_TYPE",
+      "description": "a function"
+    },
+    {
+      "builder": "symbol",
+      "code": "JCS_UNSUPPORTED_TYPE",
+      "description": "a symbol"
+    },
+    {
+      "builder": "bigint",
+      "code": "JCS_UNSUPPORTED_TYPE",
+      "description": "a BigInt"
+    },
+    {
+      "builder": "map",
+      "code": "JCS_NOT_PLAIN",
+      "description": "a Map"
+    },
+    {
+      "builder": "set",
+      "code": "JCS_NOT_PLAIN",
+      "description": "a Set"
+    },
+    {
+      "builder": "date",
+      "code": "JCS_NOT_PLAIN",
+      "description": "a Date"
+    },
+    {
+      "builder": "class-instance",
+      "code": "JCS_NOT_PLAIN",
+      "description": "an instance of a class"
+    },
+    {
+      "builder": "typed-array",
+      "code": "JCS_NOT_PLAIN",
+      "description": "a Uint8Array"
+    },
+    {
+      "builder": "boxed-string",
+      "code": "JCS_NOT_PLAIN",
+      "description": "new String(\"x\")"
+    },
+    {
+      "builder": "regexp",
+      "code": "JCS_NOT_PLAIN",
+      "description": "a RegExp"
+    },
+    {
+      "builder": "symbol-key",
+      "code": "JCS_NOT_PLAIN",
+      "description": "an object with a symbol-keyed property"
+    },
+    {
+      "builder": "getter",
+      "code": "JCS_NOT_PLAIN",
+      "description": "an accessor property"
+    },
+    {
+      "builder": "non-enumerable",
+      "code": "JCS_NOT_PLAIN",
+      "description": "a non-enumerable own property (hidden data)"
+    },
+    {
+      "builder": "sparse-array",
+      "code": "JCS_NOT_PLAIN",
+      "description": "an array with a hole"
+    },
+    {
+      "builder": "array-extra-property",
+      "code": "JCS_NOT_PLAIN",
+      "description": "an array with a non-index property"
+    },
+    {
+      "builder": "lone-surrogate-string",
+      "code": "JCS_ILL_FORMED_STRING",
+      "description": "a string containing a lone surrogate"
+    },
+    {
+      "builder": "lone-surrogate-key",
+      "code": "JCS_ILL_FORMED_STRING",
+      "description": "an object key containing a lone surrogate"
+    },
+    {
+      "builder": "cycle",
+      "code": "JCS_CYCLE",
+      "description": "an object that contains itself"
+    },
+    {
+      "builder": "too-deep",
+      "code": "JCS_TOO_DEEP",
+      "description": "nesting deeper than 64"
+    }
+  ],
+  "unicode": [
+    {
+      "name": "nfc-and-nfd-keys-are-two-members",
+      "description": "Two keys that are canonically equivalent but not identical are two members, in code-unit order, un-normalized.",
+      "input": "{\"é\":1,\"é\":2}",
+      "canonical": "{\"é\":2,\"é\":1}"
+    },
+    {
+      "name": "nfc-and-nfd-strings-are-different",
+      "description": "The two spellings of a string are different strings.",
+      "input": "[\"café\",\"café\"]",
+      "canonical": "[\"café\",\"café\"]"
+    },
+    {
+      "name": "compatibility-forms-are-untouched",
+      "description": "NFKC would change these; nothing is normalized.",
+      "input": "[\"ﬁ\",\"①\",\"Ａ\"]",
+      "canonical": "[\"ﬁ\",\"①\",\"Ａ\"]"
+    },
+    {
+      "name": "escape-is-not-normalization",
+      "description": "An escaped combining sequence stays a combining sequence.",
+      "input": "[\"e\\u0301\"]",
+      "canonical": "[\"é\"]"
+    }
+  ],
+  "f1RoundTrip": {
+    "description": "F1: an in-memory object with an undefined member is REJECTED; its serialized form (no such key) canonicalizes. The old canonicalizer turned undefined into null, so signer and verifier could hash different bytes.",
+    "builder": "undefined-property",
+    "code": "JCS_UNDEFINED",
+    "serializedText": "{\"a\":1}",
+    "serializedCanonical": "{\"a\":1}"
+  }
+}

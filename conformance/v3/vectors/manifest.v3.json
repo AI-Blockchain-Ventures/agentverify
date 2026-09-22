@@ -1,0 +1,17 @@
+{
+  "note": "SHA-256 of every vector file in vector set v3. If a vector changes, this changes, and the change is visible in review.",
+  "files": {
+    "admission.v3.json": "f190279a09c53913eccc22629e771d7c5b8f4888bf2df6e0ca4af8352d777859",
+    "assessment-digest.v3.json": "f4cefa2a1f53aab28ddc54c7bf06e9b6460b409bb940c6b57341bf1e8386fe85",
+    "assessment-schema.v3.json": "a3cfa5af887891b3b6ab103ac618bb986133ae3019ea47cc12f77adbdf1dc79f",
+    "avpkg.v3.json": "2645047fed70797656baf5f05f4cbe1963e9410b96c67eeac8e4454ee0d5d0c3",
+    "bundles.v3.json": "0f7d1e38a7afdf228b37ace7abb2dc433d1e52fbfdf097c07c18f66a4a3c6e04",
+    "domains.v3.json": "a532189a15767aaa8c51b1a635b2773066d56334cdbaa4abb32d33cef5acfe48",
+    "jcs.v3.json": "77bbbca1f7ecf28c5d5fe1bfcace95f1abf9d6ce2201bd7bcaf9c66b6e8f05b5",
+    "keyid.v3.json": "e36382cd30cd35a610388b2992776beaf1c755c4c33041edc20c3a95b033b610",
+    "legacy-attestation.v3.json": "55b45c94611fbc6de8f67fca8ebd41007116cad4393baef7ec9144023221c825",
+    "profile-registry.v3.json": "934cb5ae81cbc7f3e6ef4c86c0d1cff91de2ab077125264a1708fead43bfbb3d",
+    "signing.v3.json": "594ea2cfdf55c89300b027c8b521a003ba220af23c38806b8464543d9013b211",
+    "timestamps.v3.json": "d90bf4dd5e383adc7fbdc809ca3f821bec02e3a656a1b7dc418a7e6f74ee604c"
+  }
+}

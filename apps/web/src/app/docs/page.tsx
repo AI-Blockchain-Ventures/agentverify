@@ -248,7 +248,7 @@ Agent-Verify-Signature: t=1735689600,v1=5f4dcc3b5aa765d61d8327deb882cf99...
   "eventType": "VERIFICATION_FAILED",
   "organizationId": "org_abc123",
   "timestamp": "2026-09-02T13:49:12.000Z",
-  "data": { "reportId": "REPORT-qhhic9fbkv", "verdict": "NOT_VERIFIED", "riskScore": 30 }
+  "data": { "scanId": "REPORT-qhhic9fbkv", "verdict": "NOT_VERIFIED", "score": 30, "fileName": "agent.ts" }
 }`}</CodeBlock>
               <p>The <code>Agent-Verify-Signature</code> header carries <code>t=&lt;unix-seconds&gt;,v1=&lt;hex-encoded HMAC-SHA256&gt;</code> &mdash; the same shape Stripe uses for its own webhooks. The signature is computed over <code>{`\${timestamp}.\${rawRequestBody}`}</code> using your webhook&apos;s secret (shown once, at creation &mdash; store it like any other credential). To verify a delivery:</p>
               <CodeBlock>{`const [t, v1] = signatureHeader.split(',').map(p => p.split('=')[1])

@@ -1,0 +1,568 @@
+{
+  "vectorSet": "agentverify-profile-attestation-conformance",
+  "version": "2.0.0",
+  "supersedes": "vector set v1 (v1 signatures were not low-S; v1 is replaced, not patched)",
+  "note": "CONFORMANCE VECTOR. Synthetic data and throwaway keys: nothing here is a real customer, scan, key or credential. Do not treat any key in this file as an Agent Verify signing key.",
+  "formulas": {
+    "signingInput": "UTF8(\"agentverify-attestation/profile-assessment/v1\\n\") || UTF8(JCS(payload)), JCS under the signed-content numeric profile",
+    "signature": "base64( ECDSA-P256-SHA256( privateKey, signingInput ) ), raw r||s (64 bytes), standard base64 with padding, LOW-S (s <= floor(n/2)): an Agent Verify canonical-signature rule, not an RFC 7518 requirement",
+    "assessmentDigest": "\"avassess-sha256:\" + hex( SHA-256( UTF8(\"agentverify-assessment-digest/v1\\n\") || UTF8(JCS(assessment)) ) )",
+    "keyId": "base64url( SHA-256( JCS({ crv, kty, x, y }) ) )  (RFC 7638); x and y must be canonical unpadded base64url of exactly 32 bytes",
+    "bundleVersion": "NOT part of the signing input or any digest: the outer bundle is unsigned framing in v1"
+  },
+  "p256Order": "ffffffff00000000ffffffffffffffffbce6faada7179e84f3b9cac2fc632551",
+  "p256HalfOrder": "7fffffff800000007fffffffffffffffde737d56d38bcf4279dce5617e3192a8",
+  "entries": [
+    {
+      "name": "B1",
+      "payload": {
+        "attestationType": "agentverify.profile-assessment",
+        "attestationVersion": "1.0.0",
+        "profile": "owasp-agentic-skills-2026",
+        "profileVersion": "1.0.0-alpha.1",
+        "framework": "OWASP_AGENTIC_SKILLS_TOP_10",
+        "upstream": {
+          "repo": "OWASP/www-project-agentic-skills-top-10",
+          "commit": "d6f7d7d0de314f52a83a85d1828e06ab096e595c",
+          "license": "CC-BY-SA-4.0"
+        },
+        "implementedControls": [
+          "AST02",
+          "AST03",
+          "AST04"
+        ],
+        "assessmentSchemaVersion": "1.1.0",
+        "interpretationVersions": {
+          "scannerVersion": "1.4.0",
+          "assessmentEngineVersion": "1.0.1",
+          "riskRubricVersion": "1.0.0",
+          "keyAllowlistVersion": "1.0.0",
+          "normalizationVersion": "1.0.0"
+        },
+        "package": {
+          "digest": "avpkg-sha256:9fc4448c2e85c812c981cfd961939a23acf5d74b52888cbb26814dcb78390ac0",
+          "fileCount": 3
+        },
+        "assessment": {
+          "digest": "avassess-sha256:42acdd8e15eca71fe16fcdaae03ff762334afe5dcc5281bf93259f35f7a74dec",
+          "canonicalization": "RFC8785"
+        },
+        "issuer": "agentverify-conformance",
+        "keyId": "Q0SYhOsBWXDxa-UTEEuI3jb8DkooT-FFUFJ97Z6GO44",
+        "issuedAt": "2026-01-15T12:00:00.000Z"
+      },
+      "payloadJcs": "{\"assessment\":{\"canonicalization\":\"RFC8785\",\"digest\":\"avassess-sha256:42acdd8e15eca71fe16fcdaae03ff762334afe5dcc5281bf93259f35f7a74dec\"},\"assessmentSchemaVersion\":\"1.1.0\",\"attestationType\":\"agentverify.profile-assessment\",\"attestationVersion\":\"1.0.0\",\"framework\":\"OWASP_AGENTIC_SKILLS_TOP_10\",\"implementedControls\":[\"AST02\",\"AST03\",\"AST04\"],\"interpretationVersions\":{\"assessmentEngineVersion\":\"1.0.1\",\"keyAllowlistVersion\":\"1.0.0\",\"normalizationVersion\":\"1.0.0\",\"riskRubricVersion\":\"1.0.0\",\"scannerVersion\":\"1.4.0\"},\"issuedAt\":\"2026-01-15T12:00:00.000Z\",\"issuer\":\"agentverify-conformance\",\"keyId\":\"Q0SYhOsBWXDxa-UTEEuI3jb8DkooT-FFUFJ97Z6GO44\",\"package\":{\"digest\":\"avpkg-sha256:9fc4448c2e85c812c981cfd961939a23acf5d74b52888cbb26814dcb78390ac0\",\"fileCount\":3},\"profile\":\"owasp-agentic-skills-2026\",\"profileVersion\":\"1.0.0-alpha.1\",\"upstream\":{\"commit\":\"d6f7d7d0de314f52a83a85d1828e06ab096e595c\",\"license\":\"CC-BY-SA-4.0\",\"repo\":\"OWASP/www-project-agentic-skills-top-10\"}}",
+      "signingInputHex": "6167656e747665726966792d6174746573746174696f6e2f70726f66696c652d6173736573736d656e742f76310a7b226173736573736d656e74223a7b2263616e6f6e6963616c697a6174696f6e223a2252464338373835222c22646967657374223a2261766173736573732d7368613235363a34326163646438653135656361373166653136666364616165303366663736323333346166653564636335323831626639333235396633356637613734646563227d2c226173736573736d656e74536368656d6156657273696f6e223a22312e312e30222c226174746573746174696f6e54797065223a226167656e747665726966792e70726f66696c652d6173736573736d656e74222c226174746573746174696f6e56657273696f6e223a22312e302e30222c226672616d65776f726b223a224f574153505f4147454e5449435f534b494c4c535f544f505f3130222c22696d706c656d656e746564436f6e74726f6c73223a5b224153543032222c224153543033222c224153543034225d2c22696e746572707265746174696f6e56657273696f6e73223a7b226173736573736d656e74456e67696e6556657273696f6e223a22312e302e31222c226b6579416c6c6f776c69737456657273696f6e223a22312e302e30222c226e6f726d616c697a6174696f6e56657273696f6e223a22312e302e30222c227269736b52756272696356657273696f6e223a22312e302e30222c227363616e6e657256657273696f6e223a22312e342e30227d2c226973737565644174223a22323032362d30312d31355431323a30303a30302e3030305a222c22697373756572223a226167656e747665726966792d636f6e666f726d616e6365222c226b65794964223a2251305359684f734257584478612d555445457549336a6238446b6f6f542d464655464a39375a36474f3434222c227061636b616765223a7b22646967657374223a226176706b672d7368613235363a39666334343438633265383563383132633938316366643936313933396132336163663564373462353238383863626232363831346463623738333930616330222c2266696c65436f756e74223a337d2c2270726f66696c65223a226f776173702d6167656e7469632d736b696c6c732d32303236222c2270726f66696c6556657273696f6e223a22312e302e302d616c7068612e31222c22757073747265616d223a7b22636f6d6d6974223a2264366637643764306465333134663532613833613835643138323865303661623039366535393563222c226c6963656e7365223a2243432d42592d53412d342e30222c227265706f223a224f574153502f7777772d70726f6a6563742d6167656e7469632d736b696c6c732d746f702d3130227d7d",
+      "signingInputSha256": "695ac6b59cc497aa265bd2dec7425314a0dc790c338710f3f68d3d278bc46266",
+      "assessmentJcsSha256": "6c0b0b43c87145c2e61e80769af0989a32c19c0d41231ea6f07f21489e9c7e2b",
+      "assessmentDigest": "avassess-sha256:42acdd8e15eca71fe16fcdaae03ff762334afe5dcc5281bf93259f35f7a74dec",
+      "signature": "b05LBxHzzOuhyczckxk7Ub9RPubqfkzibzbCr5X0cFwsnu/mthSa8q9oXa/ftw9SgKgdBtQOSKpapOVwntMrLQ==",
+      "signatureRHex": "6f4e4b0711f3cceba1c9ccdc93193b51bf513ee6ea7e4ce26f36c2af95f4705c",
+      "signatureSHex": "2c9eefe6b6149af2af685dafdfb70f5280a81d06d40e48aa5aa4e5709ed32b2d",
+      "lowS": true,
+      "publicKey": {
+        "kty": "EC",
+        "crv": "P-256",
+        "x": "Q3ZLLuzwdwgLNAn5h1Ubh6R4Xmgxa6x3x_Uc1e67pDA",
+        "y": "lEgPpHvsAh3CLtdMRmHCC9ywlBPG_iXAH6LA1FwnDIo"
+      },
+      "keyId": "Q0SYhOsBWXDxa-UTEEuI3jb8DkooT-FFUFJ97Z6GO44"
+    },
+    {
+      "name": "B2",
+      "payload": {
+        "attestationType": "agentverify.profile-assessment",
+        "attestationVersion": "1.0.0",
+        "profile": "owasp-agentic-skills-2026",
+        "profileVersion": "1.0.0-alpha.1",
+        "framework": "OWASP_AGENTIC_SKILLS_TOP_10",
+        "upstream": {
+          "repo": "OWASP/www-project-agentic-skills-top-10",
+          "commit": "d6f7d7d0de314f52a83a85d1828e06ab096e595c",
+          "license": "CC-BY-SA-4.0"
+        },
+        "implementedControls": [
+          "AST02",
+          "AST03",
+          "AST04"
+        ],
+        "assessmentSchemaVersion": "1.1.0",
+        "interpretationVersions": {
+          "scannerVersion": "1.4.0",
+          "assessmentEngineVersion": "1.0.1",
+          "riskRubricVersion": "1.0.0",
+          "keyAllowlistVersion": "1.0.0",
+          "normalizationVersion": "1.0.0"
+        },
+        "package": {
+          "digest": "avpkg-sha256:9fc4448c2e85c812c981cfd961939a23acf5d74b52888cbb26814dcb78390ac0",
+          "fileCount": 3
+        },
+        "assessment": {
+          "digest": "avassess-sha256:42acdd8e15eca71fe16fcdaae03ff762334afe5dcc5281bf93259f35f7a74dec",
+          "canonicalization": "RFC8785"
+        },
+        "issuer": "agentverify-conformance",
+        "keyId": "Q0SYhOsBWXDxa-UTEEuI3jb8DkooT-FFUFJ97Z6GO44",
+        "issuedAt": "2026-01-15T12:00:00.000Z",
+        "workspaceId": "ws_conformance_0001"
+      },
+      "payloadJcs": "{\"assessment\":{\"canonicalization\":\"RFC8785\",\"digest\":\"avassess-sha256:42acdd8e15eca71fe16fcdaae03ff762334afe5dcc5281bf93259f35f7a74dec\"},\"assessmentSchemaVersion\":\"1.1.0\",\"attestationType\":\"agentverify.profile-assessment\",\"attestationVersion\":\"1.0.0\",\"framework\":\"OWASP_AGENTIC_SKILLS_TOP_10\",\"implementedControls\":[\"AST02\",\"AST03\",\"AST04\"],\"interpretationVersions\":{\"assessmentEngineVersion\":\"1.0.1\",\"keyAllowlistVersion\":\"1.0.0\",\"normalizationVersion\":\"1.0.0\",\"riskRubricVersion\":\"1.0.0\",\"scannerVersion\":\"1.4.0\"},\"issuedAt\":\"2026-01-15T12:00:00.000Z\",\"issuer\":\"agentverify-conformance\",\"keyId\":\"Q0SYhOsBWXDxa-UTEEuI3jb8DkooT-FFUFJ97Z6GO44\",\"package\":{\"digest\":\"avpkg-sha256:9fc4448c2e85c812c981cfd961939a23acf5d74b52888cbb26814dcb78390ac0\",\"fileCount\":3},\"profile\":\"owasp-agentic-skills-2026\",\"profileVersion\":\"1.0.0-alpha.1\",\"upstream\":{\"commit\":\"d6f7d7d0de314f52a83a85d1828e06ab096e595c\",\"license\":\"CC-BY-SA-4.0\",\"repo\":\"OWASP/www-project-agentic-skills-top-10\"},\"workspaceId\":\"ws_conformance_0001\"}",
+      "signingInputHex": "6167656e747665726966792d6174746573746174696f6e2f70726f66696c652d6173736573736d656e742f76310a7b226173736573736d656e74223a7b2263616e6f6e6963616c697a6174696f6e223a2252464338373835222c22646967657374223a2261766173736573732d7368613235363a34326163646438653135656361373166653136666364616165303366663736323333346166653564636335323831626639333235396633356637613734646563227d2c226173736573736d656e74536368656d6156657273696f6e223a22312e312e30222c226174746573746174696f6e54797065223a226167656e747665726966792e70726f66696c652d6173736573736d656e74222c226174746573746174696f6e56657273696f6e223a22312e302e30222c226672616d65776f726b223a224f574153505f4147454e5449435f534b494c4c535f544f505f3130222c22696d706c656d656e746564436f6e74726f6c73223a5b224153543032222c224153543033222c224153543034225d2c22696e746572707265746174696f6e56657273696f6e73223a7b226173736573736d656e74456e67696e6556657273696f6e223a22312e302e31222c226b6579416c6c6f776c69737456657273696f6e223a22312e302e30222c226e6f726d616c697a6174696f6e56657273696f6e223a22312e302e30222c227269736b52756272696356657273696f6e223a22312e302e30222c227363616e6e657256657273696f6e223a22312e342e30227d2c226973737565644174223a22323032362d30312d31355431323a30303a30302e3030305a222c22697373756572223a226167656e747665726966792d636f6e666f726d616e6365222c226b65794964223a2251305359684f734257584478612d555445457549336a6238446b6f6f542d464655464a39375a36474f3434222c227061636b616765223a7b22646967657374223a226176706b672d7368613235363a39666334343438633265383563383132633938316366643936313933396132336163663564373462353238383863626232363831346463623738333930616330222c2266696c65436f756e74223a337d2c2270726f66696c65223a226f776173702d6167656e7469632d736b696c6c732d32303236222c2270726f66696c6556657273696f6e223a22312e302e302d616c7068612e31222c22757073747265616d223a7b22636f6d6d6974223a2264366637643764306465333134663532613833613835643138323865303661623039366535393563222c226c6963656e7365223a2243432d42592d53412d342e30222c227265706f223a224f574153502f7777772d70726f6a6563742d6167656e7469632d736b696c6c732d746f702d3130227d2c22776f726b73706163654964223a2277735f636f6e666f726d616e63655f30303031227d",
+      "signingInputSha256": "ff30cc5f8c90283070eb5fa829f3616961c6e187c2b29a91f94039b1a3c23b85",
+      "assessmentJcsSha256": "6c0b0b43c87145c2e61e80769af0989a32c19c0d41231ea6f07f21489e9c7e2b",
+      "assessmentDigest": "avassess-sha256:42acdd8e15eca71fe16fcdaae03ff762334afe5dcc5281bf93259f35f7a74dec",
+      "signature": "GA1cthz43DhxbxclVn/OeRgRXbVfjXidbQH2dxMTGBcxQccJx6rHOGppB2p7fFnqi7sLROIwOX1mgt/2XKmpdw==",
+      "signatureRHex": "180d5cb61cf8dc38716f1725567fce7918115db55f8d789d6d01f67713131817",
+      "signatureSHex": "3141c709c7aac7386a69076a7b7c59ea8bbb0b44e230397d6682dff65ca9a977",
+      "lowS": true,
+      "publicKey": {
+        "kty": "EC",
+        "crv": "P-256",
+        "x": "Q3ZLLuzwdwgLNAn5h1Ubh6R4Xmgxa6x3x_Uc1e67pDA",
+        "y": "lEgPpHvsAh3CLtdMRmHCC9ywlBPG_iXAH6LA1FwnDIo"
+      },
+      "keyId": "Q0SYhOsBWXDxa-UTEEuI3jb8DkooT-FFUFJ97Z6GO44"
+    },
+    {
+      "name": "B_other",
+      "payload": {
+        "attestationType": "agentverify.profile-assessment",
+        "attestationVersion": "1.0.0",
+        "profile": "owasp-agentic-skills-2026",
+        "profileVersion": "1.0.0-alpha.1",
+        "framework": "OWASP_AGENTIC_SKILLS_TOP_10",
+        "upstream": {
+          "repo": "OWASP/www-project-agentic-skills-top-10",
+          "commit": "d6f7d7d0de314f52a83a85d1828e06ab096e595c",
+          "license": "CC-BY-SA-4.0"
+        },
+        "implementedControls": [
+          "AST02",
+          "AST03",
+          "AST04"
+        ],
+        "assessmentSchemaVersion": "1.1.0",
+        "interpretationVersions": {
+          "scannerVersion": "1.4.0",
+          "assessmentEngineVersion": "1.0.1",
+          "riskRubricVersion": "1.0.0",
+          "keyAllowlistVersion": "1.0.0",
+          "normalizationVersion": "1.0.0"
+        },
+        "package": {
+          "digest": "avpkg-sha256:9fc4448c2e85c812c981cfd961939a23acf5d74b52888cbb26814dcb78390ac0",
+          "fileCount": 3
+        },
+        "assessment": {
+          "digest": "avassess-sha256:9158a20021e2f0f1cd54ca5b10ec20ac3a962a9ef362dac9e42bb6fe5b41c8f0",
+          "canonicalization": "RFC8785"
+        },
+        "issuer": "agentverify-conformance",
+        "keyId": "Q0SYhOsBWXDxa-UTEEuI3jb8DkooT-FFUFJ97Z6GO44",
+        "issuedAt": "2026-01-15T12:00:00.000Z"
+      },
+      "payloadJcs": "{\"assessment\":{\"canonicalization\":\"RFC8785\",\"digest\":\"avassess-sha256:9158a20021e2f0f1cd54ca5b10ec20ac3a962a9ef362dac9e42bb6fe5b41c8f0\"},\"assessmentSchemaVersion\":\"1.1.0\",\"attestationType\":\"agentverify.profile-assessment\",\"attestationVersion\":\"1.0.0\",\"framework\":\"OWASP_AGENTIC_SKILLS_TOP_10\",\"implementedControls\":[\"AST02\",\"AST03\",\"AST04\"],\"interpretationVersions\":{\"assessmentEngineVersion\":\"1.0.1\",\"keyAllowlistVersion\":\"1.0.0\",\"normalizationVersion\":\"1.0.0\",\"riskRubricVersion\":\"1.0.0\",\"scannerVersion\":\"1.4.0\"},\"issuedAt\":\"2026-01-15T12:00:00.000Z\",\"issuer\":\"agentverify-conformance\",\"keyId\":\"Q0SYhOsBWXDxa-UTEEuI3jb8DkooT-FFUFJ97Z6GO44\",\"package\":{\"digest\":\"avpkg-sha256:9fc4448c2e85c812c981cfd961939a23acf5d74b52888cbb26814dcb78390ac0\",\"fileCount\":3},\"profile\":\"owasp-agentic-skills-2026\",\"profileVersion\":\"1.0.0-alpha.1\",\"upstream\":{\"commit\":\"d6f7d7d0de314f52a83a85d1828e06ab096e595c\",\"license\":\"CC-BY-SA-4.0\",\"repo\":\"OWASP/www-project-agentic-skills-top-10\"}}",
+      "signingInputHex": "6167656e747665726966792d6174746573746174696f6e2f70726f66696c652d6173736573736d656e742f76310a7b226173736573736d656e74223a7b2263616e6f6e6963616c697a6174696f6e223a2252464338373835222c22646967657374223a2261766173736573732d7368613235363a39313538613230303231653266306631636435346361356231306563323061633361393632613965663336326461633965343262623666653562343163386630227d2c226173736573736d656e74536368656d6156657273696f6e223a22312e312e30222c226174746573746174696f6e54797065223a226167656e747665726966792e70726f66696c652d6173736573736d656e74222c226174746573746174696f6e56657273696f6e223a22312e302e30222c226672616d65776f726b223a224f574153505f4147454e5449435f534b494c4c535f544f505f3130222c22696d706c656d656e746564436f6e74726f6c73223a5b224153543032222c224153543033222c224153543034225d2c22696e746572707265746174696f6e56657273696f6e73223a7b226173736573736d656e74456e67696e6556657273696f6e223a22312e302e31222c226b6579416c6c6f776c69737456657273696f6e223a22312e302e30222c226e6f726d616c697a6174696f6e56657273696f6e223a22312e302e30222c227269736b52756272696356657273696f6e223a22312e302e30222c227363616e6e657256657273696f6e223a22312e342e30227d2c226973737565644174223a22323032362d30312d31355431323a30303a30302e3030305a222c22697373756572223a226167656e747665726966792d636f6e666f726d616e6365222c226b65794964223a2251305359684f734257584478612d555445457549336a6238446b6f6f542d464655464a39375a36474f3434222c227061636b616765223a7b22646967657374223a226176706b672d7368613235363a39666334343438633265383563383132633938316366643936313933396132336163663564373462353238383863626232363831346463623738333930616330222c2266696c65436f756e74223a337d2c2270726f66696c65223a226f776173702d6167656e7469632d736b696c6c732d32303236222c2270726f66696c6556657273696f6e223a22312e302e302d616c7068612e31222c22757073747265616d223a7b22636f6d6d6974223a2264366637643764306465333134663532613833613835643138323865303661623039366535393563222c226c6963656e7365223a2243432d42592d53412d342e30222c227265706f223a224f574153502f7777772d70726f6a6563742d6167656e7469632d736b696c6c732d746f702d3130227d7d",
+      "signingInputSha256": "15ed6a6f3f1fbbeba606b924be8355bf47dd733d081234928977037e48effd0e",
+      "assessmentJcsSha256": "cf9194c1c040a6922c9c9f4de49b3f704e50e703a7d1cd37f27bd8048a9b8981",
+      "assessmentDigest": "avassess-sha256:9158a20021e2f0f1cd54ca5b10ec20ac3a962a9ef362dac9e42bb6fe5b41c8f0",
+      "signature": "uG6KkRjjj5lota64N/uEp4mnuPS/JIfgQ5JYVKZ+pWsR8UUDLxuCS8dlFWtUYVGA7E7OjuH2xKLW3fXkG57t0Q==",
+      "signatureRHex": "b86e8a9118e38f9968b5aeb837fb84a789a7b8f4bf2487e043925854a67ea56b",
+      "signatureSHex": "11f145032f1b824bc765156b54615180ec4ece8ee1f6c4a2d6ddf5e41b9eedd1",
+      "lowS": true,
+      "publicKey": {
+        "kty": "EC",
+        "crv": "P-256",
+        "x": "Q3ZLLuzwdwgLNAn5h1Ubh6R4Xmgxa6x3x_Uc1e67pDA",
+        "y": "lEgPpHvsAh3CLtdMRmHCC9ywlBPG_iXAH6LA1FwnDIo"
+      },
+      "keyId": "Q0SYhOsBWXDxa-UTEEuI3jb8DkooT-FFUFJ97Z6GO44"
+    },
+    {
+      "name": "B_rotated",
+      "payload": {
+        "attestationType": "agentverify.profile-assessment",
+        "attestationVersion": "1.0.0",
+        "profile": "owasp-agentic-skills-2026",
+        "profileVersion": "1.0.0-alpha.1",
+        "framework": "OWASP_AGENTIC_SKILLS_TOP_10",
+        "upstream": {
+          "repo": "OWASP/www-project-agentic-skills-top-10",
+          "commit": "d6f7d7d0de314f52a83a85d1828e06ab096e595c",
+          "license": "CC-BY-SA-4.0"
+        },
+        "implementedControls": [
+          "AST02",
+          "AST03",
+          "AST04"
+        ],
+        "assessmentSchemaVersion": "1.1.0",
+        "interpretationVersions": {
+          "scannerVersion": "1.4.0",
+          "assessmentEngineVersion": "1.0.1",
+          "riskRubricVersion": "1.0.0",
+          "keyAllowlistVersion": "1.0.0",
+          "normalizationVersion": "1.0.0"
+        },
+        "package": {
+          "digest": "avpkg-sha256:9fc4448c2e85c812c981cfd961939a23acf5d74b52888cbb26814dcb78390ac0",
+          "fileCount": 3
+        },
+        "assessment": {
+          "digest": "avassess-sha256:42acdd8e15eca71fe16fcdaae03ff762334afe5dcc5281bf93259f35f7a74dec",
+          "canonicalization": "RFC8785"
+        },
+        "issuer": "agentverify-conformance",
+        "keyId": "mezUcoBFDKRBPDh2G7QuAkPwnCbZ1IWHV5746eH0f-4",
+        "issuedAt": "2026-01-15T12:00:00.000Z"
+      },
+      "payloadJcs": "{\"assessment\":{\"canonicalization\":\"RFC8785\",\"digest\":\"avassess-sha256:42acdd8e15eca71fe16fcdaae03ff762334afe5dcc5281bf93259f35f7a74dec\"},\"assessmentSchemaVersion\":\"1.1.0\",\"attestationType\":\"agentverify.profile-assessment\",\"attestationVersion\":\"1.0.0\",\"framework\":\"OWASP_AGENTIC_SKILLS_TOP_10\",\"implementedControls\":[\"AST02\",\"AST03\",\"AST04\"],\"interpretationVersions\":{\"assessmentEngineVersion\":\"1.0.1\",\"keyAllowlistVersion\":\"1.0.0\",\"normalizationVersion\":\"1.0.0\",\"riskRubricVersion\":\"1.0.0\",\"scannerVersion\":\"1.4.0\"},\"issuedAt\":\"2026-01-15T12:00:00.000Z\",\"issuer\":\"agentverify-conformance\",\"keyId\":\"mezUcoBFDKRBPDh2G7QuAkPwnCbZ1IWHV5746eH0f-4\",\"package\":{\"digest\":\"avpkg-sha256:9fc4448c2e85c812c981cfd961939a23acf5d74b52888cbb26814dcb78390ac0\",\"fileCount\":3},\"profile\":\"owasp-agentic-skills-2026\",\"profileVersion\":\"1.0.0-alpha.1\",\"upstream\":{\"commit\":\"d6f7d7d0de314f52a83a85d1828e06ab096e595c\",\"license\":\"CC-BY-SA-4.0\",\"repo\":\"OWASP/www-project-agentic-skills-top-10\"}}",
+      "signingInputHex": "6167656e747665726966792d6174746573746174696f6e2f70726f66696c652d6173736573736d656e742f76310a7b226173736573736d656e74223a7b2263616e6f6e6963616c697a6174696f6e223a2252464338373835222c22646967657374223a2261766173736573732d7368613235363a34326163646438653135656361373166653136666364616165303366663736323333346166653564636335323831626639333235396633356637613734646563227d2c226173736573736d656e74536368656d6156657273696f6e223a22312e312e30222c226174746573746174696f6e54797065223a226167656e747665726966792e70726f66696c652d6173736573736d656e74222c226174746573746174696f6e56657273696f6e223a22312e302e30222c226672616d65776f726b223a224f574153505f4147454e5449435f534b494c4c535f544f505f3130222c22696d706c656d656e746564436f6e74726f6c73223a5b224153543032222c224153543033222c224153543034225d2c22696e746572707265746174696f6e56657273696f6e73223a7b226173736573736d656e74456e67696e6556657273696f6e223a22312e302e31222c226b6579416c6c6f776c69737456657273696f6e223a22312e302e30222c226e6f726d616c697a6174696f6e56657273696f6e223a22312e302e30222c227269736b52756272696356657273696f6e223a22312e302e30222c227363616e6e657256657273696f6e223a22312e342e30227d2c226973737565644174223a22323032362d30312d31355431323a30303a30302e3030305a222c22697373756572223a226167656e747665726966792d636f6e666f726d616e6365222c226b65794964223a226d657a55636f4246444b52425044683247375175416b50776e43625a314957485635373436654830662d34222c227061636b616765223a7b22646967657374223a226176706b672d7368613235363a39666334343438633265383563383132633938316366643936313933396132336163663564373462353238383863626232363831346463623738333930616330222c2266696c65436f756e74223a337d2c2270726f66696c65223a226f776173702d6167656e7469632d736b696c6c732d32303236222c2270726f66696c6556657273696f6e223a22312e302e302d616c7068612e31222c22757073747265616d223a7b22636f6d6d6974223a2264366637643764306465333134663532613833613835643138323865303661623039366535393563222c226c6963656e7365223a2243432d42592d53412d342e30222c227265706f223a224f574153502f7777772d70726f6a6563742d6167656e7469632d736b696c6c732d746f702d3130227d7d",
+      "signingInputSha256": "1be09d8ad1dfb023586fa888b8cf23a493abe58e19e89661d80c79aae0cc4e5f",
+      "assessmentJcsSha256": "6c0b0b43c87145c2e61e80769af0989a32c19c0d41231ea6f07f21489e9c7e2b",
+      "assessmentDigest": "avassess-sha256:42acdd8e15eca71fe16fcdaae03ff762334afe5dcc5281bf93259f35f7a74dec",
+      "signature": "8uvIE8PVuYz13uAbYqMXXJ0am8dtTSkeDIcXRMcds+ktXwBQdOS5hmXjpxm14pRnEAX4NCg1FK4rm4NqXgC8eg==",
+      "signatureRHex": "f2ebc813c3d5b98cf5dee01b62a3175c9d1a9bc76d4d291e0c871744c71db3e9",
+      "signatureSHex": "2d5f005074e4b98665e3a719b5e294671005f834283514ae2b9b836a5e00bc7a",
+      "lowS": true,
+      "publicKey": {
+        "kty": "EC",
+        "crv": "P-256",
+        "x": "lkkBAHgam19YKSZDiKUj4ouWZOXfoy1U5NkS0rjrul4",
+        "y": "oWSI59LDtJ5Hu9W6n7iF5HaVk1DTj2PJ3pSeYTQ0QHs"
+      },
+      "keyId": "mezUcoBFDKRBPDh2G7QuAkPwnCbZ1IWHV5746eH0f-4"
+    },
+    {
+      "name": "D10_scannerVersion",
+      "payload": {
+        "attestationType": "agentverify.profile-assessment",
+        "attestationVersion": "1.0.0",
+        "profile": "owasp-agentic-skills-2026",
+        "profileVersion": "1.0.0-alpha.1",
+        "framework": "OWASP_AGENTIC_SKILLS_TOP_10",
+        "upstream": {
+          "repo": "OWASP/www-project-agentic-skills-top-10",
+          "commit": "d6f7d7d0de314f52a83a85d1828e06ab096e595c",
+          "license": "CC-BY-SA-4.0"
+        },
+        "implementedControls": [
+          "AST02",
+          "AST03",
+          "AST04"
+        ],
+        "assessmentSchemaVersion": "1.1.0",
+        "interpretationVersions": {
+          "scannerVersion": "1.4.1",
+          "assessmentEngineVersion": "1.0.1",
+          "riskRubricVersion": "1.0.0",
+          "keyAllowlistVersion": "1.0.0",
+          "normalizationVersion": "1.0.0"
+        },
+        "package": {
+          "digest": "avpkg-sha256:9fc4448c2e85c812c981cfd961939a23acf5d74b52888cbb26814dcb78390ac0",
+          "fileCount": 3
+        },
+        "assessment": {
+          "digest": "avassess-sha256:eeb18aa831e4bcca93cc376782563281593c1e4bd913b4b2680a3a88646ca274",
+          "canonicalization": "RFC8785"
+        },
+        "issuer": "agentverify-conformance",
+        "keyId": "Q0SYhOsBWXDxa-UTEEuI3jb8DkooT-FFUFJ97Z6GO44",
+        "issuedAt": "2026-01-15T12:00:00.000Z"
+      },
+      "payloadJcs": "{\"assessment\":{\"canonicalization\":\"RFC8785\",\"digest\":\"avassess-sha256:eeb18aa831e4bcca93cc376782563281593c1e4bd913b4b2680a3a88646ca274\"},\"assessmentSchemaVersion\":\"1.1.0\",\"attestationType\":\"agentverify.profile-assessment\",\"attestationVersion\":\"1.0.0\",\"framework\":\"OWASP_AGENTIC_SKILLS_TOP_10\",\"implementedControls\":[\"AST02\",\"AST03\",\"AST04\"],\"interpretationVersions\":{\"assessmentEngineVersion\":\"1.0.1\",\"keyAllowlistVersion\":\"1.0.0\",\"normalizationVersion\":\"1.0.0\",\"riskRubricVersion\":\"1.0.0\",\"scannerVersion\":\"1.4.1\"},\"issuedAt\":\"2026-01-15T12:00:00.000Z\",\"issuer\":\"agentverify-conformance\",\"keyId\":\"Q0SYhOsBWXDxa-UTEEuI3jb8DkooT-FFUFJ97Z6GO44\",\"package\":{\"digest\":\"avpkg-sha256:9fc4448c2e85c812c981cfd961939a23acf5d74b52888cbb26814dcb78390ac0\",\"fileCount\":3},\"profile\":\"owasp-agentic-skills-2026\",\"profileVersion\":\"1.0.0-alpha.1\",\"upstream\":{\"commit\":\"d6f7d7d0de314f52a83a85d1828e06ab096e595c\",\"license\":\"CC-BY-SA-4.0\",\"repo\":\"OWASP/www-project-agentic-skills-top-10\"}}",
+      "signingInputHex": "6167656e747665726966792d6174746573746174696f6e2f70726f66696c652d6173736573736d656e742f76310a7b226173736573736d656e74223a7b2263616e6f6e6963616c697a6174696f6e223a2252464338373835222c22646967657374223a2261766173736573732d7368613235363a65656231386161383331653462636361393363633337363738323536333238313539336331653462643931336234623236383061336138383634366361323734227d2c226173736573736d656e74536368656d6156657273696f6e223a22312e312e30222c226174746573746174696f6e54797065223a226167656e747665726966792e70726f66696c652d6173736573736d656e74222c226174746573746174696f6e56657273696f6e223a22312e302e30222c226672616d65776f726b223a224f574153505f4147454e5449435f534b494c4c535f544f505f3130222c22696d706c656d656e746564436f6e74726f6c73223a5b224153543032222c224153543033222c224153543034225d2c22696e746572707265746174696f6e56657273696f6e73223a7b226173736573736d656e74456e67696e6556657273696f6e223a22312e302e31222c226b6579416c6c6f776c69737456657273696f6e223a22312e302e30222c226e6f726d616c697a6174696f6e56657273696f6e223a22312e302e30222c227269736b52756272696356657273696f6e223a22312e302e30222c227363616e6e657256657273696f6e223a22312e342e31227d2c226973737565644174223a22323032362d30312d31355431323a30303a30302e3030305a222c22697373756572223a226167656e747665726966792d636f6e666f726d616e6365222c226b65794964223a2251305359684f734257584478612d555445457549336a6238446b6f6f542d464655464a39375a36474f3434222c227061636b616765223a7b22646967657374223a226176706b672d7368613235363a39666334343438633265383563383132633938316366643936313933396132336163663564373462353238383863626232363831346463623738333930616330222c2266696c65436f756e74223a337d2c2270726f66696c65223a226f776173702d6167656e7469632d736b696c6c732d32303236222c2270726f66696c6556657273696f6e223a22312e302e302d616c7068612e31222c22757073747265616d223a7b22636f6d6d6974223a2264366637643764306465333134663532613833613835643138323865303661623039366535393563222c226c6963656e7365223a2243432d42592d53412d342e30222c227265706f223a224f574153502f7777772d70726f6a6563742d6167656e7469632d736b696c6c732d746f702d3130227d7d",
+      "signingInputSha256": "279996f68eda2486c39066b22a6b893798ea52e15e044fcc911e88c4992ba24f",
+      "assessmentJcsSha256": "ea88cc6450c3000073b18e29a14e21aac207a6e75d3a2d367942b12b1cef789f",
+      "assessmentDigest": "avassess-sha256:eeb18aa831e4bcca93cc376782563281593c1e4bd913b4b2680a3a88646ca274",
+      "signature": "TPiz+pJa6FdIWUvpePFKTMGeGJFuYk7R86nszgbJDfQBnTq62gUocCKZazCWvpc89EvS+pC1XFWi14jD3Gk9Zw==",
+      "signatureRHex": "4cf8b3fa925ae85748594be978f14a4cc19e18916e624ed1f3a9ecce06c90df4",
+      "signatureSHex": "019d3abada05287022996b3096be973cf44bd2fa90b55c55a2d788c3dc693d67",
+      "lowS": true,
+      "publicKey": {
+        "kty": "EC",
+        "crv": "P-256",
+        "x": "Q3ZLLuzwdwgLNAn5h1Ubh6R4Xmgxa6x3x_Uc1e67pDA",
+        "y": "lEgPpHvsAh3CLtdMRmHCC9ywlBPG_iXAH6LA1FwnDIo"
+      },
+      "keyId": "Q0SYhOsBWXDxa-UTEEuI3jb8DkooT-FFUFJ97Z6GO44"
+    },
+    {
+      "name": "D10_assessmentEngineVersion",
+      "payload": {
+        "attestationType": "agentverify.profile-assessment",
+        "attestationVersion": "1.0.0",
+        "profile": "owasp-agentic-skills-2026",
+        "profileVersion": "1.0.0-alpha.1",
+        "framework": "OWASP_AGENTIC_SKILLS_TOP_10",
+        "upstream": {
+          "repo": "OWASP/www-project-agentic-skills-top-10",
+          "commit": "d6f7d7d0de314f52a83a85d1828e06ab096e595c",
+          "license": "CC-BY-SA-4.0"
+        },
+        "implementedControls": [
+          "AST02",
+          "AST03",
+          "AST04"
+        ],
+        "assessmentSchemaVersion": "1.1.0",
+        "interpretationVersions": {
+          "scannerVersion": "1.4.0",
+          "assessmentEngineVersion": "1.0.2",
+          "riskRubricVersion": "1.0.0",
+          "keyAllowlistVersion": "1.0.0",
+          "normalizationVersion": "1.0.0"
+        },
+        "package": {
+          "digest": "avpkg-sha256:9fc4448c2e85c812c981cfd961939a23acf5d74b52888cbb26814dcb78390ac0",
+          "fileCount": 3
+        },
+        "assessment": {
+          "digest": "avassess-sha256:b8c49da2dc3db7609d09d55f98292108bf289bcd04f0faf81b2542db84207f12",
+          "canonicalization": "RFC8785"
+        },
+        "issuer": "agentverify-conformance",
+        "keyId": "Q0SYhOsBWXDxa-UTEEuI3jb8DkooT-FFUFJ97Z6GO44",
+        "issuedAt": "2026-01-15T12:00:00.000Z"
+      },
+      "payloadJcs": "{\"assessment\":{\"canonicalization\":\"RFC8785\",\"digest\":\"avassess-sha256:b8c49da2dc3db7609d09d55f98292108bf289bcd04f0faf81b2542db84207f12\"},\"assessmentSchemaVersion\":\"1.1.0\",\"attestationType\":\"agentverify.profile-assessment\",\"attestationVersion\":\"1.0.0\",\"framework\":\"OWASP_AGENTIC_SKILLS_TOP_10\",\"implementedControls\":[\"AST02\",\"AST03\",\"AST04\"],\"interpretationVersions\":{\"assessmentEngineVersion\":\"1.0.2\",\"keyAllowlistVersion\":\"1.0.0\",\"normalizationVersion\":\"1.0.0\",\"riskRubricVersion\":\"1.0.0\",\"scannerVersion\":\"1.4.0\"},\"issuedAt\":\"2026-01-15T12:00:00.000Z\",\"issuer\":\"agentverify-conformance\",\"keyId\":\"Q0SYhOsBWXDxa-UTEEuI3jb8DkooT-FFUFJ97Z6GO44\",\"package\":{\"digest\":\"avpkg-sha256:9fc4448c2e85c812c981cfd961939a23acf5d74b52888cbb26814dcb78390ac0\",\"fileCount\":3},\"profile\":\"owasp-agentic-skills-2026\",\"profileVersion\":\"1.0.0-alpha.1\",\"upstream\":{\"commit\":\"d6f7d7d0de314f52a83a85d1828e06ab096e595c\",\"license\":\"CC-BY-SA-4.0\",\"repo\":\"OWASP/www-project-agentic-skills-top-10\"}}",
+      "signingInputHex": "6167656e747665726966792d6174746573746174696f6e2f70726f66696c652d6173736573736d656e742f76310a7b226173736573736d656e74223a7b2263616e6f6e6963616c697a6174696f6e223a2252464338373835222c22646967657374223a2261766173736573732d7368613235363a62386334396461326463336462373630396430396435356639383239323130386266323839626364303466306661663831623235343264623834323037663132227d2c226173736573736d656e74536368656d6156657273696f6e223a22312e312e30222c226174746573746174696f6e54797065223a226167656e747665726966792e70726f66696c652d6173736573736d656e74222c226174746573746174696f6e56657273696f6e223a22312e302e30222c226672616d65776f726b223a224f574153505f4147454e5449435f534b494c4c535f544f505f3130222c22696d706c656d656e746564436f6e74726f6c73223a5b224153543032222c224153543033222c224153543034225d2c22696e746572707265746174696f6e56657273696f6e73223a7b226173736573736d656e74456e67696e6556657273696f6e223a22312e302e32222c226b6579416c6c6f776c69737456657273696f6e223a22312e302e30222c226e6f726d616c697a6174696f6e56657273696f6e223a22312e302e30222c227269736b52756272696356657273696f6e223a22312e302e30222c227363616e6e657256657273696f6e223a22312e342e30227d2c226973737565644174223a22323032362d30312d31355431323a30303a30302e3030305a222c22697373756572223a226167656e747665726966792d636f6e666f726d616e6365222c226b65794964223a2251305359684f734257584478612d555445457549336a6238446b6f6f542d464655464a39375a36474f3434222c227061636b616765223a7b22646967657374223a226176706b672d7368613235363a39666334343438633265383563383132633938316366643936313933396132336163663564373462353238383863626232363831346463623738333930616330222c2266696c65436f756e74223a337d2c2270726f66696c65223a226f776173702d6167656e7469632d736b696c6c732d32303236222c2270726f66696c6556657273696f6e223a22312e302e302d616c7068612e31222c22757073747265616d223a7b22636f6d6d6974223a2264366637643764306465333134663532613833613835643138323865303661623039366535393563222c226c6963656e7365223a2243432d42592d53412d342e30222c227265706f223a224f574153502f7777772d70726f6a6563742d6167656e7469632d736b696c6c732d746f702d3130227d7d",
+      "signingInputSha256": "facced35cf339ea3ddebf3cb1c23e0ddd3e316b011b38496c32853f412c89773",
+      "assessmentJcsSha256": "7e28abc77c80a2364496b091dfa291d56e0f606ddba35e0a2cc029a64ac272a9",
+      "assessmentDigest": "avassess-sha256:b8c49da2dc3db7609d09d55f98292108bf289bcd04f0faf81b2542db84207f12",
+      "signature": "6svd42IPbg4r1Ur48wCI5s2PGep2EHMurj23y0fxej5UExdRsyGJoc9aceHjhLoO+acCPFC+VkU3YqH95ZF1uA==",
+      "signatureRHex": "eacbdde3620f6e0e2bd54af8f30088e6cd8f19ea7610732eae3db7cb47f17a3e",
+      "signatureSHex": "54131751b32189a1cf5a71e1e384ba0ef9a7023c50be56453762a1fde59175b8",
+      "lowS": true,
+      "publicKey": {
+        "kty": "EC",
+        "crv": "P-256",
+        "x": "Q3ZLLuzwdwgLNAn5h1Ubh6R4Xmgxa6x3x_Uc1e67pDA",
+        "y": "lEgPpHvsAh3CLtdMRmHCC9ywlBPG_iXAH6LA1FwnDIo"
+      },
+      "keyId": "Q0SYhOsBWXDxa-UTEEuI3jb8DkooT-FFUFJ97Z6GO44"
+    },
+    {
+      "name": "D10_riskRubricVersion",
+      "payload": {
+        "attestationType": "agentverify.profile-assessment",
+        "attestationVersion": "1.0.0",
+        "profile": "owasp-agentic-skills-2026",
+        "profileVersion": "1.0.0-alpha.1",
+        "framework": "OWASP_AGENTIC_SKILLS_TOP_10",
+        "upstream": {
+          "repo": "OWASP/www-project-agentic-skills-top-10",
+          "commit": "d6f7d7d0de314f52a83a85d1828e06ab096e595c",
+          "license": "CC-BY-SA-4.0"
+        },
+        "implementedControls": [
+          "AST02",
+          "AST03",
+          "AST04"
+        ],
+        "assessmentSchemaVersion": "1.1.0",
+        "interpretationVersions": {
+          "scannerVersion": "1.4.0",
+          "assessmentEngineVersion": "1.0.1",
+          "riskRubricVersion": "1.0.1",
+          "keyAllowlistVersion": "1.0.0",
+          "normalizationVersion": "1.0.0"
+        },
+        "package": {
+          "digest": "avpkg-sha256:9fc4448c2e85c812c981cfd961939a23acf5d74b52888cbb26814dcb78390ac0",
+          "fileCount": 3
+        },
+        "assessment": {
+          "digest": "avassess-sha256:40c2efdd29bc1a90cdfc6e028f30b45e4fcd05aa838b4843c392b566306b2568",
+          "canonicalization": "RFC8785"
+        },
+        "issuer": "agentverify-conformance",
+        "keyId": "Q0SYhOsBWXDxa-UTEEuI3jb8DkooT-FFUFJ97Z6GO44",
+        "issuedAt": "2026-01-15T12:00:00.000Z"
+      },
+      "payloadJcs": "{\"assessment\":{\"canonicalization\":\"RFC8785\",\"digest\":\"avassess-sha256:40c2efdd29bc1a90cdfc6e028f30b45e4fcd05aa838b4843c392b566306b2568\"},\"assessmentSchemaVersion\":\"1.1.0\",\"attestationType\":\"agentverify.profile-assessment\",\"attestationVersion\":\"1.0.0\",\"framework\":\"OWASP_AGENTIC_SKILLS_TOP_10\",\"implementedControls\":[\"AST02\",\"AST03\",\"AST04\"],\"interpretationVersions\":{\"assessmentEngineVersion\":\"1.0.1\",\"keyAllowlistVersion\":\"1.0.0\",\"normalizationVersion\":\"1.0.0\",\"riskRubricVersion\":\"1.0.1\",\"scannerVersion\":\"1.4.0\"},\"issuedAt\":\"2026-01-15T12:00:00.000Z\",\"issuer\":\"agentverify-conformance\",\"keyId\":\"Q0SYhOsBWXDxa-UTEEuI3jb8DkooT-FFUFJ97Z6GO44\",\"package\":{\"digest\":\"avpkg-sha256:9fc4448c2e85c812c981cfd961939a23acf5d74b52888cbb26814dcb78390ac0\",\"fileCount\":3},\"profile\":\"owasp-agentic-skills-2026\",\"profileVersion\":\"1.0.0-alpha.1\",\"upstream\":{\"commit\":\"d6f7d7d0de314f52a83a85d1828e06ab096e595c\",\"license\":\"CC-BY-SA-4.0\",\"repo\":\"OWASP/www-project-agentic-skills-top-10\"}}",
+      "signingInputHex": "6167656e747665726966792d6174746573746174696f6e2f70726f66696c652d6173736573736d656e742f76310a7b226173736573736d656e74223a7b2263616e6f6e6963616c697a6174696f6e223a2252464338373835222c22646967657374223a2261766173736573732d7368613235363a34306332656664643239626331613930636466633665303238663330623435653466636430356161383338623438343363333932623536363330366232353638227d2c226173736573736d656e74536368656d6156657273696f6e223a22312e312e30222c226174746573746174696f6e54797065223a226167656e747665726966792e70726f66696c652d6173736573736d656e74222c226174746573746174696f6e56657273696f6e223a22312e302e30222c226672616d65776f726b223a224f574153505f4147454e5449435f534b494c4c535f544f505f3130222c22696d706c656d656e746564436f6e74726f6c73223a5b224153543032222c224153543033222c224153543034225d2c22696e746572707265746174696f6e56657273696f6e73223a7b226173736573736d656e74456e67696e6556657273696f6e223a22312e302e31222c226b6579416c6c6f776c69737456657273696f6e223a22312e302e30222c226e6f726d616c697a6174696f6e56657273696f6e223a22312e302e30222c227269736b52756272696356657273696f6e223a22312e302e31222c227363616e6e657256657273696f6e223a22312e342e30227d2c226973737565644174223a22323032362d30312d31355431323a30303a30302e3030305a222c22697373756572223a226167656e747665726966792d636f6e666f726d616e6365222c226b65794964223a2251305359684f734257584478612d555445457549336a6238446b6f6f542d464655464a39375a36474f3434222c227061636b616765223a7b22646967657374223a226176706b672d7368613235363a39666334343438633265383563383132633938316366643936313933396132336163663564373462353238383863626232363831346463623738333930616330222c2266696c65436f756e74223a337d2c2270726f66696c65223a226f776173702d6167656e7469632d736b696c6c732d32303236222c2270726f66696c6556657273696f6e223a22312e302e302d616c7068612e31222c22757073747265616d223a7b22636f6d6d6974223a2264366637643764306465333134663532613833613835643138323865303661623039366535393563222c226c6963656e7365223a2243432d42592d53412d342e30222c227265706f223a224f574153502f7777772d70726f6a6563742d6167656e7469632d736b696c6c732d746f702d3130227d7d",
+      "signingInputSha256": "66b3a509a9c225a0c9906bf8038e96554c9de63693f7254cf0f2895bd2a69fc4",
+      "assessmentJcsSha256": "5b0bc693081f350396d89f7a7f3b4615c1beb200fd49b173e9e0a45752e1237f",
+      "assessmentDigest": "avassess-sha256:40c2efdd29bc1a90cdfc6e028f30b45e4fcd05aa838b4843c392b566306b2568",
+      "signature": "Y0HZr9jipZk0vJ52fLCSJpl6PeR9AjZXkTHNF1Zk32ke9S3gaJHhQOFKWpOdmXEJivOYo/bDEq/KWkknoUSwog==",
+      "signatureRHex": "6341d9afd8e2a59934bc9e767cb09226997a3de47d0236579131cd175664df69",
+      "signatureSHex": "1ef52de06891e140e14a5a939d9971098af398a3f6c312afca5a4927a144b0a2",
+      "lowS": true,
+      "publicKey": {
+        "kty": "EC",
+        "crv": "P-256",
+        "x": "Q3ZLLuzwdwgLNAn5h1Ubh6R4Xmgxa6x3x_Uc1e67pDA",
+        "y": "lEgPpHvsAh3CLtdMRmHCC9ywlBPG_iXAH6LA1FwnDIo"
+      },
+      "keyId": "Q0SYhOsBWXDxa-UTEEuI3jb8DkooT-FFUFJ97Z6GO44"
+    },
+    {
+      "name": "D10_keyAllowlistVersion",
+      "payload": {
+        "attestationType": "agentverify.profile-assessment",
+        "attestationVersion": "1.0.0",
+        "profile": "owasp-agentic-skills-2026",
+        "profileVersion": "1.0.0-alpha.1",
+        "framework": "OWASP_AGENTIC_SKILLS_TOP_10",
+        "upstream": {
+          "repo": "OWASP/www-project-agentic-skills-top-10",
+          "commit": "d6f7d7d0de314f52a83a85d1828e06ab096e595c",
+          "license": "CC-BY-SA-4.0"
+        },
+        "implementedControls": [
+          "AST02",
+          "AST03",
+          "AST04"
+        ],
+        "assessmentSchemaVersion": "1.1.0",
+        "interpretationVersions": {
+          "scannerVersion": "1.4.0",
+          "assessmentEngineVersion": "1.0.1",
+          "riskRubricVersion": "1.0.0",
+          "keyAllowlistVersion": "1.0.1",
+          "normalizationVersion": "1.0.0"
+        },
+        "package": {
+          "digest": "avpkg-sha256:9fc4448c2e85c812c981cfd961939a23acf5d74b52888cbb26814dcb78390ac0",
+          "fileCount": 3
+        },
+        "assessment": {
+          "digest": "avassess-sha256:f745323895f15c421eaf4978e393bd12ebca4935521d7f4c64cb95f9fda964c2",
+          "canonicalization": "RFC8785"
+        },
+        "issuer": "agentverify-conformance",
+        "keyId": "Q0SYhOsBWXDxa-UTEEuI3jb8DkooT-FFUFJ97Z6GO44",
+        "issuedAt": "2026-01-15T12:00:00.000Z"
+      },
+      "payloadJcs": "{\"assessment\":{\"canonicalization\":\"RFC8785\",\"digest\":\"avassess-sha256:f745323895f15c421eaf4978e393bd12ebca4935521d7f4c64cb95f9fda964c2\"},\"assessmentSchemaVersion\":\"1.1.0\",\"attestationType\":\"agentverify.profile-assessment\",\"attestationVersion\":\"1.0.0\",\"framework\":\"OWASP_AGENTIC_SKILLS_TOP_10\",\"implementedControls\":[\"AST02\",\"AST03\",\"AST04\"],\"interpretationVersions\":{\"assessmentEngineVersion\":\"1.0.1\",\"keyAllowlistVersion\":\"1.0.1\",\"normalizationVersion\":\"1.0.0\",\"riskRubricVersion\":\"1.0.0\",\"scannerVersion\":\"1.4.0\"},\"issuedAt\":\"2026-01-15T12:00:00.000Z\",\"issuer\":\"agentverify-conformance\",\"keyId\":\"Q0SYhOsBWXDxa-UTEEuI3jb8DkooT-FFUFJ97Z6GO44\",\"package\":{\"digest\":\"avpkg-sha256:9fc4448c2e85c812c981cfd961939a23acf5d74b52888cbb26814dcb78390ac0\",\"fileCount\":3},\"profile\":\"owasp-agentic-skills-2026\",\"profileVersion\":\"1.0.0-alpha.1\",\"upstream\":{\"commit\":\"d6f7d7d0de314f52a83a85d1828e06ab096e595c\",\"license\":\"CC-BY-SA-4.0\",\"repo\":\"OWASP/www-project-agentic-skills-top-10\"}}",
+      "signingInputHex": "6167656e747665726966792d6174746573746174696f6e2f70726f66696c652d6173736573736d656e742f76310a7b226173736573736d656e74223a7b2263616e6f6e6963616c697a6174696f6e223a2252464338373835222c22646967657374223a2261766173736573732d7368613235363a66373435333233383935663135633432316561663439373865333933626431326562636134393335353231643766346336346362393566396664613936346332227d2c226173736573736d656e74536368656d6156657273696f6e223a22312e312e30222c226174746573746174696f6e54797065223a226167656e747665726966792e70726f66696c652d6173736573736d656e74222c226174746573746174696f6e56657273696f6e223a22312e302e30222c226672616d65776f726b223a224f574153505f4147454e5449435f534b494c4c535f544f505f3130222c22696d706c656d656e746564436f6e74726f6c73223a5b224153543032222c224153543033222c224153543034225d2c22696e746572707265746174696f6e56657273696f6e73223a7b226173736573736d656e74456e67696e6556657273696f6e223a22312e302e31222c226b6579416c6c6f776c69737456657273696f6e223a22312e302e31222c226e6f726d616c697a6174696f6e56657273696f6e223a22312e302e30222c227269736b52756272696356657273696f6e223a22312e302e30222c227363616e6e657256657273696f6e223a22312e342e30227d2c226973737565644174223a22323032362d30312d31355431323a30303a30302e3030305a222c22697373756572223a226167656e747665726966792d636f6e666f726d616e6365222c226b65794964223a2251305359684f734257584478612d555445457549336a6238446b6f6f542d464655464a39375a36474f3434222c227061636b616765223a7b22646967657374223a226176706b672d7368613235363a39666334343438633265383563383132633938316366643936313933396132336163663564373462353238383863626232363831346463623738333930616330222c2266696c65436f756e74223a337d2c2270726f66696c65223a226f776173702d6167656e7469632d736b696c6c732d32303236222c2270726f66696c6556657273696f6e223a22312e302e302d616c7068612e31222c22757073747265616d223a7b22636f6d6d6974223a2264366637643764306465333134663532613833613835643138323865303661623039366535393563222c226c6963656e7365223a2243432d42592d53412d342e30222c227265706f223a224f574153502f7777772d70726f6a6563742d6167656e7469632d736b696c6c732d746f702d3130227d7d",
+      "signingInputSha256": "96dc2e4580d1e0e424873cdd42d27a3bd15de10acf9f4f301afe269b8f41edbb",
+      "assessmentJcsSha256": "462e57e0c02211513cc04e193b49536e6308fb92d0681ff2956351fb4de0852a",
+      "assessmentDigest": "avassess-sha256:f745323895f15c421eaf4978e393bd12ebca4935521d7f4c64cb95f9fda964c2",
+      "signature": "TIj/O4cmoskjaCLVAob0PKOL3BcejVUxwjhcpapq679KEVWbRoc4BAMlZjSD0fSXcT50BGhKzlN9WiPwe+AUFA==",
+      "signatureRHex": "4c88ff3b8726a2c9236822d50286f43ca38bdc171e8d5531c2385ca5aa6aebbf",
+      "signatureSHex": "4a11559b468738040325663483d1f497713e7404684ace537d5a23f07be01414",
+      "lowS": true,
+      "publicKey": {
+        "kty": "EC",
+        "crv": "P-256",
+        "x": "Q3ZLLuzwdwgLNAn5h1Ubh6R4Xmgxa6x3x_Uc1e67pDA",
+        "y": "lEgPpHvsAh3CLtdMRmHCC9ywlBPG_iXAH6LA1FwnDIo"
+      },
+      "keyId": "Q0SYhOsBWXDxa-UTEEuI3jb8DkooT-FFUFJ97Z6GO44"
+    },
+    {
+      "name": "D10_normalizationVersion",
+      "payload": {
+        "attestationType": "agentverify.profile-assessment",
+        "attestationVersion": "1.0.0",
+        "profile": "owasp-agentic-skills-2026",
+        "profileVersion": "1.0.0-alpha.1",
+        "framework": "OWASP_AGENTIC_SKILLS_TOP_10",
+        "upstream": {
+          "repo": "OWASP/www-project-agentic-skills-top-10",
+          "commit": "d6f7d7d0de314f52a83a85d1828e06ab096e595c",
+          "license": "CC-BY-SA-4.0"
+        },
+        "implementedControls": [
+          "AST02",
+          "AST03",
+          "AST04"
+        ],
+        "assessmentSchemaVersion": "1.1.0",
+        "interpretationVersions": {
+          "scannerVersion": "1.4.0",
+          "assessmentEngineVersion": "1.0.1",
+          "riskRubricVersion": "1.0.0",
+          "keyAllowlistVersion": "1.0.0",
+          "normalizationVersion": "1.0.1"
+        },
+        "package": {
+          "digest": "avpkg-sha256:9fc4448c2e85c812c981cfd961939a23acf5d74b52888cbb26814dcb78390ac0",
+          "fileCount": 3
+        },
+        "assessment": {
+          "digest": "avassess-sha256:9f4675d5801a438ba949705316e175ba2c9f4f815c928314c401a1a5bd93f102",
+          "canonicalization": "RFC8785"
+        },
+        "issuer": "agentverify-conformance",
+        "keyId": "Q0SYhOsBWXDxa-UTEEuI3jb8DkooT-FFUFJ97Z6GO44",
+        "issuedAt": "2026-01-15T12:00:00.000Z"
+      },
+      "payloadJcs": "{\"assessment\":{\"canonicalization\":\"RFC8785\",\"digest\":\"avassess-sha256:9f4675d5801a438ba949705316e175ba2c9f4f815c928314c401a1a5bd93f102\"},\"assessmentSchemaVersion\":\"1.1.0\",\"attestationType\":\"agentverify.profile-assessment\",\"attestationVersion\":\"1.0.0\",\"framework\":\"OWASP_AGENTIC_SKILLS_TOP_10\",\"implementedControls\":[\"AST02\",\"AST03\",\"AST04\"],\"interpretationVersions\":{\"assessmentEngineVersion\":\"1.0.1\",\"keyAllowlistVersion\":\"1.0.0\",\"normalizationVersion\":\"1.0.1\",\"riskRubricVersion\":\"1.0.0\",\"scannerVersion\":\"1.4.0\"},\"issuedAt\":\"2026-01-15T12:00:00.000Z\",\"issuer\":\"agentverify-conformance\",\"keyId\":\"Q0SYhOsBWXDxa-UTEEuI3jb8DkooT-FFUFJ97Z6GO44\",\"package\":{\"digest\":\"avpkg-sha256:9fc4448c2e85c812c981cfd961939a23acf5d74b52888cbb26814dcb78390ac0\",\"fileCount\":3},\"profile\":\"owasp-agentic-skills-2026\",\"profileVersion\":\"1.0.0-alpha.1\",\"upstream\":{\"commit\":\"d6f7d7d0de314f52a83a85d1828e06ab096e595c\",\"license\":\"CC-BY-SA-4.0\",\"repo\":\"OWASP/www-project-agentic-skills-top-10\"}}",
+      "signingInputHex": "6167656e747665726966792d6174746573746174696f6e2f70726f66696c652d6173736573736d656e742f76310a7b226173736573736d656e74223a7b2263616e6f6e6963616c697a6174696f6e223a2252464338373835222c22646967657374223a2261766173736573732d7368613235363a39663436373564353830316134333862613934393730353331366531373562613263396634663831356339323833313463343031613161356264393366313032227d2c226173736573736d656e74536368656d6156657273696f6e223a22312e312e30222c226174746573746174696f6e54797065223a226167656e747665726966792e70726f66696c652d6173736573736d656e74222c226174746573746174696f6e56657273696f6e223a22312e302e30222c226672616d65776f726b223a224f574153505f4147454e5449435f534b494c4c535f544f505f3130222c22696d706c656d656e746564436f6e74726f6c73223a5b224153543032222c224153543033222c224153543034225d2c22696e746572707265746174696f6e56657273696f6e73223a7b226173736573736d656e74456e67696e6556657273696f6e223a22312e302e31222c226b6579416c6c6f776c69737456657273696f6e223a22312e302e30222c226e6f726d616c697a6174696f6e56657273696f6e223a22312e302e31222c227269736b52756272696356657273696f6e223a22312e302e30222c227363616e6e657256657273696f6e223a22312e342e30227d2c226973737565644174223a22323032362d30312d31355431323a30303a30302e3030305a222c22697373756572223a226167656e747665726966792d636f6e666f726d616e6365222c226b65794964223a2251305359684f734257584478612d555445457549336a6238446b6f6f542d464655464a39375a36474f3434222c227061636b616765223a7b22646967657374223a226176706b672d7368613235363a39666334343438633265383563383132633938316366643936313933396132336163663564373462353238383863626232363831346463623738333930616330222c2266696c65436f756e74223a337d2c2270726f66696c65223a226f776173702d6167656e7469632d736b696c6c732d32303236222c2270726f66696c6556657273696f6e223a22312e302e302d616c7068612e31222c22757073747265616d223a7b22636f6d6d6974223a2264366637643764306465333134663532613833613835643138323865303661623039366535393563222c226c6963656e7365223a2243432d42592d53412d342e30222c227265706f223a224f574153502f7777772d70726f6a6563742d6167656e7469632d736b696c6c732d746f702d3130227d7d",
+      "signingInputSha256": "2a26e7bf85db7abd4244cd63352a67ea6adf0151234dbc78e5316db8b02e159f",
+      "assessmentJcsSha256": "945d158807548c9b8dc5d24e25af84ca6ba3230c94f44b48f526f8636406fdcc",
+      "assessmentDigest": "avassess-sha256:9f4675d5801a438ba949705316e175ba2c9f4f815c928314c401a1a5bd93f102",
+      "signature": "OGNCLo/zzNdGYvys6q0BEti2tZ9QYETodn1zatddxUxyaQsCj2i8OJvQeJYdaRp1rfshaWEe5acMin8czmii0g==",
+      "signatureRHex": "3863422e8ff3ccd74662fcaceaad0112d8b6b59f506044e8767d736ad75dc54c",
+      "signatureSHex": "72690b028f68bc389bd078961d691a75adfb2169611ee5a70c8a7f1cce68a2d2",
+      "lowS": true,
+      "publicKey": {
+        "kty": "EC",
+        "crv": "P-256",
+        "x": "Q3ZLLuzwdwgLNAn5h1Ubh6R4Xmgxa6x3x_Uc1e67pDA",
+        "y": "lEgPpHvsAh3CLtdMRmHCC9ywlBPG_iXAH6LA1FwnDIo"
+      },
+      "keyId": "Q0SYhOsBWXDxa-UTEEuI3jb8DkooT-FFUFJ97Z6GO44"
+    },
+    {
+      "name": "D10_agentverifyProfileVersion",
+      "payload": {
+        "attestationType": "agentverify.profile-assessment",
+        "attestationVersion": "1.0.0",
+        "profile": "owasp-agentic-skills-2026",
+        "profileVersion": "1.0.0-alpha.2",
+        "framework": "OWASP_AGENTIC_SKILLS_TOP_10",
+        "upstream": {
+          "repo": "OWASP/www-project-agentic-skills-top-10",
+          "commit": "d6f7d7d0de314f52a83a85d1828e06ab096e595c",
+          "license": "CC-BY-SA-4.0"
+        },
+        "implementedControls": [
+          "AST02",
+          "AST03",
+          "AST04"
+        ],
+        "assessmentSchemaVersion": "1.1.0",
+        "interpretationVersions": {
+          "scannerVersion": "1.4.0",
+          "assessmentEngineVersion": "1.0.1",
+          "riskRubricVersion": "1.0.0",
+          "keyAllowlistVersion": "1.0.0",
+          "normalizationVersion": "1.0.0"
+        },
+        "package": {
+          "digest": "avpkg-sha256:9fc4448c2e85c812c981cfd961939a23acf5d74b52888cbb26814dcb78390ac0",
+          "fileCount": 3
+        },
+        "assessment": {
+          "digest": "avassess-sha256:740e898be10cadbe40be2a365f4acb840c4226fa584b988dacb8c4a9c5bd8cc3",
+          "canonicalization": "RFC8785"
+        },
+        "issuer": "agentverify-conformance",
+        "keyId": "Q0SYhOsBWXDxa-UTEEuI3jb8DkooT-FFUFJ97Z6GO44",
+        "issuedAt": "2026-01-15T12:00:00.000Z"
+      },
+      "payloadJcs": "{\"assessment\":{\"canonicalization\":\"RFC8785\",\"digest\":\"avassess-sha256:740e898be10cadbe40be2a365f4acb840c4226fa584b988dacb8c4a9c5bd8cc3\"},\"assessmentSchemaVersion\":\"1.1.0\",\"attestationType\":\"agentverify.profile-assessment\",\"attestationVersion\":\"1.0.0\",\"framework\":\"OWASP_AGENTIC_SKILLS_TOP_10\",\"implementedControls\":[\"AST02\",\"AST03\",\"AST04\"],\"interpretationVersions\":{\"assessmentEngineVersion\":\"1.0.1\",\"keyAllowlistVersion\":\"1.0.0\",\"normalizationVersion\":\"1.0.0\",\"riskRubricVersion\":\"1.0.0\",\"scannerVersion\":\"1.4.0\"},\"issuedAt\":\"2026-01-15T12:00:00.000Z\",\"issuer\":\"agentverify-conformance\",\"keyId\":\"Q0SYhOsBWXDxa-UTEEuI3jb8DkooT-FFUFJ97Z6GO44\",\"package\":{\"digest\":\"avpkg-sha256:9fc4448c2e85c812c981cfd961939a23acf5d74b52888cbb26814dcb78390ac0\",\"fileCount\":3},\"profile\":\"owasp-agentic-skills-2026\",\"profileVersion\":\"1.0.0-alpha.2\",\"upstream\":{\"commit\":\"d6f7d7d0de314f52a83a85d1828e06ab096e595c\",\"license\":\"CC-BY-SA-4.0\",\"repo\":\"OWASP/www-project-agentic-skills-top-10\"}}",
+      "signingInputHex": "6167656e747665726966792d6174746573746174696f6e2f70726f66696c652d6173736573736d656e742f76310a7b226173736573736d656e74223a7b2263616e6f6e6963616c697a6174696f6e223a2252464338373835222c22646967657374223a2261766173736573732d7368613235363a37343065383938626531306361646265343062653261333635663461636238343063343232366661353834623938386461636238633461396335626438636333227d2c226173736573736d656e74536368656d6156657273696f6e223a22312e312e30222c226174746573746174696f6e54797065223a226167656e747665726966792e70726f66696c652d6173736573736d656e74222c226174746573746174696f6e56657273696f6e223a22312e302e30222c226672616d65776f726b223a224f574153505f4147454e5449435f534b494c4c535f544f505f3130222c22696d706c656d656e746564436f6e74726f6c73223a5b224153543032222c224153543033222c224153543034225d2c22696e746572707265746174696f6e56657273696f6e73223a7b226173736573736d656e74456e67696e6556657273696f6e223a22312e302e31222c226b6579416c6c6f776c69737456657273696f6e223a22312e302e30222c226e6f726d616c697a6174696f6e56657273696f6e223a22312e302e30222c227269736b52756272696356657273696f6e223a22312e302e30222c227363616e6e657256657273696f6e223a22312e342e30227d2c226973737565644174223a22323032362d30312d31355431323a30303a30302e3030305a222c22697373756572223a226167656e747665726966792d636f6e666f726d616e6365222c226b65794964223a2251305359684f734257584478612d555445457549336a6238446b6f6f542d464655464a39375a36474f3434222c227061636b616765223a7b22646967657374223a226176706b672d7368613235363a39666334343438633265383563383132633938316366643936313933396132336163663564373462353238383863626232363831346463623738333930616330222c2266696c65436f756e74223a337d2c2270726f66696c65223a226f776173702d6167656e7469632d736b696c6c732d32303236222c2270726f66696c6556657273696f6e223a22312e302e302d616c7068612e32222c22757073747265616d223a7b22636f6d6d6974223a2264366637643764306465333134663532613833613835643138323865303661623039366535393563222c226c6963656e7365223a2243432d42592d53412d342e30222c227265706f223a224f574153502f7777772d70726f6a6563742d6167656e7469632d736b696c6c732d746f702d3130227d7d",
+      "signingInputSha256": "c78d88dab396fe937aa1f6d6f058b870ad0bf19219f84fe3884c0968030c150c",
+      "assessmentJcsSha256": "fabc26aaf72347b3b85c72c43b6fa8b6a7d2cc39ca69b1d3a955a45182b4777d",
+      "assessmentDigest": "avassess-sha256:740e898be10cadbe40be2a365f4acb840c4226fa584b988dacb8c4a9c5bd8cc3",
+      "signature": "NOwKhWKYMNlrqFRgVDdliwTyrrzcwlLH2Yyi/d2tGVg/UdWIMu4H2ges2of7jeA7XAWl3sbKSsX9XKnHZEtqtQ==",
+      "signatureRHex": "34ec0a85629830d96ba854605437658b04f2aebcdcc252c7d98ca2fdddad1958",
+      "signatureSHex": "3f51d58832ee07da07acda87fb8de03b5c05a5dec6ca4ac5fd5ca9c7644b6ab5",
+      "lowS": true,
+      "publicKey": {
+        "kty": "EC",
+        "crv": "P-256",
+        "x": "Q3ZLLuzwdwgLNAn5h1Ubh6R4Xmgxa6x3x_Uc1e67pDA",
+        "y": "lEgPpHvsAh3CLtdMRmHCC9ywlBPG_iXAH6LA1FwnDIo"
+      },
+      "keyId": "Q0SYhOsBWXDxa-UTEEuI3jb8DkooT-FFUFJ97Z6GO44"
+    }
+  ]
+}

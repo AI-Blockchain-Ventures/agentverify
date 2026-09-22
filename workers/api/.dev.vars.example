@@ -9,6 +9,23 @@
 ATTESTATION_SIGNING_PRIVATE_KEY_JWK={"kty":"EC","crv":"P-256","x":"...","y":"...","d":"...","key_ops":["sign"]}
 ATTESTATION_ISSUER=agentverify-dev
 
+# Profile-attestation signing key (workers/api/src/profileAttestationSigning.ts) -- a DIFFERENT, domain-
+# separated key from the legacy ATTESTATION_SIGNING_PRIVATE_KEY_JWK above; both may be configured at once,
+# neither is derived from the other. Generate a throwaway DEV-ONLY key automatically with:
+#   node workers/api/scripts/generate-dev-profile-attestation-key.mjs
+# which appends the four lines below (as PRIVATE_KEY_JWK_B64, not the plain-JSON form) to your local
+# .dev.vars, including a correctly-derived PROFILE_ATTESTATION_EXPECTED_KEY_ID for that specific dev key.
+# DEV ONLY. Never a production signing key. Generated locally, never committed. See
+# docs/profile-attestation-production-checklist.md for the production equivalent of every line below.
+PROFILE_ATTESTATION_SIGNING_PRIVATE_KEY_JWK={"kty":"EC","crv":"P-256","x":"...","y":"...","d":"...","key_ops":["sign"]}
+PROFILE_ATTESTATION_ISSUER=agentverify-profile-dev
+PROFILE_ATTESTATION_KEY_PURPOSE=agentverify-profile-v1
+# Optional. Left commented out (truly UNSET, not present-but-empty -- an empty VALUE is treated as
+# misconfiguration and refuses to sign, on purpose) so the check is skipped until you deliberately want it.
+# Uncomment and fill in once you know a specific dev key's own identity, or set to an intentionally wrong
+# value to exercise the key-identity-mismatch refusal path.
+# PROFILE_ATTESTATION_EXPECTED_KEY_ID=
+
 # Stripe TEST-mode configuration — required only to exercise real checkout/webhook/portal locally.
 # See "Local Review Billing" in docs/billing-setup.md for the full walkthrough. Use TEST-mode
 # values ONLY (sk_test_..., whsec_..., a test-mode price/portal configuration id) — never a live

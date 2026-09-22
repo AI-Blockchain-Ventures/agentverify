@@ -12,6 +12,9 @@ import { createWebhook, listWebhooks, setWebhookStatus, type WebhooksEnv } from 
 import { enqueueWebhookDeliveries, runDueDeliveries, listDeliveries, retryDelivery, type WebhooksDeliveryEnv } from './webhookDelivery'
 import { authenticateRequest, authorize, type AuthzEnv } from './authz'
 import { isRateLimited, clientIp } from './rateLimit'
+import { handleProfileRequest } from './profiles'
+import { signProfileAttestation, getProfileAttestationPublicKeyInfo, type ProfileAttestationSigningEnv, type SignFailureCategory } from './profileAttestationSigning'
+import { readBoundedBody, decodeBody, isValidUtf8 } from './requestBody'
 
 const json = (body: unknown, status = 200): Response =>
   new Response(JSON.stringify(body), {
@@ -144,10 +147,22 @@ async function saveReportToFirebase(
   }
 }
 
-type WorkerEnv = BillingEnv & AttestationSigningEnv & OrganizationsEnv & AuditLogEnv & WebhooksEnv & WebhooksDeliveryEnv & {
+type WorkerEnv = BillingEnv & AttestationSigningEnv & ProfileAttestationSigningEnv & OrganizationsEnv & AuditLogEnv & WebhooksEnv & WebhooksDeliveryEnv & {
   FIREBASE_API_KEY?: string
   FIREBASE_CLIENT_EMAIL?: string
   FIREBASE_PRIVATE_KEY?: string
+}
+
+// HTTP status classification for an `attest: true` signing failure, by the signer's own `category` (never by
+// pattern-matching `reason` strings): the specific assessment being inadmissible is a client-content problem
+// (422); the signing capability being unconfigured/misconfigured is a server-availability problem (503); an
+// unexpected defect inside the signer itself is a genuine server error (500). See
+// profileAttestationSigning.ts's module header for the full rationale and the stable `reason` codes.
+const ATTEST_FAILURE_STATUS: Record<SignFailureCategory, 422 | 503 | 500> = { inadmissible: 422, unavailable: 503, internal: 500 }
+const ATTEST_FAILURE_MESSAGE: Record<SignFailureCategory, string> = {
+  inadmissible: 'Assessment not admitted for attestation',
+  unavailable: 'Attestation signing unavailable',
+  internal: 'Attestation signing failed',
 }
 
 // Minimal hand-rolled Cron Trigger types — same convention as billing.ts's D1Database: this
@@ -380,6 +395,20 @@ export default {
       return json(info)
     }
 
+    // Public — the trusted publication channel for the profile-attestation key (design doc §10.1, review
+    // requirement): a third party MUST fetch the signing key's identity from HERE, independent of any bundle,
+    // and never treat a bundle's own embedded publicKey as a trust anchor merely because a signature verifies
+    // against it. Contains only { issuer, keyId, publicKey: {kty,crv,x,y}, algorithm, purpose } — never secret
+    // material — and keyId is always derived from publicKey itself, so what is published here can never
+    // diverge from what the signer actually signs with. INTERIM SCOPE: a single trusted key, not a key set —
+    // no sequence, keySetVersion, generatedAt or status field exists here on purpose (see
+    // getProfileAttestationPublicKeyInfo's own header for why those must not be faked yet).
+    if (request.method === 'GET' && url.pathname === '/v1/profile-attestation/public-key') {
+      const info = await getProfileAttestationPublicKeyInfo(env)
+      if (!info) return json({ error: 'Profile-attestation signing is not configured for this environment' }, 404)
+      return json(info)
+    }
+
     if (request.method === 'GET' && url.pathname.startsWith('/v1/verification/')) {
       const artifactHash = decodeURIComponent(url.pathname.split('/v1/verification/')[1] ?? '')
       if (!artifactHash || !/^[0-9a-f]{64}$/i.test(artifactHash)) {
@@ -601,7 +630,63 @@ export default {
         }, 429)
       }
 
-      const body = (await request.json()) as Partial<ScanInput> & { policyId?: string; organizationId?: string }
+      // Authentication and quota came first, so an unauthenticated caller never reaches the body at all.
+      // The body is then read as bytes under a hard ceiling BEFORE any parsing (requestBody.ts).
+      const raw = await readBoundedBody(request)
+      if (!raw.ok) return json({ error: 'Request body too large' }, 413)
+      const body = JSON.parse(decodeBody(raw.bytes)) as Partial<ScanInput> & { policyId?: string; organizationId?: string; profile?: unknown; files?: unknown; attest?: unknown }
+
+      // An explicit `profile` opts in to an assessment profile (see profiles.ts): package in, the private
+      // scanner's frozen assessment out, nothing saved or signed. When `profile` is absent — the only
+      // case existing clients produce — none of this runs and everything below is exactly as before.
+      if (body.profile !== undefined) {
+        // Profile requests must be valid UTF-8; malformed bytes are refused, not silently repaired.
+        if (!isValidUtf8(raw.bytes)) return json({ error: 'Request body must be valid UTF-8' }, 400)
+        const profiled = await handleProfileRequest(body as Record<string, unknown>, auth.uid)
+
+        // METERING (public release, RD-2 resolved): a completed profile assessment consumes exactly one
+        // Agent Verify scan unit — the SAME metering path an ordinary scan uses (same usage_monthly ledger,
+        // same `quota` already computed above before the profile/ordinary split; never a separate OWASP
+        // billing product or entitlement). Recorded HERE, once, the moment the assessment itself succeeds —
+        // deliberately BEFORE the attest:true branch below, so: a malformed/rejected/timed-out/quota-blocked
+        // request (profiled.status !== 200, or never reaching this line at all) never consumes a unit; an
+        // `attest: true` request that then fails to sign (422/503/500 below) has ALREADY been charged exactly
+        // once here and is never charged a second time; a successful attest:true costs the same one unit as
+        // an unsigned assessment, since signing is not a second scan.
+        if (profiled.status === 200) await recordMonthlyUsage(env, auth.uid, quota.month, quota.plan)
+
+        // `attest: true` is an explicit, separate opt-in on top of `profile` (docs/attestation-profile-design.md
+        // §10.1). Its absence changes NOTHING here: profiled.body is returned exactly as handleProfileRequest
+        // built it, attestation: null included, byte-identical to before this branch existed. THE WORKER IS THE
+        // SIGNING BOUNDARY for this branch ONLY, and only when the caller asked for it: profiles.ts itself never
+        // signs anything (see its own header) and is not touched by this code.
+        if (profiled.status === 200 && body.attest === true) {
+          // The EXACT object handleProfileRequest just returned as `assessment` — the same JS reference the
+          // scanner produced, never rescanned, reconstructed or mutated (design doc §10.3). No workspace context
+          // is wired into the profile route yet (profiles.ts hard-rejects organizationId on this path today), so
+          // workspaceId is correctly omitted here rather than sourced from anything request-controlled.
+          const assessment = (profiled.body as { assessment: unknown }).assessment
+          const signed = await signProfileAttestation(assessment, env)
+          if (!signed.ok) {
+            // Fails cleanly and closed: never a 200 with attestation: null pretending the plain path was taken,
+            // and never an unsigned bundle returned as though signing succeeded. The HTTP status is classified
+            // by the signer's own `category` (see profileAttestationSigning.ts's header), not by pattern-
+            // matching `reason` strings here: 'inadmissible' (this specific assessment cannot be attested) is
+            // 422; 'unavailable' (the signing capability itself is unconfigured or misconfigured) is 503;
+            // 'internal' (an unexpected defect in the signer) is 500. `reason` is always a stable public code,
+            // never a raw error message — see signProfileAttestation's own doc comment for the full code list.
+            const status = ATTEST_FAILURE_STATUS[signed.category]
+            const error = ATTEST_FAILURE_MESSAGE[signed.category]
+            return json({ error, reason: signed.reason }, status)
+          }
+          // bundleVersion is additive, unsigned framing (never part of any digest or signing input — design
+          // doc / conformance/v4): included so a non-JS client can reconstruct the frozen v4 bundle shape
+          // { bundleVersion, attestation, assessment } without out-of-band knowledge of the constant's value.
+          return json({ ...profiled.body, attestation: signed.attestation, bundleVersion: signed.bundle.bundleVersion }, 200)
+        }
+        return json(profiled.body, profiled.status)
+      }
+
       if (!body.content || typeof body.content !== 'string') {
         return json({ error: 'content is required' }, 400)
       }

@@ -1,0 +1,46 @@
+{
+  "note": "Key sets of the default /v1/scan success response, captured from the Worker build BEFORE profile plumbing was added. A request without a profile must keep exactly this shape.",
+  "topLevelKeys": [
+    "a2spaStatus",
+    "artifactFingerprint",
+    "attestation",
+    "bom",
+    "capabilities",
+    "capabilityChains",
+    "categoryScores",
+    "confidence",
+    "findings",
+    "mcpExposures",
+    "metadata",
+    "notDetermined",
+    "optimizationScore",
+    "policyProfile",
+    "policyResult",
+    "reportId",
+    "reportInsights",
+    "reportIntegrity",
+    "reportUrl",
+    "riskLevel",
+    "riskScore",
+    "saved",
+    "schemaVersion",
+    "securityCategories",
+    "securityControlsDetected",
+    "threatCategories",
+    "verdict"
+  ],
+  "artifactFingerprintKeys": [
+    "artifactFingerprintVersion",
+    "artifactHash",
+    "artifactHashAlgorithm"
+  ],
+  "reportIntegrityKeys": [
+    "algorithm",
+    "reportHash",
+    "scanId",
+    "scannerVersion",
+    "schemaVersion",
+    "timestamp"
+  ],
+  "unsignedAttestation": null
+}

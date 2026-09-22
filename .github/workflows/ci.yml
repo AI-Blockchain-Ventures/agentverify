@@ -36,6 +36,15 @@ jobs:
       - name: Test Worker
         run: npm test --workspace=workers/api
 
+      - name: Conformance vectors (legacy attestations unchanged; profile-attestation rules pinned)
+        run: npm run test:conformance
+
+      - name: Conformance vectors v3 (post-authorization; frozen suite unchanged, historical no-implementation tripwire retired — see conformance/implementation/CHANGELOG.md)
+        run: npm run test:conformance:v3:post-authorization
+
+      - name: Conformance vectors v4 (post-authorization; frozen suite unchanged, historical no-implementation tripwire retired, implementation gate enforced — see conformance/implementation/CHANGELOG.md)
+        run: npm run test:conformance:v4:post-authorization
+
       - name: Web typecheck
         run: npm run check:web
 

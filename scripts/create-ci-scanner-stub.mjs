@@ -297,6 +297,49 @@ export interface AttestationVerificationResult {
   reason?: string
 }
 
+// Skill-package assessment types (type-compatible with the private scanner's public exports; the stub
+// performs no analysis). The Worker treats the assessment as an opaque, frozen object.
+export interface SkillPackageFileInput {
+  path: string
+  content: string
+  kind?: 'file' | 'directory' | 'symlink' | 'hardlink' | 'other'
+}
+
+export interface SkillPackageRejection {
+  code: string
+  message: string
+  path?: string
+}
+
+export interface SkillAstAssessment {
+  schemaVersion: '1.1.0'
+  profile: {
+    profileId: string
+    framework: string
+    upstreamRepo: string
+    upstreamCommit: string
+    upstreamStatus: string
+    upstreamLicense: string
+    agentverifyProfileVersion: string
+    implementedControls: readonly string[]
+    scannerVersion: string
+    assessmentEngineVersion: string
+    riskRubricVersion: string
+    keyAllowlistVersion: string
+    normalizationVersion: string
+  }
+  controls: unknown[]
+  evidence: unknown[]
+  notImplementedControls: string[]
+  unmappedEvidenceIds: string[]
+  package: { digest: string; fileCount: number; manifestFiles: string[] }
+  notes: string[]
+}
+
+export type SkillAstAssessmentResult =
+  | { ok: true; assessment: SkillAstAssessment; normalized: unknown }
+  | { ok: false; rejection: SkillPackageRejection }
+
 export type PolicyId = 'standard' | 'high-security' | 'financial-agent' | 'production-infrastructure'
 
 export interface PolicyProfile {
@@ -575,6 +618,381 @@ export function evaluatePolicy(result: ScanResult, policy: PolicyProfile): Polic
 export function evaluateAllPolicies(result: ScanResult): PolicyEvaluationResult[] {
   return BUILTIN_POLICIES.map(p => evaluatePolicy(result, p))
 }
+
+// Stub: performs NO analysis. Returns a well-formed, empty assessment so public CI can build and typecheck the
+// Worker's profile plumbing. Tests that need real findings run only where the private scanner is present.
+export const SKILL_ASSESSMENT_SCHEMA_VERSION = '1.1.0'
+export async function assessSkillPackageAst(files: SkillPackageFileInput[]): Promise<SkillAstAssessmentResult> {
+  return {
+    ok: true,
+    normalized: null,
+    assessment: {
+      schemaVersion: '1.1.0',
+      profile: { profileId: 'owasp-agentic-skills-2026', framework: 'OWASP_AGENTIC_SKILLS_TOP_10', upstreamRepo: 'ci-stub', upstreamCommit: '0'.repeat(40), upstreamStatus: 'ci-stub', upstreamLicense: 'ci-stub', agentverifyProfileVersion: 'ci-stub', implementedControls: [], scannerVersion: 'ci-stub', assessmentEngineVersion: 'ci-stub', riskRubricVersion: 'ci-stub', keyAllowlistVersion: 'ci-stub', normalizationVersion: 'ci-stub' },
+      controls: [],
+      evidence: [],
+      notImplementedControls: [],
+      unmappedEvidenceIds: [],
+      package: { digest: 'ci-stub', fileCount: files.length, manifestFiles: [] },
+      notes: ['CI scanner stub — no real analysis was performed.'],
+    },
+  }
+}
+
+// ── Profile-attestation verification logic (NOT proprietary — a faithful, hand-maintained flattened port of
+// packages/scanner/src/profileAttestation.ts, itself a port of conformance/v4/reference/*.mjs). Unlike
+// assessSkillPackageAst above, this is safe and correct to include here in full: it contains no detection
+// logic, no scanning heuristics, nothing that needs to stay private. It exists in the CI stub so that
+// workers/api/src/profileAttestationSigning.ts — which imports these exact names from '@agentverify/scanner' —
+// typechecks and runs correctly in public CI, where the private scanner package is absent. If the real
+// packages/scanner/src/profileAttestation.ts ever changes these algorithms, this block must be kept in sync by
+// hand (there is no build step that derives one from the other) — packages/scanner/test/profileAttestationPort.test.mjs
+// (private, not run in public CI) is what keeps the REAL module honest against conformance/v4; this CI-stub
+// copy only needs to satisfy this repo's OWN Worker-side tests, not byte-for-byte parity with the reference.
+export const PROFILE_ATTESTATION_TYPE = 'agentverify.profile-assessment'
+export const PROFILE_ATTESTATION_VERSION = '1.0.0'
+export const PROFILE_BUNDLE_VERSION = '1.0.0'
+export const PROFILE_PAYLOAD_TAG = 'agentverify-attestation/profile-assessment/v1\\n'
+export const PROFILE_KEY_PURPOSE = 'agentverify-profile-v1'
+export const PROFILE_ASSESSMENT_TAG = 'agentverify-assessment-digest/v1\\n'
+export const PROFILE_ATTESTATION_ALGORITHM = 'ECDSA-P256-SHA256'
+export const PROFILE_ASSESSMENT_SCHEMA_VERSION = '1.1.0'
+export const INTERPRETATION_VERSION_KEYS = ['scannerVersion', 'assessmentEngineVersion', 'riskRubricVersion', 'keyAllowlistVersion', 'normalizationVersion']
+export const PROFILE_PAYLOAD_BASE_DEPTH = 2
+const PROFILE_ASSESSMENT_BASE_DEPTH = 1
+const PROFILE_MAX_JSON_DEPTH = 64
+
+function profileNumberProblem(value: any) {
+  if (typeof value !== 'number') return 'NOT_A_NUMBER'
+  if (!Number.isFinite(value)) return 'NON_FINITE'
+  if (Object.is(value, -0)) return 'NEGATIVE_ZERO'
+  if (!Number.isInteger(value)) return 'NON_INTEGER'
+  if (!Number.isSafeInteger(value)) return 'UNSAFE_INTEGER'
+  return null
+}
+
+function profileIsWellFormedString(s: any) {
+  for (let i = 0; i < s.length; i++) {
+    const c = s.charCodeAt(i)
+    if (c >= 0xd800 && c <= 0xdbff) {
+      const n = s.charCodeAt(i + 1)
+      if (n >= 0xdc00 && n <= 0xdfff) { i++; continue }
+      return false
+    }
+    if (c >= 0xdc00 && c <= 0xdfff) return false
+  }
+  return true
+}
+
+function profileCanonicalizeSigned(value: any, baseDepth: any) {
+  const stack = new Set()
+  function ser(v: any, depth: any, where: any): string {
+    if (v === null) return 'null'
+    switch (typeof v) {
+      case 'undefined': throw new Error('JCS_UNDEFINED: undefined at ' + where)
+      case 'boolean': return v ? 'true' : 'false'
+      case 'number': {
+        if (!Number.isFinite(v)) throw new Error('JCS_NON_FINITE: non-finite number at ' + where)
+        const problem = profileNumberProblem(v)
+        if (problem !== null) throw new Error('JCS_NUMBER_NOT_ADMITTED: ' + problem + ' at ' + where)
+        return String(v)
+      }
+      case 'string': {
+        if (!profileIsWellFormedString(v)) throw new Error('JCS_ILL_FORMED_STRING: lone surrogate at ' + where)
+        return JSON.stringify(v)
+      }
+      case 'function': case 'symbol': case 'bigint':
+        throw new Error('JCS_UNSUPPORTED_TYPE: ' + typeof v + ' at ' + where)
+      default: break
+    }
+    if (depth > PROFILE_MAX_JSON_DEPTH) throw new Error('JCS_TOO_DEEP: nesting deeper than ' + PROFILE_MAX_JSON_DEPTH + ' at ' + where)
+    if (stack.has(v)) throw new Error('JCS_CYCLE: cycle at ' + where)
+    stack.add(v)
+    try {
+      if (Array.isArray(v)) {
+        if (Object.getPrototypeOf(v) !== Array.prototype) throw new Error('JCS_NOT_PLAIN: array subclass at ' + where)
+        const keys = Reflect.ownKeys(v).filter(function(k: any) { return k !== 'length' })
+        if (keys.length !== v.length || keys.some(function(k: any, idx: any) { return k !== String(idx) })) throw new Error('JCS_NOT_PLAIN: sparse array at ' + where)
+        return '[' + v.map(function(item: any, idx: any) { return ser(item, depth + 1, where + '[' + idx + ']') }).join(',') + ']'
+      }
+      const proto = Object.getPrototypeOf(v)
+      if (proto !== Object.prototype && proto !== null) throw new Error('JCS_NOT_PLAIN: non-plain object at ' + where)
+      const own = Reflect.ownKeys(v)
+      if (own.some(function(k: any) { return typeof k === 'symbol' })) throw new Error('JCS_NOT_PLAIN: symbol-keyed property at ' + where)
+      const parts = []
+      const sortedKeys = own.slice().sort()
+      for (const key of sortedKeys) {
+        const d = Object.getOwnPropertyDescriptor(v, key)
+        if (!d || !d.enumerable || 'get' in d || 'set' in d) throw new Error('JCS_NOT_PLAIN: non-data property ' + JSON.stringify(key) + ' at ' + where)
+        if (typeof key !== 'string' || !profileIsWellFormedString(key)) throw new Error('JCS_ILL_FORMED_STRING: lone surrogate in a key at ' + where)
+        parts.push(JSON.stringify(key) + ':' + ser(d.value, depth + 1, where + '.' + key))
+      }
+      return '{' + parts.join(',') + '}'
+    } finally {
+      stack.delete(v)
+    }
+  }
+  return ser(value, baseDepth + 1, '$')
+}
+function profileSignedBytes(value: any, baseDepth: any) {
+  return new TextEncoder().encode(profileCanonicalizeSigned(value, baseDepth))
+}
+
+const profileEnc = new TextEncoder()
+function profileHex(bytes: any) { return Array.from(new Uint8Array(bytes)).map(function(b: any) { return b.toString(16).padStart(2, '0') }).join('') }
+function profileConcat(a: any, b: any) { const out = new Uint8Array(a.length + b.length); out.set(a, 0); out.set(b, a.length); return out }
+function profileToBase64Url(bytes: any) {
+  let binary = ''
+  const arr = new Uint8Array(bytes)
+  for (let i = 0; i < arr.length; i++) binary += String.fromCharCode(arr[i])
+  return btoa(binary).replace(/\\+/g, '-').replace(/\\//g, '_').replace(/=+$/, '')
+}
+
+export async function profileAssessmentDigest(assessment: any) {
+  const bytes = profileConcat(profileEnc.encode(PROFILE_ASSESSMENT_TAG), profileSignedBytes(assessment, PROFILE_ASSESSMENT_BASE_DEPTH))
+  return 'avassess-sha256:' + profileHex(await crypto.subtle.digest('SHA-256', bytes))
+}
+export function profileSigningInput(payload: any) {
+  return profileConcat(profileEnc.encode(PROFILE_PAYLOAD_TAG), profileSignedBytes(payload, PROFILE_PAYLOAD_BASE_DEPTH))
+}
+export async function profileKeyIdOf(jwk: any) {
+  if (jwk.kty !== 'EC') throw new Error('unsupported key type for a thumbprint')
+  const members = { crv: jwk.crv, kty: jwk.kty, x: jwk.x, y: jwk.y }
+  return profileToBase64Url(await crypto.subtle.digest('SHA-256', profileEnc.encode(profileCanonicalizeSigned(members, 0))))
+}
+
+export const P256_ORDER = 0xFFFFFFFF00000000FFFFFFFFFFFFFFFFBCE6FAADA7179E84F3B9CAC2FC632551n
+export const P256_HALF_ORDER = P256_ORDER / 2n
+const PROFILE_FIELD_PRIME = 0xFFFFFFFF00000001000000000000000000000000FFFFFFFFFFFFFFFFFFFFFFFFn
+
+function profileBase64UrlToBytes(s: any) {
+  const padded = s.replace(/-/g, '+').replace(/_/g, '/') + '='.repeat((4 - (s.length % 4)) % 4)
+  const binary = atob(padded)
+  const bytes = new Uint8Array(binary.length)
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i)
+  return bytes
+}
+function profileBytesToBigInt(bytes: any) { let n = 0n; for (let i = 0; i < bytes.length; i++) n = (n << 8n) | BigInt(bytes[i]); return n }
+function profileBigIntToBytes32(n: any) { const out = new Uint8Array(32); for (let i = 31; i >= 0; i--) { out[i] = Number(n & 0xffn); n >>= 8n } return out }
+
+function profileIsCanonicalCoordinate(s: any) {
+  if (typeof s !== 'string' || !/^[A-Za-z0-9_-]{43}$/.test(s)) return false
+  const bytes = profileBase64UrlToBytes(s)
+  if (bytes.length !== 32) return false
+  let binary = ''
+  for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i])
+  return btoa(binary).replace(/\\+/g, '-').replace(/\\//g, '_').replace(/=+$/, '') === s
+}
+function profileIsCoordinateInRange(s: any) {
+  return profileBytesToBigInt(profileBase64UrlToBytes(s)) < PROFILE_FIELD_PRIME
+}
+export function checkP256PublicJwk(jwk: any): any {
+  if (typeof jwk !== 'object' || jwk === null || Array.isArray(jwk)) return { ok: false, reasonCode: 'jwk.shape' }
+  const keys = Object.keys(jwk).sort()
+  if (JSON.stringify(keys) !== JSON.stringify(['crv', 'kty', 'x', 'y'])) {
+    return { ok: false, reasonCode: Object.hasOwn(jwk, 'd') ? 'jwk.private-key-material' : 'jwk.members' }
+  }
+  if (typeof jwk.kty !== 'string' || typeof jwk.crv !== 'string') return { ok: false, reasonCode: 'jwk.types' }
+  if (jwk.kty !== 'EC' || jwk.crv !== 'P-256') return { ok: false, reasonCode: 'jwk.not-p256' }
+  if (!profileIsCanonicalCoordinate(jwk.x) || !profileIsCanonicalCoordinate(jwk.y)) return { ok: false, reasonCode: 'jwk.coordinates' }
+  if (!profileIsCoordinateInRange(jwk.x) || !profileIsCoordinateInRange(jwk.y)) return { ok: false, reasonCode: 'jwk.coordinate-range' }
+  return { ok: true }
+}
+export function profileSignatureProblem(bytes: any) {
+  if (bytes.length !== 64) return 'signature.range'
+  const r = profileBytesToBigInt(bytes.subarray(0, 32))
+  const s = profileBytesToBigInt(bytes.subarray(32))
+  if (r < 1n || r >= P256_ORDER || s < 1n || s >= P256_ORDER) return 'signature.range'
+  if (s > P256_HALF_ORDER) return 'signature.high-s'
+  return null
+}
+export function normalizeProfileSignatureLowS(rawSignature: any) {
+  if (rawSignature.length !== 64) throw new Error('raw ECDSA signature must be exactly 64 bytes (r || s)')
+  const r = rawSignature.subarray(0, 32)
+  const s = profileBytesToBigInt(rawSignature.subarray(32))
+  const lowS = s > P256_HALF_ORDER ? P256_ORDER - s : s
+  const out = new Uint8Array(64)
+  out.set(r, 0)
+  out.set(profileBigIntToBytes32(lowS), 32)
+  return out
+}
+
+const PROFILE_CONFIDENCES = ['high', 'medium', 'low']
+const PROFILE_SEVERITIES = ['high', 'medium', 'low']
+const PROFILE_POLARITIES = ['gap', 'positive', 'context']
+const PROFILE_AXES = ['manifest', 'tools', 'network', 'shell', 'filesystem', 'identity', 'sensitive', 'dependencies', 'lockfile', 'execution-config', 'sbom', 'metadata']
+const PROFILE_PROVENANCES = ['DECLARED', 'STATICALLY_OBSERVED', 'RECOMPUTED', 'CRYPTOGRAPHICALLY_VERIFIED', 'BEHAVIORALLY_OBSERVED', 'EXTERNAL_EVIDENCE', 'INFERRED']
+const PROFILE_UPSTREAM_SEVERITIES = ['Critical', 'High', 'Medium']
+const PROFILE_CHECK_STATUSES = ['EVIDENCE_OBSERVED', 'GAP_IDENTIFIED', 'NOT_ASSESSED']
+const PROFILE_TOP = ['schemaVersion', 'profile', 'controls', 'notImplementedControls', 'evidence', 'unmappedEvidenceIds', 'package', 'notes']
+const PROFILE_PROFILE_KEYS = ['profileId', 'framework', 'upstreamRepo', 'upstreamCommit', 'upstreamStatus', 'upstreamLicense', 'agentverifyProfileVersion', 'implementedControls'].concat(INTERPRETATION_VERSION_KEYS)
+const PROFILE_CONTROL_KEYS = ['controlId', 'framework', 'title', 'upstreamSeverity', 'status', 'confidence', 'explanation', 'checks', 'coverage']
+const PROFILE_CHECK_KEYS = ['checkId', 'title', 'status', 'confidence', 'provenance', 'supportingEvidenceIds', 'explanation']
+const PROFILE_COVERAGE_KEYS = ['total', 'evidenceObserved', 'gapIdentified', 'notAssessed']
+const PROFILE_EVIDENCE_KEYS = ['id', 'kind', 'axis', 'polarity', 'severity', 'confidence', 'provenance', 'summary', 'expected', 'remediation', 'locations', 'facts']
+const PROFILE_PACKAGE_KEYS = ['digest', 'fileCount', 'manifestFiles']
+const PROFILE_SEMVER_RE = /^\\d+\\.\\d+\\.\\d+(-[0-9A-Za-z.-]+)?$/
+const PROFILE_ID_RE = /^[a-z0-9]+(-[a-z0-9]+)*$/
+const PROFILE_CONTROL_ID_RE = /^[A-Z]{3}\\d{2}$/
+const PROFILE_COMMIT_RE = /^[0-9a-f]{40}$/
+const PROFILE_PACKAGE_DIGEST_RE = /^avpkg-sha256:[0-9a-f]{64}$/
+
+function profileIsPlain(v: any) { return typeof v === 'object' && v !== null && !Array.isArray(v) && (Object.getPrototypeOf(v) === Object.prototype || Object.getPrototypeOf(v) === null) }
+function profileIsDenseArray(v: any) {
+  if (!Array.isArray(v) || Object.getPrototypeOf(v) !== Array.prototype) return false
+  const keys = Reflect.ownKeys(v).filter(function(k: any) { return k !== 'length' })
+  return keys.length === v.length && keys.every(function(k: any, i: any) { return k === String(i) })
+}
+function profileExactKeys(o: any, required: any, optional: any = []) {
+  optional = optional || []
+  if (Object.getOwnPropertySymbols(o).length > 0) return false
+  const keys = Object.keys(o)
+  return required.every(function(k: any) { return Object.hasOwn(o, k) }) && keys.every(function(k: any) { return required.includes(k) || optional.includes(k) })
+}
+function profileIsNonEmptyString(s: any) { return typeof s === 'string' && s.length > 0 && profileIsWellFormedString(s) }
+function profileIsString(s: any) { return typeof s === 'string' && profileIsWellFormedString(s) }
+function profileIsSemver(s: any) { return typeof s === 'string' && PROFILE_SEMVER_RE.test(s) }
+function profileIsCommit(s: any) { return typeof s === 'string' && PROFILE_COMMIT_RE.test(s) }
+function profileIsNonNegativeSafeInteger(n: any) { return typeof n === 'number' && profileNumberProblem(n) === null && n >= 0 }
+function profileIsPositiveSafeInteger(n: any) { return typeof n === 'number' && profileNumberProblem(n) === null && n >= 1 }
+function profileIsUniqueStringArray(a: any, itemOk: any) { return profileIsDenseArray(a) && a.every(itemOk) && new Set(a).size === a.length }
+function profileInEnum(list: any, v: any) { return typeof v === 'string' && list.includes(v) }
+function profileIsFact(v: any) { return typeof v === 'boolean' || profileIsString(v) || (typeof v === 'number' && profileNumberProblem(v) === null) || (profileIsDenseArray(v) && v.every(profileIsString)) }
+function profileIsLocation(l: any) { return profileIsPlain(l) && profileExactKeys(l, ['file'], ['line', 'keyPath']) && profileIsNonEmptyString(l.file) && (!Object.hasOwn(l, 'line') || profileIsPositiveSafeInteger(l.line)) && (!Object.hasOwn(l, 'keyPath') || profileIsNonEmptyString(l.keyPath)) }
+
+export function assessmentSchemaProblem(a: any) {
+  if (!profileIsPlain(a) || !profileExactKeys(a, PROFILE_TOP)) return 'assessment.schema.top-level'
+  if (a.schemaVersion !== PROFILE_ASSESSMENT_SCHEMA_VERSION) return 'assessment.schema.schema-version'
+  const p = a.profile
+  if (!profileIsPlain(p) || !profileExactKeys(p, PROFILE_PROFILE_KEYS)) return 'assessment.schema.profile'
+  if (!(typeof p.profileId === 'string' && PROFILE_ID_RE.test(p.profileId))) return 'assessment.schema.profile'
+  const profileStringFields = ['framework', 'upstreamRepo', 'upstreamStatus', 'upstreamLicense']
+  for (let i = 0; i < profileStringFields.length; i++) if (!profileIsNonEmptyString(p[profileStringFields[i]])) return 'assessment.schema.profile'
+  if (!profileIsCommit(p.upstreamCommit) || !profileIsSemver(p.agentverifyProfileVersion)) return 'assessment.schema.profile'
+  if (!INTERPRETATION_VERSION_KEYS.every(function(k: any) { return profileIsSemver(p[k]) })) return 'assessment.schema.profile'
+  if (!profileIsUniqueStringArray(p.implementedControls, function(c: any) { return typeof c === 'string' && PROFILE_CONTROL_ID_RE.test(c) }) || p.implementedControls.length === 0) return 'assessment.schema.profile.implemented-controls'
+
+  if (!profileIsDenseArray(a.evidence)) return 'assessment.schema.evidence'
+  const evidenceIds = new Set()
+  for (const e of a.evidence) {
+    if (!profileIsPlain(e) || !profileExactKeys(e, PROFILE_EVIDENCE_KEYS)) return 'assessment.schema.evidence'
+    if (!profileIsNonEmptyString(e.id) || !profileIsNonEmptyString(e.kind)) return 'assessment.schema.evidence'
+    if (!profileInEnum(PROFILE_AXES, e.axis) || !profileInEnum(PROFILE_POLARITIES, e.polarity) || !profileInEnum(PROFILE_SEVERITIES, e.severity) || !profileInEnum(PROFILE_CONFIDENCES, e.confidence)) return 'assessment.schema.evidence'
+    if (!profileIsUniqueStringArray(e.provenance, function(x: any) { return profileInEnum(PROFILE_PROVENANCES, x) })) return 'assessment.schema.evidence'
+    if (!profileIsString(e.summary) || !profileIsString(e.expected) || !profileIsString(e.remediation)) return 'assessment.schema.evidence'
+    if (!profileIsDenseArray(e.locations) || !e.locations.every(profileIsLocation)) return 'assessment.schema.evidence'
+    if (!profileIsPlain(e.facts) || !Object.keys(e.facts).every(function(k: any) { return profileIsFact(e.facts[k]) }) || Object.getOwnPropertySymbols(e.facts).length > 0) return 'assessment.schema.evidence'
+    if (evidenceIds.has(e.id)) return 'assessment.schema.evidence.duplicate-id'
+    evidenceIds.add(e.id)
+  }
+
+  if (!profileIsDenseArray(a.controls)) return 'assessment.schema.controls'
+  const seenControls = new Set()
+  const referencedEvidenceIds = new Set()
+  for (const c of a.controls) {
+    if (!profileIsPlain(c) || !profileExactKeys(c, PROFILE_CONTROL_KEYS)) return 'assessment.schema.control'
+    if (typeof c.controlId !== 'string' || !PROFILE_CONTROL_ID_RE.test(c.controlId)) return 'assessment.schema.control'
+    if (c.framework !== p.framework) return 'assessment.schema.control'
+    if (!profileIsNonEmptyString(c.title) || !profileIsString(c.explanation)) return 'assessment.schema.control'
+    if (!profileInEnum(PROFILE_UPSTREAM_SEVERITIES, c.upstreamSeverity) || !profileInEnum(PROFILE_CHECK_STATUSES, c.status) || !profileInEnum(PROFILE_CONFIDENCES, c.confidence)) return 'assessment.schema.control'
+    if (seenControls.has(c.controlId)) return 'assessment.schema.controls'
+    seenControls.add(c.controlId)
+    if (!profileIsDenseArray(c.checks) || c.checks.length === 0) return 'assessment.schema.checks'
+    const seenChecks = new Set()
+    const counts = { EVIDENCE_OBSERVED: 0, GAP_IDENTIFIED: 0, NOT_ASSESSED: 0 }
+    for (const k of c.checks) {
+      if (!profileIsPlain(k) || !profileExactKeys(k, PROFILE_CHECK_KEYS)) return 'assessment.schema.check'
+      if (!profileIsNonEmptyString(k.checkId) || !profileIsNonEmptyString(k.title) || !profileIsString(k.explanation)) return 'assessment.schema.check'
+      if (!profileInEnum(PROFILE_CHECK_STATUSES, k.status) || !profileInEnum(PROFILE_CONFIDENCES, k.confidence)) return 'assessment.schema.check'
+      if (!profileIsUniqueStringArray(k.provenance, function(x: any) { return profileInEnum(PROFILE_PROVENANCES, x) })) return 'assessment.schema.check'
+      if (!profileIsUniqueStringArray(k.supportingEvidenceIds, profileIsNonEmptyString)) return 'assessment.schema.check'
+      if (seenChecks.has(k.checkId)) return 'assessment.schema.check'
+      seenChecks.add(k.checkId)
+      if (!k.supportingEvidenceIds.every(function(id: any) { return evidenceIds.has(id) })) return 'assessment.schema.evidence-reference'
+      for (const id of k.supportingEvidenceIds) referencedEvidenceIds.add(id)
+      counts[k.status as keyof typeof counts]++
+    }
+    const cov = c.coverage
+    if (!profileIsPlain(cov) || !profileExactKeys(cov, PROFILE_COVERAGE_KEYS) || !PROFILE_COVERAGE_KEYS.every(function(f: any) { return profileIsNonNegativeSafeInteger(cov[f]) })) return 'assessment.schema.coverage'
+    if (cov.total !== c.checks.length || cov.evidenceObserved !== counts.EVIDENCE_OBSERVED || cov.gapIdentified !== counts.GAP_IDENTIFIED || cov.notAssessed !== counts.NOT_ASSESSED) return 'assessment.schema.coverage'
+    const expectedStatus = counts.GAP_IDENTIFIED > 0 ? 'GAP_IDENTIFIED' : counts.NOT_ASSESSED > 0 ? 'NOT_ASSESSED' : 'EVIDENCE_OBSERVED'
+    if (c.status !== expectedStatus) return 'assessment.schema.control-status'
+  }
+  const controlIds = a.controls.map(function(c: any) { return c.controlId })
+  if (controlIds.length !== p.implementedControls.length || controlIds.some(function(id: any, i: any) { return id !== p.implementedControls[i] })) return 'assessment.schema.controls'
+  if (!profileIsUniqueStringArray(a.notImplementedControls, function(c: any) { return typeof c === 'string' && PROFILE_CONTROL_ID_RE.test(c) })) return 'assessment.schema.not-implemented'
+  if (a.notImplementedControls.some(function(c: any) { return p.implementedControls.includes(c) })) return 'assessment.schema.not-implemented'
+  if (!profileIsUniqueStringArray(a.unmappedEvidenceIds, profileIsNonEmptyString) || !a.unmappedEvidenceIds.every(function(id: any) { return evidenceIds.has(id) })) return 'assessment.schema.unmapped-evidence'
+  for (const id of a.unmappedEvidenceIds) if (referencedEvidenceIds.has(id)) return 'assessment.schema.evidence-mapping-conflict'
+  const unmappedEvidenceIdSet = new Set(a.unmappedEvidenceIds)
+  for (const id of evidenceIds) if (!referencedEvidenceIds.has(id) && !unmappedEvidenceIdSet.has(id)) return 'assessment.schema.evidence-unaccounted'
+  const pk = a.package
+  if (!profileIsPlain(pk) || !profileExactKeys(pk, PROFILE_PACKAGE_KEYS)) return 'assessment.schema.package'
+  if (typeof pk.digest !== 'string' || !PROFILE_PACKAGE_DIGEST_RE.test(pk.digest) || !profileIsNonNegativeSafeInteger(pk.fileCount)) return 'assessment.schema.package'
+  if (!profileIsDenseArray(pk.manifestFiles) || !pk.manifestFiles.every(profileIsNonEmptyString)) return 'assessment.schema.package'
+  if (!profileIsDenseArray(a.notes) || !a.notes.every(profileIsString)) return 'assessment.schema.notes'
+  return null
+}
+
+export const PROFILE_ATTESTATION_REGISTRY = Object.freeze({
+  'owasp-agentic-skills-2026': Object.freeze({
+    versions: Object.freeze({
+      '1.0.0-alpha.1': Object.freeze({
+        framework: 'OWASP_AGENTIC_SKILLS_TOP_10',
+        upstream: Object.freeze({ repo: 'OWASP/www-project-agentic-skills-top-10', commit: 'd6f7d7d0de314f52a83a85d1828e06ab096e595c', license: 'CC-BY-SA-4.0', status: 'public-review' }),
+        controlUniverse: Object.freeze(['AST01', 'AST02', 'AST03', 'AST04', 'AST05', 'AST06', 'AST07', 'AST08', 'AST09', 'AST10']),
+        implementedControls: Object.freeze(['AST02', 'AST03', 'AST04']),
+        assessmentSchemaVersion: '1.1.0',
+      }),
+    }),
+  }),
+})
+
+export function lookupProfileAttestationDefinition(profileId: any, profileVersion: any): any {
+  const registry: any = PROFILE_ATTESTATION_REGISTRY
+  const entry = typeof profileId === 'string' && Object.hasOwn(registry, profileId) ? registry[profileId] : undefined
+  if (!entry) return { problem: 'UNSUPPORTED_PROFILE' }
+  const definition = typeof profileVersion === 'string' && Object.hasOwn(entry.versions, profileVersion) ? entry.versions[profileVersion] : undefined
+  if (!definition) return { problem: 'UNSUPPORTED_PROFILE_VERSION' }
+  return { definition: definition }
+}
+function profileSameList(a: any, b: any) { return Array.isArray(a) && a.length === b.length && a.every(function(x: any, i: any) { return x === b[i] }) }
+function profileDefinitionProblem(definition: any, assessment: any): any {
+  const p = assessment.profile
+  if (p.framework !== definition.framework) return 'profile.framework'
+  if (p.upstreamRepo !== definition.upstream.repo) return 'profile.upstream.repo'
+  if (p.upstreamCommit !== definition.upstream.commit) return 'profile.upstream.commit'
+  if (p.upstreamLicense !== definition.upstream.license) return 'profile.upstream.license'
+  if (p.upstreamStatus !== definition.upstream.status) return 'profile.upstream.status'
+  if (!profileSameList(p.implementedControls, definition.implementedControls)) return 'profile.implemented-controls'
+  const expectedNotImplemented = definition.controlUniverse.filter(function(c: any) { return !definition.implementedControls.includes(c) })
+  if (!profileSameList(assessment.notImplementedControls, expectedNotImplemented)) return 'profile.not-implemented-controls'
+  if (assessment.schemaVersion !== definition.assessmentSchemaVersion) return 'profile.assessment-schema-version'
+  return null
+}
+export function profileInterpretationOf(assessment: any): any {
+  if (!profileIsPlain(assessment) || typeof assessment.schemaVersion !== 'string' || assessment.schemaVersion !== PROFILE_ASSESSMENT_SCHEMA_VERSION) {
+    return { interpretation: 'UNSUPPORTED_SCHEMA' }
+  }
+  const structural = assessmentSchemaProblem(assessment)
+  if (structural) return { interpretation: 'INVALID_ASSESSMENT', interpretationReason: structural }
+  const found = lookupProfileAttestationDefinition(assessment.profile.profileId, assessment.profile.agentverifyProfileVersion)
+  if (found.problem) return { interpretation: found.problem }
+  const mismatch = profileDefinitionProblem(found.definition, assessment)
+  if (mismatch) return { interpretation: 'PROFILE_DEFINITION_MISMATCH', interpretationReason: mismatch }
+  return { interpretation: 'SUPPORTED' }
+}
+export function admitAssessment(assessment: any): any {
+  try {
+    profileSignedBytes(assessment, PROFILE_ASSESSMENT_BASE_DEPTH)
+  } catch (e) {
+    const code = e instanceof Error ? e.message.split(':')[0] : 'ERROR'
+    return { admitted: false, reason: 'assessment.not-canonicalizable:' + code }
+  }
+  const result = profileInterpretationOf(assessment)
+  if (result.interpretation === 'SUPPORTED') return { admitted: true }
+  return { admitted: false, reason: result.interpretationReason !== undefined ? result.interpretationReason : result.interpretation }
+}
 `
 
 // dist/index.d.ts needs `scan`'s signature as a declaration (`;`), not a body — everything else
@@ -832,6 +1250,379 @@ export function evaluatePolicy(result, policy) {
 }
 export function evaluateAllPolicies(result) {
   return BUILTIN_POLICIES.map(p => evaluatePolicy(result, p))
+}
+
+// Stub: performs NO analysis (see the matching TypeScript block above).
+export const SKILL_ASSESSMENT_SCHEMA_VERSION = '1.1.0'
+export async function assessSkillPackageAst(files) {
+  return {
+    ok: true,
+    normalized: null,
+    assessment: {
+      schemaVersion: '1.1.0',
+      profile: { profileId: 'owasp-agentic-skills-2026', framework: 'OWASP_AGENTIC_SKILLS_TOP_10', upstreamRepo: 'ci-stub', upstreamCommit: '0'.repeat(40), upstreamStatus: 'ci-stub', upstreamLicense: 'ci-stub', agentverifyProfileVersion: 'ci-stub', implementedControls: [], scannerVersion: 'ci-stub', assessmentEngineVersion: 'ci-stub', riskRubricVersion: 'ci-stub', keyAllowlistVersion: 'ci-stub', normalizationVersion: 'ci-stub' },
+      controls: [],
+      evidence: [],
+      notImplementedControls: [],
+      unmappedEvidenceIds: [],
+      package: { digest: 'ci-stub', fileCount: files.length, manifestFiles: [] },
+      notes: ['CI scanner stub — no real analysis was performed.'],
+    },
+  }
+}
+
+// ── Profile-attestation verification logic (NOT proprietary — a faithful, hand-maintained flattened port of
+// packages/scanner/src/profileAttestation.ts, itself a port of conformance/v4/reference/*.mjs). Unlike
+// assessSkillPackageAst above, this is safe and correct to include here in full: it contains no detection
+// logic, no scanning heuristics, nothing that needs to stay private. It exists in the CI stub so that
+// workers/api/src/profileAttestationSigning.ts — which imports these exact names from '@agentverify/scanner' —
+// typechecks and runs correctly in public CI, where the private scanner package is absent. If the real
+// packages/scanner/src/profileAttestation.ts ever changes these algorithms, this block must be kept in sync by
+// hand (there is no build step that derives one from the other) — packages/scanner/test/profileAttestationPort.test.mjs
+// (private, not run in public CI) is what keeps the REAL module honest against conformance/v4; this CI-stub
+// copy only needs to satisfy this repo's OWN Worker-side tests, not byte-for-byte parity with the reference.
+export const PROFILE_ATTESTATION_TYPE = 'agentverify.profile-assessment'
+export const PROFILE_ATTESTATION_VERSION = '1.0.0'
+export const PROFILE_BUNDLE_VERSION = '1.0.0'
+export const PROFILE_PAYLOAD_TAG = 'agentverify-attestation/profile-assessment/v1\\n'
+export const PROFILE_KEY_PURPOSE = 'agentverify-profile-v1'
+export const PROFILE_ASSESSMENT_TAG = 'agentverify-assessment-digest/v1\\n'
+export const PROFILE_ATTESTATION_ALGORITHM = 'ECDSA-P256-SHA256'
+export const PROFILE_ASSESSMENT_SCHEMA_VERSION = '1.1.0'
+export const INTERPRETATION_VERSION_KEYS = ['scannerVersion', 'assessmentEngineVersion', 'riskRubricVersion', 'keyAllowlistVersion', 'normalizationVersion']
+export const PROFILE_PAYLOAD_BASE_DEPTH = 2
+const PROFILE_ASSESSMENT_BASE_DEPTH = 1
+const PROFILE_MAX_JSON_DEPTH = 64
+
+function profileNumberProblem(value) {
+  if (typeof value !== 'number') return 'NOT_A_NUMBER'
+  if (!Number.isFinite(value)) return 'NON_FINITE'
+  if (Object.is(value, -0)) return 'NEGATIVE_ZERO'
+  if (!Number.isInteger(value)) return 'NON_INTEGER'
+  if (!Number.isSafeInteger(value)) return 'UNSAFE_INTEGER'
+  return null
+}
+
+function profileIsWellFormedString(s) {
+  for (let i = 0; i < s.length; i++) {
+    const c = s.charCodeAt(i)
+    if (c >= 0xd800 && c <= 0xdbff) {
+      const n = s.charCodeAt(i + 1)
+      if (n >= 0xdc00 && n <= 0xdfff) { i++; continue }
+      return false
+    }
+    if (c >= 0xdc00 && c <= 0xdfff) return false
+  }
+  return true
+}
+
+function profileCanonicalizeSigned(value, baseDepth) {
+  const stack = new Set()
+  function ser(v, depth, where) {
+    if (v === null) return 'null'
+    switch (typeof v) {
+      case 'undefined': throw new Error('JCS_UNDEFINED: undefined at ' + where)
+      case 'boolean': return v ? 'true' : 'false'
+      case 'number': {
+        if (!Number.isFinite(v)) throw new Error('JCS_NON_FINITE: non-finite number at ' + where)
+        const problem = profileNumberProblem(v)
+        if (problem !== null) throw new Error('JCS_NUMBER_NOT_ADMITTED: ' + problem + ' at ' + where)
+        return String(v)
+      }
+      case 'string': {
+        if (!profileIsWellFormedString(v)) throw new Error('JCS_ILL_FORMED_STRING: lone surrogate at ' + where)
+        return JSON.stringify(v)
+      }
+      case 'function': case 'symbol': case 'bigint':
+        throw new Error('JCS_UNSUPPORTED_TYPE: ' + typeof v + ' at ' + where)
+      default: break
+    }
+    if (depth > PROFILE_MAX_JSON_DEPTH) throw new Error('JCS_TOO_DEEP: nesting deeper than ' + PROFILE_MAX_JSON_DEPTH + ' at ' + where)
+    if (stack.has(v)) throw new Error('JCS_CYCLE: cycle at ' + where)
+    stack.add(v)
+    try {
+      if (Array.isArray(v)) {
+        if (Object.getPrototypeOf(v) !== Array.prototype) throw new Error('JCS_NOT_PLAIN: array subclass at ' + where)
+        const keys = Reflect.ownKeys(v).filter(function (k) { return k !== 'length' })
+        if (keys.length !== v.length || keys.some(function (k, idx) { return k !== String(idx) })) throw new Error('JCS_NOT_PLAIN: sparse array at ' + where)
+        return '[' + v.map(function (item, idx) { return ser(item, depth + 1, where + '[' + idx + ']') }).join(',') + ']'
+      }
+      const proto = Object.getPrototypeOf(v)
+      if (proto !== Object.prototype && proto !== null) throw new Error('JCS_NOT_PLAIN: non-plain object at ' + where)
+      const own = Reflect.ownKeys(v)
+      if (own.some(function (k) { return typeof k === 'symbol' })) throw new Error('JCS_NOT_PLAIN: symbol-keyed property at ' + where)
+      const parts = []
+      const sortedKeys = own.slice().sort()
+      for (const key of sortedKeys) {
+        const d = Object.getOwnPropertyDescriptor(v, key)
+        if (!d || !d.enumerable || 'get' in d || 'set' in d) throw new Error('JCS_NOT_PLAIN: non-data property ' + JSON.stringify(key) + ' at ' + where)
+        if (typeof key !== 'string' || !profileIsWellFormedString(key)) throw new Error('JCS_ILL_FORMED_STRING: lone surrogate in a key at ' + where)
+        parts.push(JSON.stringify(key) + ':' + ser(d.value, depth + 1, where + '.' + key))
+      }
+      return '{' + parts.join(',') + '}'
+    } finally {
+      stack.delete(v)
+    }
+  }
+  return ser(value, baseDepth + 1, '$')
+}
+function profileSignedBytes(value, baseDepth) {
+  return new TextEncoder().encode(profileCanonicalizeSigned(value, baseDepth))
+}
+
+const profileEnc = new TextEncoder()
+function profileHex(bytes) { return Array.from(new Uint8Array(bytes)).map(function (b) { return b.toString(16).padStart(2, '0') }).join('') }
+function profileConcat(a, b) { const out = new Uint8Array(a.length + b.length); out.set(a, 0); out.set(b, a.length); return out }
+function profileToBase64Url(bytes) {
+  let binary = ''
+  const arr = new Uint8Array(bytes)
+  for (let i = 0; i < arr.length; i++) binary += String.fromCharCode(arr[i])
+  return btoa(binary).replace(/\\+/g, '-').replace(/\\//g, '_').replace(/=+$/, '')
+}
+
+export async function profileAssessmentDigest(assessment) {
+  const bytes = profileConcat(profileEnc.encode(PROFILE_ASSESSMENT_TAG), profileSignedBytes(assessment, PROFILE_ASSESSMENT_BASE_DEPTH))
+  return 'avassess-sha256:' + profileHex(await crypto.subtle.digest('SHA-256', bytes))
+}
+export function profileSigningInput(payload) {
+  return profileConcat(profileEnc.encode(PROFILE_PAYLOAD_TAG), profileSignedBytes(payload, PROFILE_PAYLOAD_BASE_DEPTH))
+}
+export async function profileKeyIdOf(jwk) {
+  if (jwk.kty !== 'EC') throw new Error('unsupported key type for a thumbprint')
+  const members = { crv: jwk.crv, kty: jwk.kty, x: jwk.x, y: jwk.y }
+  return profileToBase64Url(await crypto.subtle.digest('SHA-256', profileEnc.encode(profileCanonicalizeSigned(members, 0))))
+}
+
+export const P256_ORDER = 0xFFFFFFFF00000000FFFFFFFFFFFFFFFFBCE6FAADA7179E84F3B9CAC2FC632551n
+export const P256_HALF_ORDER = P256_ORDER / 2n
+const PROFILE_FIELD_PRIME = 0xFFFFFFFF00000001000000000000000000000000FFFFFFFFFFFFFFFFFFFFFFFFn
+
+function profileBase64UrlToBytes(s) {
+  const padded = s.replace(/-/g, '+').replace(/_/g, '/') + '='.repeat((4 - (s.length % 4)) % 4)
+  const binary = atob(padded)
+  const bytes = new Uint8Array(binary.length)
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i)
+  return bytes
+}
+function profileBytesToBigInt(bytes) { let n = 0n; for (let i = 0; i < bytes.length; i++) n = (n << 8n) | BigInt(bytes[i]); return n }
+function profileBigIntToBytes32(n) { const out = new Uint8Array(32); for (let i = 31; i >= 0; i--) { out[i] = Number(n & 0xffn); n >>= 8n } return out }
+
+function profileIsCanonicalCoordinate(s) {
+  if (typeof s !== 'string' || !/^[A-Za-z0-9_-]{43}$/.test(s)) return false
+  const bytes = profileBase64UrlToBytes(s)
+  if (bytes.length !== 32) return false
+  let binary = ''
+  for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i])
+  return btoa(binary).replace(/\\+/g, '-').replace(/\\//g, '_').replace(/=+$/, '') === s
+}
+function profileIsCoordinateInRange(s) {
+  return profileBytesToBigInt(profileBase64UrlToBytes(s)) < PROFILE_FIELD_PRIME
+}
+export function checkP256PublicJwk(jwk) {
+  if (typeof jwk !== 'object' || jwk === null || Array.isArray(jwk)) return { ok: false, reasonCode: 'jwk.shape' }
+  const keys = Object.keys(jwk).sort()
+  if (JSON.stringify(keys) !== JSON.stringify(['crv', 'kty', 'x', 'y'])) {
+    return { ok: false, reasonCode: Object.hasOwn(jwk, 'd') ? 'jwk.private-key-material' : 'jwk.members' }
+  }
+  if (typeof jwk.kty !== 'string' || typeof jwk.crv !== 'string') return { ok: false, reasonCode: 'jwk.types' }
+  if (jwk.kty !== 'EC' || jwk.crv !== 'P-256') return { ok: false, reasonCode: 'jwk.not-p256' }
+  if (!profileIsCanonicalCoordinate(jwk.x) || !profileIsCanonicalCoordinate(jwk.y)) return { ok: false, reasonCode: 'jwk.coordinates' }
+  if (!profileIsCoordinateInRange(jwk.x) || !profileIsCoordinateInRange(jwk.y)) return { ok: false, reasonCode: 'jwk.coordinate-range' }
+  return { ok: true }
+}
+export function profileSignatureProblem(bytes) {
+  if (bytes.length !== 64) return 'signature.range'
+  const r = profileBytesToBigInt(bytes.subarray(0, 32))
+  const s = profileBytesToBigInt(bytes.subarray(32))
+  if (r < 1n || r >= P256_ORDER || s < 1n || s >= P256_ORDER) return 'signature.range'
+  if (s > P256_HALF_ORDER) return 'signature.high-s'
+  return null
+}
+export function normalizeProfileSignatureLowS(rawSignature) {
+  if (rawSignature.length !== 64) throw new Error('raw ECDSA signature must be exactly 64 bytes (r || s)')
+  const r = rawSignature.subarray(0, 32)
+  const s = profileBytesToBigInt(rawSignature.subarray(32))
+  const lowS = s > P256_HALF_ORDER ? P256_ORDER - s : s
+  const out = new Uint8Array(64)
+  out.set(r, 0)
+  out.set(profileBigIntToBytes32(lowS), 32)
+  return out
+}
+
+const PROFILE_CONFIDENCES = ['high', 'medium', 'low']
+const PROFILE_SEVERITIES = ['high', 'medium', 'low']
+const PROFILE_POLARITIES = ['gap', 'positive', 'context']
+const PROFILE_AXES = ['manifest', 'tools', 'network', 'shell', 'filesystem', 'identity', 'sensitive', 'dependencies', 'lockfile', 'execution-config', 'sbom', 'metadata']
+const PROFILE_PROVENANCES = ['DECLARED', 'STATICALLY_OBSERVED', 'RECOMPUTED', 'CRYPTOGRAPHICALLY_VERIFIED', 'BEHAVIORALLY_OBSERVED', 'EXTERNAL_EVIDENCE', 'INFERRED']
+const PROFILE_UPSTREAM_SEVERITIES = ['Critical', 'High', 'Medium']
+const PROFILE_CHECK_STATUSES = ['EVIDENCE_OBSERVED', 'GAP_IDENTIFIED', 'NOT_ASSESSED']
+const PROFILE_TOP = ['schemaVersion', 'profile', 'controls', 'notImplementedControls', 'evidence', 'unmappedEvidenceIds', 'package', 'notes']
+const PROFILE_PROFILE_KEYS = ['profileId', 'framework', 'upstreamRepo', 'upstreamCommit', 'upstreamStatus', 'upstreamLicense', 'agentverifyProfileVersion', 'implementedControls'].concat(INTERPRETATION_VERSION_KEYS)
+const PROFILE_CONTROL_KEYS = ['controlId', 'framework', 'title', 'upstreamSeverity', 'status', 'confidence', 'explanation', 'checks', 'coverage']
+const PROFILE_CHECK_KEYS = ['checkId', 'title', 'status', 'confidence', 'provenance', 'supportingEvidenceIds', 'explanation']
+const PROFILE_COVERAGE_KEYS = ['total', 'evidenceObserved', 'gapIdentified', 'notAssessed']
+const PROFILE_EVIDENCE_KEYS = ['id', 'kind', 'axis', 'polarity', 'severity', 'confidence', 'provenance', 'summary', 'expected', 'remediation', 'locations', 'facts']
+const PROFILE_PACKAGE_KEYS = ['digest', 'fileCount', 'manifestFiles']
+const PROFILE_SEMVER_RE = /^\\d+\\.\\d+\\.\\d+(-[0-9A-Za-z.-]+)?$/
+const PROFILE_ID_RE = /^[a-z0-9]+(-[a-z0-9]+)*$/
+const PROFILE_CONTROL_ID_RE = /^[A-Z]{3}\\d{2}$/
+const PROFILE_COMMIT_RE = /^[0-9a-f]{40}$/
+const PROFILE_PACKAGE_DIGEST_RE = /^avpkg-sha256:[0-9a-f]{64}$/
+
+function profileIsPlain(v) { return typeof v === 'object' && v !== null && !Array.isArray(v) && (Object.getPrototypeOf(v) === Object.prototype || Object.getPrototypeOf(v) === null) }
+function profileIsDenseArray(v) {
+  if (!Array.isArray(v) || Object.getPrototypeOf(v) !== Array.prototype) return false
+  const keys = Reflect.ownKeys(v).filter(function (k) { return k !== 'length' })
+  return keys.length === v.length && keys.every(function (k, i) { return k === String(i) })
+}
+function profileExactKeys(o, required, optional) {
+  optional = optional || []
+  if (Object.getOwnPropertySymbols(o).length > 0) return false
+  const keys = Object.keys(o)
+  return required.every(function (k) { return Object.hasOwn(o, k) }) && keys.every(function (k) { return required.includes(k) || optional.includes(k) })
+}
+function profileIsNonEmptyString(s) { return typeof s === 'string' && s.length > 0 && profileIsWellFormedString(s) }
+function profileIsString(s) { return typeof s === 'string' && profileIsWellFormedString(s) }
+function profileIsSemver(s) { return typeof s === 'string' && PROFILE_SEMVER_RE.test(s) }
+function profileIsCommit(s) { return typeof s === 'string' && PROFILE_COMMIT_RE.test(s) }
+function profileIsNonNegativeSafeInteger(n) { return typeof n === 'number' && profileNumberProblem(n) === null && n >= 0 }
+function profileIsPositiveSafeInteger(n) { return typeof n === 'number' && profileNumberProblem(n) === null && n >= 1 }
+function profileIsUniqueStringArray(a, itemOk) { return profileIsDenseArray(a) && a.every(itemOk) && new Set(a).size === a.length }
+function profileInEnum(list, v) { return typeof v === 'string' && list.includes(v) }
+function profileIsFact(v) { return typeof v === 'boolean' || profileIsString(v) || (typeof v === 'number' && profileNumberProblem(v) === null) || (profileIsDenseArray(v) && v.every(profileIsString)) }
+function profileIsLocation(l) { return profileIsPlain(l) && profileExactKeys(l, ['file'], ['line', 'keyPath']) && profileIsNonEmptyString(l.file) && (!Object.hasOwn(l, 'line') || profileIsPositiveSafeInteger(l.line)) && (!Object.hasOwn(l, 'keyPath') || profileIsNonEmptyString(l.keyPath)) }
+
+export function assessmentSchemaProblem(a) {
+  if (!profileIsPlain(a) || !profileExactKeys(a, PROFILE_TOP)) return 'assessment.schema.top-level'
+  if (a.schemaVersion !== PROFILE_ASSESSMENT_SCHEMA_VERSION) return 'assessment.schema.schema-version'
+  const p = a.profile
+  if (!profileIsPlain(p) || !profileExactKeys(p, PROFILE_PROFILE_KEYS)) return 'assessment.schema.profile'
+  if (!(typeof p.profileId === 'string' && PROFILE_ID_RE.test(p.profileId))) return 'assessment.schema.profile'
+  const profileStringFields = ['framework', 'upstreamRepo', 'upstreamStatus', 'upstreamLicense']
+  for (let i = 0; i < profileStringFields.length; i++) if (!profileIsNonEmptyString(p[profileStringFields[i]])) return 'assessment.schema.profile'
+  if (!profileIsCommit(p.upstreamCommit) || !profileIsSemver(p.agentverifyProfileVersion)) return 'assessment.schema.profile'
+  if (!INTERPRETATION_VERSION_KEYS.every(function (k) { return profileIsSemver(p[k]) })) return 'assessment.schema.profile'
+  if (!profileIsUniqueStringArray(p.implementedControls, function (c) { return typeof c === 'string' && PROFILE_CONTROL_ID_RE.test(c) }) || p.implementedControls.length === 0) return 'assessment.schema.profile.implemented-controls'
+
+  if (!profileIsDenseArray(a.evidence)) return 'assessment.schema.evidence'
+  const evidenceIds = new Set()
+  for (const e of a.evidence) {
+    if (!profileIsPlain(e) || !profileExactKeys(e, PROFILE_EVIDENCE_KEYS)) return 'assessment.schema.evidence'
+    if (!profileIsNonEmptyString(e.id) || !profileIsNonEmptyString(e.kind)) return 'assessment.schema.evidence'
+    if (!profileInEnum(PROFILE_AXES, e.axis) || !profileInEnum(PROFILE_POLARITIES, e.polarity) || !profileInEnum(PROFILE_SEVERITIES, e.severity) || !profileInEnum(PROFILE_CONFIDENCES, e.confidence)) return 'assessment.schema.evidence'
+    if (!profileIsUniqueStringArray(e.provenance, function (x) { return profileInEnum(PROFILE_PROVENANCES, x) })) return 'assessment.schema.evidence'
+    if (!profileIsString(e.summary) || !profileIsString(e.expected) || !profileIsString(e.remediation)) return 'assessment.schema.evidence'
+    if (!profileIsDenseArray(e.locations) || !e.locations.every(profileIsLocation)) return 'assessment.schema.evidence'
+    if (!profileIsPlain(e.facts) || !Object.keys(e.facts).every(function (k) { return profileIsFact(e.facts[k]) }) || Object.getOwnPropertySymbols(e.facts).length > 0) return 'assessment.schema.evidence'
+    if (evidenceIds.has(e.id)) return 'assessment.schema.evidence.duplicate-id'
+    evidenceIds.add(e.id)
+  }
+
+  if (!profileIsDenseArray(a.controls)) return 'assessment.schema.controls'
+  const seenControls = new Set()
+  const referencedEvidenceIds = new Set()
+  for (const c of a.controls) {
+    if (!profileIsPlain(c) || !profileExactKeys(c, PROFILE_CONTROL_KEYS)) return 'assessment.schema.control'
+    if (typeof c.controlId !== 'string' || !PROFILE_CONTROL_ID_RE.test(c.controlId)) return 'assessment.schema.control'
+    if (c.framework !== p.framework) return 'assessment.schema.control'
+    if (!profileIsNonEmptyString(c.title) || !profileIsString(c.explanation)) return 'assessment.schema.control'
+    if (!profileInEnum(PROFILE_UPSTREAM_SEVERITIES, c.upstreamSeverity) || !profileInEnum(PROFILE_CHECK_STATUSES, c.status) || !profileInEnum(PROFILE_CONFIDENCES, c.confidence)) return 'assessment.schema.control'
+    if (seenControls.has(c.controlId)) return 'assessment.schema.controls'
+    seenControls.add(c.controlId)
+    if (!profileIsDenseArray(c.checks) || c.checks.length === 0) return 'assessment.schema.checks'
+    const seenChecks = new Set()
+    const counts = { EVIDENCE_OBSERVED: 0, GAP_IDENTIFIED: 0, NOT_ASSESSED: 0 }
+    for (const k of c.checks) {
+      if (!profileIsPlain(k) || !profileExactKeys(k, PROFILE_CHECK_KEYS)) return 'assessment.schema.check'
+      if (!profileIsNonEmptyString(k.checkId) || !profileIsNonEmptyString(k.title) || !profileIsString(k.explanation)) return 'assessment.schema.check'
+      if (!profileInEnum(PROFILE_CHECK_STATUSES, k.status) || !profileInEnum(PROFILE_CONFIDENCES, k.confidence)) return 'assessment.schema.check'
+      if (!profileIsUniqueStringArray(k.provenance, function (x) { return profileInEnum(PROFILE_PROVENANCES, x) })) return 'assessment.schema.check'
+      if (!profileIsUniqueStringArray(k.supportingEvidenceIds, profileIsNonEmptyString)) return 'assessment.schema.check'
+      if (seenChecks.has(k.checkId)) return 'assessment.schema.check'
+      seenChecks.add(k.checkId)
+      if (!k.supportingEvidenceIds.every(function (id) { return evidenceIds.has(id) })) return 'assessment.schema.evidence-reference'
+      for (const id of k.supportingEvidenceIds) referencedEvidenceIds.add(id)
+      counts[k.status]++
+    }
+    const cov = c.coverage
+    if (!profileIsPlain(cov) || !profileExactKeys(cov, PROFILE_COVERAGE_KEYS) || !PROFILE_COVERAGE_KEYS.every(function (f) { return profileIsNonNegativeSafeInteger(cov[f]) })) return 'assessment.schema.coverage'
+    if (cov.total !== c.checks.length || cov.evidenceObserved !== counts.EVIDENCE_OBSERVED || cov.gapIdentified !== counts.GAP_IDENTIFIED || cov.notAssessed !== counts.NOT_ASSESSED) return 'assessment.schema.coverage'
+    const expectedStatus = counts.GAP_IDENTIFIED > 0 ? 'GAP_IDENTIFIED' : counts.NOT_ASSESSED > 0 ? 'NOT_ASSESSED' : 'EVIDENCE_OBSERVED'
+    if (c.status !== expectedStatus) return 'assessment.schema.control-status'
+  }
+  const controlIds = a.controls.map(function (c) { return c.controlId })
+  if (controlIds.length !== p.implementedControls.length || controlIds.some(function (id, i) { return id !== p.implementedControls[i] })) return 'assessment.schema.controls'
+  if (!profileIsUniqueStringArray(a.notImplementedControls, function (c) { return typeof c === 'string' && PROFILE_CONTROL_ID_RE.test(c) })) return 'assessment.schema.not-implemented'
+  if (a.notImplementedControls.some(function (c) { return p.implementedControls.includes(c) })) return 'assessment.schema.not-implemented'
+  if (!profileIsUniqueStringArray(a.unmappedEvidenceIds, profileIsNonEmptyString) || !a.unmappedEvidenceIds.every(function (id) { return evidenceIds.has(id) })) return 'assessment.schema.unmapped-evidence'
+  for (const id of a.unmappedEvidenceIds) if (referencedEvidenceIds.has(id)) return 'assessment.schema.evidence-mapping-conflict'
+  const unmappedEvidenceIdSet = new Set(a.unmappedEvidenceIds)
+  for (const id of evidenceIds) if (!referencedEvidenceIds.has(id) && !unmappedEvidenceIdSet.has(id)) return 'assessment.schema.evidence-unaccounted'
+  const pk = a.package
+  if (!profileIsPlain(pk) || !profileExactKeys(pk, PROFILE_PACKAGE_KEYS)) return 'assessment.schema.package'
+  if (typeof pk.digest !== 'string' || !PROFILE_PACKAGE_DIGEST_RE.test(pk.digest) || !profileIsNonNegativeSafeInteger(pk.fileCount)) return 'assessment.schema.package'
+  if (!profileIsDenseArray(pk.manifestFiles) || !pk.manifestFiles.every(profileIsNonEmptyString)) return 'assessment.schema.package'
+  if (!profileIsDenseArray(a.notes) || !a.notes.every(profileIsString)) return 'assessment.schema.notes'
+  return null
+}
+
+export const PROFILE_ATTESTATION_REGISTRY = Object.freeze({
+  'owasp-agentic-skills-2026': Object.freeze({
+    versions: Object.freeze({
+      '1.0.0-alpha.1': Object.freeze({
+        framework: 'OWASP_AGENTIC_SKILLS_TOP_10',
+        upstream: Object.freeze({ repo: 'OWASP/www-project-agentic-skills-top-10', commit: 'd6f7d7d0de314f52a83a85d1828e06ab096e595c', license: 'CC-BY-SA-4.0', status: 'public-review' }),
+        controlUniverse: Object.freeze(['AST01', 'AST02', 'AST03', 'AST04', 'AST05', 'AST06', 'AST07', 'AST08', 'AST09', 'AST10']),
+        implementedControls: Object.freeze(['AST02', 'AST03', 'AST04']),
+        assessmentSchemaVersion: '1.1.0',
+      }),
+    }),
+  }),
+})
+
+export function lookupProfileAttestationDefinition(profileId, profileVersion) {
+  const entry = typeof profileId === 'string' && Object.hasOwn(PROFILE_ATTESTATION_REGISTRY, profileId) ? PROFILE_ATTESTATION_REGISTRY[profileId] : undefined
+  if (!entry) return { problem: 'UNSUPPORTED_PROFILE' }
+  const definition = typeof profileVersion === 'string' && Object.hasOwn(entry.versions, profileVersion) ? entry.versions[profileVersion] : undefined
+  if (!definition) return { problem: 'UNSUPPORTED_PROFILE_VERSION' }
+  return { definition: definition }
+}
+function profileSameList(a, b) { return Array.isArray(a) && a.length === b.length && a.every(function (x, i) { return x === b[i] }) }
+function profileDefinitionProblem(definition, assessment) {
+  const p = assessment.profile
+  if (p.framework !== definition.framework) return 'profile.framework'
+  if (p.upstreamRepo !== definition.upstream.repo) return 'profile.upstream.repo'
+  if (p.upstreamCommit !== definition.upstream.commit) return 'profile.upstream.commit'
+  if (p.upstreamLicense !== definition.upstream.license) return 'profile.upstream.license'
+  if (p.upstreamStatus !== definition.upstream.status) return 'profile.upstream.status'
+  if (!profileSameList(p.implementedControls, definition.implementedControls)) return 'profile.implemented-controls'
+  const expectedNotImplemented = definition.controlUniverse.filter(function (c) { return !definition.implementedControls.includes(c) })
+  if (!profileSameList(assessment.notImplementedControls, expectedNotImplemented)) return 'profile.not-implemented-controls'
+  if (assessment.schemaVersion !== definition.assessmentSchemaVersion) return 'profile.assessment-schema-version'
+  return null
+}
+export function profileInterpretationOf(assessment) {
+  if (!profileIsPlain(assessment) || typeof assessment.schemaVersion !== 'string' || assessment.schemaVersion !== PROFILE_ASSESSMENT_SCHEMA_VERSION) {
+    return { interpretation: 'UNSUPPORTED_SCHEMA' }
+  }
+  const structural = assessmentSchemaProblem(assessment)
+  if (structural) return { interpretation: 'INVALID_ASSESSMENT', interpretationReason: structural }
+  const found = lookupProfileAttestationDefinition(assessment.profile.profileId, assessment.profile.agentverifyProfileVersion)
+  if (found.problem) return { interpretation: found.problem }
+  const mismatch = profileDefinitionProblem(found.definition, assessment)
+  if (mismatch) return { interpretation: 'PROFILE_DEFINITION_MISMATCH', interpretationReason: mismatch }
+  return { interpretation: 'SUPPORTED' }
+}
+export function admitAssessment(assessment) {
+  try {
+    profileSignedBytes(assessment, PROFILE_ASSESSMENT_BASE_DEPTH)
+  } catch (e) {
+    const code = e instanceof Error ? e.message.split(':')[0] : 'ERROR'
+    return { admitted: false, reason: 'assessment.not-canonicalizable:' + code }
+  }
+  const result = profileInterpretationOf(assessment)
+  if (result.interpretation === 'SUPPORTED') return { admitted: true }
+  return { admitted: false, reason: result.interpretationReason !== undefined ? result.interpretationReason : result.interpretation }
 }
 `
 

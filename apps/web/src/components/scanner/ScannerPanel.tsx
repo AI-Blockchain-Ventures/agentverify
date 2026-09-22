@@ -6,6 +6,7 @@ import Link from 'next/link'
 import type { ScanResult as ScanResultType } from '@/types'
 import type { User } from 'firebase/auth'
 import { ScanResult } from './ScanResult'
+import { OwaspProfilePanel } from './OwaspProfilePanel'
 import { trackScan } from '@/lib/analytics'
 import { assetUrl } from '@/lib/assets'
 import { getApiBaseUrl } from '@/lib/billing'
@@ -233,9 +234,39 @@ interface ScannerPanelProps {
   onScanComplete?: () => void
 }
 
+/** Explicit assessment-type choice. 'standard' is the default and preserves the pre-existing scan exactly; 'owasp' is an additive option, never a silent replacement (requirement 8). */
+function AssessmentTypeToggle({ value, onChange }: { value: 'standard' | 'owasp'; onChange: (v: 'standard' | 'owasp') => void }) {
+  return (
+    <div role="tablist" aria-label="Assessment type" className="mb-4 flex flex-wrap gap-1.5 rounded-2xl p-1.5" style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}>
+      <button
+        role="tab"
+        aria-selected={value === 'standard'}
+        onClick={() => onChange('standard')}
+        style={{ backgroundColor: value === 'standard' ? 'var(--text-primary)' : 'transparent', color: value === 'standard' ? 'var(--bg)' : 'var(--text-muted)' }}
+        className="rounded-xl px-3.5 py-2 text-xs font-semibold transition-colors sm:text-sm"
+      >
+        Standard scan
+      </button>
+      <button
+        role="tab"
+        aria-selected={value === 'owasp'}
+        onClick={() => onChange('owasp')}
+        style={{ backgroundColor: value === 'owasp' ? 'var(--text-primary)' : 'transparent', color: value === 'owasp' ? 'var(--bg)' : 'var(--text-muted)' }}
+        className="rounded-xl px-3.5 py-2 text-xs font-semibold transition-colors sm:text-sm"
+      >
+        OWASP Agentic Skills profile
+      </button>
+    </div>
+  )
+}
+
 export function ScannerPanel({ user, onScanComplete }: ScannerPanelProps) {
   const billing = useBillingStatusState(user)
   const billingStatus = billing.status
+  // An explicit assessment-type choice, defaulting to the standard scan every existing client already gets —
+  // choosing OWASP here is additive and never silently replaces a standard scan (requirement 8). Nothing
+  // below this toggle in the 'standard' branch changes: same state, same run() function, same ScanResult.
+  const [assessmentType, setAssessmentType] = useState<'standard' | 'owasp'>('standard')
   const [tab, setTab] = useState<'upload' | 'paste'>('paste')
   const [content, setContent] = useState('')
   const [fileName, setFileName] = useState('')
@@ -320,8 +351,25 @@ export function ScannerPanel({ user, onScanComplete }: ScannerPanelProps) {
     />
   )
 
+  // OWASP is an explicit, additive assessment option (requirement 8): selecting it renders a completely
+  // separate panel (its own request UI, its own result rendering) rather than altering anything about the
+  // standard scan below. Nothing in the 'standard' branch (state, run(), ScanResult) is reachable or changed
+  // from this branch, and the reverse — the default ('standard') behavior below is byte-for-byte what existed
+  // before this toggle, unaffected by the OWASP feature's existence.
+  if (assessmentType === 'owasp') {
+    return (
+      <div className="mx-auto max-w-4xl">
+        <AssessmentTypeToggle value={assessmentType} onChange={setAssessmentType} />
+        <div className="mt-4">
+          <OwaspProfilePanel user={user} />
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="mx-auto max-w-4xl rounded-[2rem] border border-[var(--border)] bg-[radial-gradient(circle_at_top_right,rgba(6,182,212,0.10),transparent_32%),var(--card)] p-5 shadow-2xl shadow-black/10 backdrop-blur md:p-7">
+      <AssessmentTypeToggle value={assessmentType} onChange={setAssessmentType} />
       <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <div>
         <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[color:var(--accent-purple-text)]">Private browser scan</p>

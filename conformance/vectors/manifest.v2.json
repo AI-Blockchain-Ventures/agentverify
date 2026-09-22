@@ -1,0 +1,13 @@
+{
+  "note": "SHA-256 of every vector file in vector set v2. If a vector changes, this changes, and the change is visible in review.",
+  "files": {
+    "assessment-digest.v2.json": "921e7b9ffb3e4b4d2087e6475f6617a47cd0fe7446eed19afefbe5e14811c8e0",
+    "avpkg.v2.json": "d04769d6c8075a57592a6c3a49aa09bb891def9b1c13238f6a8444acba4d280f",
+    "bundles.v2.json": "c763759b62b8a37622d3ea7dc544ef739967fc35f05b4281f0062c8a8a43c312",
+    "domains.v2.json": "e2326558fd8a4b226122f7d1a599cf6bd76bc9b1ebf717a1889e1d52b7dfd9a8",
+    "jcs.v2.json": "ca00a276097b9fbe39abd28424b6ea178afafdeaa10a009563c7fe13de908c6e",
+    "keyid.v2.json": "f5d584625e15369a6aeafae612883a49c9a688ff7e9209324734f80aabdcb660",
+    "legacy-attestation.v2.json": "d001e60504dc7cd8c6c34c000bedb42731d6866052f21195354b9c1c0142f6fb",
+    "signing.v2.json": "6eed52d44e5e11679467d18d5ee4dc55f6239168739d94753e9d154bbe7c245c"
+  }
+}

@@ -1,0 +1,320 @@
+{
+  "vectorSet": "agentverify-profile-attestation-conformance",
+  "version": "4.0.0",
+  "supersedes": "vector set v3 (frozen, unchanged; v4 is a NEW set, not a patch of v3)",
+  "note": "CONFORMANCE VECTOR. Synthetic data and throwaway keys: nothing here is a real customer, scan, key or credential. Do not treat any key in this file as an Agent Verify signing key.",
+  "purpose": "The CLOSED profile registry. For each profileId + profileVersion it pins the framework, the upstream repository, the pinned upstream commit, the upstream licence and status, the control universe, the implemented control set and the assessment schema version. A structurally valid assessment whose profile metadata differs from the pin is PROFILE_DEFINITION_MISMATCH, never SUPPORTED. The five interpretation versions (scanner, engine, rubric, key allowlist, normalization) are deliberately NOT pinned: they are bound independently in payload and assessment.",
+  "registry": {
+    "owasp-agentic-skills-2026": {
+      "versions": {
+        "1.0.0-alpha.1": {
+          "framework": "OWASP_AGENTIC_SKILLS_TOP_10",
+          "upstream": {
+            "repo": "OWASP/www-project-agentic-skills-top-10",
+            "commit": "d6f7d7d0de314f52a83a85d1828e06ab096e595c",
+            "license": "CC-BY-SA-4.0",
+            "status": "public-review"
+          },
+          "controlUniverse": [
+            "AST01",
+            "AST02",
+            "AST03",
+            "AST04",
+            "AST05",
+            "AST06",
+            "AST07",
+            "AST08",
+            "AST09",
+            "AST10"
+          ],
+          "implementedControls": [
+            "AST02",
+            "AST03",
+            "AST04"
+          ],
+          "assessmentSchemaVersion": "1.1.0"
+        }
+      }
+    }
+  },
+  "notImplementedControlsRule": "notImplementedControls is DEFINED as controlUniverse minus implementedControls, in controlUniverse order.",
+  "problemCodes": [
+    "profile.framework",
+    "profile.upstream.repo",
+    "profile.upstream.commit",
+    "profile.upstream.license",
+    "profile.upstream.status",
+    "profile.implemented-controls",
+    "profile.not-implemented-controls",
+    "profile.assessment-schema-version"
+  ],
+  "lookups": [
+    {
+      "profileId": "owasp-agentic-skills-2026",
+      "profileVersion": "1.0.0-alpha.1",
+      "expected": {
+        "found": true
+      }
+    },
+    {
+      "profileId": "owasp-agentic-skills-2026",
+      "profileVersion": "1.0.0-alpha.2",
+      "expected": {
+        "problem": "UNSUPPORTED_PROFILE_VERSION"
+      }
+    },
+    {
+      "profileId": "owasp-agentic-skills-2026",
+      "profileVersion": "1.0.0",
+      "expected": {
+        "problem": "UNSUPPORTED_PROFILE_VERSION"
+      }
+    },
+    {
+      "profileId": "owasp-agentic-skills-2026",
+      "profileVersion": "",
+      "expected": {
+        "problem": "UNSUPPORTED_PROFILE_VERSION"
+      }
+    },
+    {
+      "profileId": "owasp-agentic-skills-2027",
+      "profileVersion": "1.0.0-alpha.1",
+      "expected": {
+        "problem": "UNSUPPORTED_PROFILE"
+      }
+    },
+    {
+      "profileId": "some-other-profile",
+      "profileVersion": "1.0.0-alpha.1",
+      "expected": {
+        "problem": "UNSUPPORTED_PROFILE"
+      }
+    },
+    {
+      "profileId": "constructor",
+      "profileVersion": "1.0.0-alpha.1",
+      "expected": {
+        "problem": "UNSUPPORTED_PROFILE"
+      }
+    },
+    {
+      "profileId": "__proto__",
+      "profileVersion": "1.0.0-alpha.1",
+      "expected": {
+        "problem": "UNSUPPORTED_PROFILE"
+      }
+    },
+    {
+      "profileId": "toString",
+      "profileVersion": "1.0.0-alpha.1",
+      "expected": {
+        "problem": "UNSUPPORTED_PROFILE"
+      }
+    },
+    {
+      "profileId": "hasOwnProperty",
+      "profileVersion": "1.0.0-alpha.1",
+      "expected": {
+        "problem": "UNSUPPORTED_PROFILE"
+      }
+    },
+    {
+      "profileId": "owasp-agentic-skills-2026",
+      "profileVersion": "constructor",
+      "expected": {
+        "problem": "UNSUPPORTED_PROFILE_VERSION"
+      }
+    },
+    {
+      "profileId": "owasp-agentic-skills-2026",
+      "profileVersion": "__proto__",
+      "expected": {
+        "problem": "UNSUPPORTED_PROFILE_VERSION"
+      }
+    },
+    {
+      "profileId": "owasp-agentic-skills-2026",
+      "profileVersion": "versions",
+      "expected": {
+        "problem": "UNSUPPORTED_PROFILE_VERSION"
+      }
+    }
+  ],
+  "baseAssessment": "assessment-schema.v4.json#/base",
+  "definitionCases": [
+    {
+      "name": "framework",
+      "patch": [
+        {
+          "op": "replace",
+          "path": "/profile/framework",
+          "value": "OTHER_FRAMEWORK"
+        },
+        {
+          "op": "replace",
+          "path": "/controls/0/framework",
+          "value": "OTHER_FRAMEWORK"
+        },
+        {
+          "op": "replace",
+          "path": "/controls/1/framework",
+          "value": "OTHER_FRAMEWORK"
+        },
+        {
+          "op": "replace",
+          "path": "/controls/2/framework",
+          "value": "OTHER_FRAMEWORK"
+        }
+      ],
+      "expected": {
+        "interpretation": "PROFILE_DEFINITION_MISMATCH",
+        "interpretationReason": "profile.framework"
+      }
+    },
+    {
+      "name": "upstream-repo",
+      "patch": [
+        {
+          "op": "replace",
+          "path": "/profile/upstreamRepo",
+          "value": "example/other-repo"
+        }
+      ],
+      "expected": {
+        "interpretation": "PROFILE_DEFINITION_MISMATCH",
+        "interpretationReason": "profile.upstream.repo"
+      }
+    },
+    {
+      "name": "upstream-commit",
+      "patch": [
+        {
+          "op": "replace",
+          "path": "/profile/upstreamCommit",
+          "value": "ffffffffffffffffffffffffffffffffffffffff"
+        }
+      ],
+      "expected": {
+        "interpretation": "PROFILE_DEFINITION_MISMATCH",
+        "interpretationReason": "profile.upstream.commit"
+      }
+    },
+    {
+      "name": "upstream-license",
+      "patch": [
+        {
+          "op": "replace",
+          "path": "/profile/upstreamLicense",
+          "value": "MIT"
+        }
+      ],
+      "expected": {
+        "interpretation": "PROFILE_DEFINITION_MISMATCH",
+        "interpretationReason": "profile.upstream.license"
+      }
+    },
+    {
+      "name": "upstream-status",
+      "patch": [
+        {
+          "op": "replace",
+          "path": "/profile/upstreamStatus",
+          "value": "final"
+        }
+      ],
+      "expected": {
+        "interpretation": "PROFILE_DEFINITION_MISMATCH",
+        "interpretationReason": "profile.upstream.status"
+      }
+    },
+    {
+      "name": "implemented-controls-subset",
+      "patch": [
+        {
+          "op": "replace",
+          "path": "/profile/implementedControls",
+          "value": [
+            "AST02",
+            "AST03"
+          ]
+        },
+        {
+          "op": "remove",
+          "path": "/controls/2"
+        },
+        {
+          "op": "replace",
+          "path": "/unmappedEvidenceIds",
+          "value": [
+            "ev-0003"
+          ]
+        }
+      ],
+      "expected": {
+        "interpretation": "PROFILE_DEFINITION_MISMATCH",
+        "interpretationReason": "profile.implemented-controls"
+      }
+    },
+    {
+      "name": "implemented-controls-reordered",
+      "patch": [
+        {
+          "op": "replace",
+          "path": "/profile/implementedControls",
+          "value": [
+            "AST03",
+            "AST02",
+            "AST04"
+          ]
+        },
+        {
+          "op": "swap",
+          "path": "/controls",
+          "i": 0,
+          "j": 1
+        }
+      ],
+      "expected": {
+        "interpretation": "PROFILE_DEFINITION_MISMATCH",
+        "interpretationReason": "profile.implemented-controls"
+      }
+    },
+    {
+      "name": "not-implemented-controls-missing-one",
+      "patch": [
+        {
+          "op": "remove",
+          "path": "/notImplementedControls/6"
+        }
+      ],
+      "expected": {
+        "interpretation": "PROFILE_DEFINITION_MISMATCH",
+        "interpretationReason": "profile.not-implemented-controls"
+      }
+    },
+    {
+      "name": "not-implemented-controls-reordered",
+      "patch": [
+        {
+          "op": "swap",
+          "path": "/notImplementedControls",
+          "i": 0,
+          "j": 1
+        }
+      ],
+      "expected": {
+        "interpretation": "PROFILE_DEFINITION_MISMATCH",
+        "interpretationReason": "profile.not-implemented-controls"
+      }
+    }
+  ],
+  "interpretationOrder": [
+    "UNSUPPORTED_SCHEMA",
+    "INVALID_ASSESSMENT",
+    "UNSUPPORTED_PROFILE",
+    "UNSUPPORTED_PROFILE_VERSION",
+    "PROFILE_DEFINITION_MISMATCH",
+    "SUPPORTED"
+  ]
+}

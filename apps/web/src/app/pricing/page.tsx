@@ -174,6 +174,7 @@ export default function PricingPage() {
         <div style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }} className="mt-10 rounded-3xl p-6 text-center shadow-xl shadow-black/5">
           <p style={{ color: 'var(--text-primary)' }} className="font-semibold">Pro is for remediation-ready reports</p>
           <p style={{ color: 'var(--text-muted)' }} className="mx-auto mt-2 max-w-2xl text-sm leading-6">Free includes 10 scans/month and basic findings. Pro adds 100 scans/month, full remediation, corrected code, A2SPA guidance, and PDF export.</p>
+          <p style={{ color: 'var(--text-muted)' }} className="mx-auto mt-2 max-w-2xl text-sm leading-6">An OWASP Agentic Skills assessment uses one scan from the same monthly quota, whether or not you ask for a signature.</p>
         </div>
       </section>
       <AuthModal open={authOpen} defaultMode="signIn" onClose={() => setAuthOpen(false)} />

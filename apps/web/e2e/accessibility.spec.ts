@@ -6,7 +6,7 @@ import AxeBuilder from '@axe-core/playwright'
 // not a substitute for manual keyboard/screen-reader testing, which this does not replace.
 // Runs both themes: the app picks light/dark from prefers-color-scheme on first load (see
 // apps/web/src/app/layout.tsx's inline theme script), so emulating colorScheme drives it.
-const pages = ['./', 'pricing/', 'docs/', 'report/demo/']
+const pages = ['./', 'pricing/', 'docs/', 'report/demo/', 'owasp-agentic-skills/', 'profile-attestation/']
 const themes = ['light', 'dark'] as const
 
 for (const theme of themes) {

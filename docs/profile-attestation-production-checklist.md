@@ -67,6 +67,9 @@ absent private key) refuse rather than assume a value.
    no `d` member anywhere in the response, and that a real `attest: true` request now returns 200 with a
    signed `attestation` whose `publicKey`/`keyId` match what was published in step 4.
 
+Replacing the key later, or responding to a suspected compromise, is covered in
+[profile-attestation-key-rotation.md](profile-attestation-key-rotation.md).
+
 ## What this interim setup does and does not provide
 
 Once the steps above are complete, a third party can: retrieve the published key independently (step 4),

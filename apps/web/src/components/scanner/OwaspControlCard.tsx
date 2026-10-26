@@ -112,7 +112,7 @@ function ImplementedControlCard({ row, allEvidence }: { row: Extract<ControlRow,
 function NotAssessedControlCard({ row }: { row: Extract<ControlRow, { implemented: false }> }) {
   const style = STATUS_STYLE.NOT_ASSESSED
   return (
-    <div style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)' }} className={`w-full rounded-xl border border-l-2 p-5 opacity-80 ${style.badgeBorder}`}>
+    <div style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)' }} className={`w-full rounded-xl border border-l-2 p-5 ${style.badgeBorder}`}>
       <div className="flex flex-wrap items-center gap-2">
         <span style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }} className="rounded px-1.5 py-0.5 font-mono text-xs font-semibold">
           {row.id}

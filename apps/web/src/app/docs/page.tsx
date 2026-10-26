@@ -135,6 +135,7 @@ agentverify --version`}</CodeBlock>
                 <li><code>--markdown</code> &mdash; Markdown summary, useful for PR comments</li>
                 <li><code>--ci</code> &mdash; concise output with strict exit codes</li>
                 <li><code>--allow-not-assessed</code> &mdash; in CI mode, do not fail solely because content is <code>NOT_ASSESSED</code></li>
+                <li><code>--profile &lt;id&gt;</code> &mdash; assess a skill directory against an assessment profile instead of running the standard scan; see <a href="#owasp-profile" className="underline">OWASP Agentic Skills Profile</a></li>
               </ul>
               <p>CI exit codes:</p>
               <table className="w-full border-collapse text-xs">

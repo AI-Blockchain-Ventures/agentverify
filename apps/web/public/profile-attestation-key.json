@@ -1,0 +1,12 @@
+{
+  "issuer": "agentverify-profile-prod",
+  "keyId": "eIO7_uhceQOQ0FDx5bGCODcYEUPkbSgAcuXczunT1QA",
+  "publicKey": {
+    "kty": "EC",
+    "crv": "P-256",
+    "x": "VXPfI3NT991D1bcsM_2qFlQQ6exNcAvg64ls03VvoEA",
+    "y": "ipymtcwB_-j_ZdDw34A47IgxUg5N4rasS8qHvHGxXL4"
+  },
+  "algorithm": "ECDSA-P256-SHA256",
+  "purpose": "agentverify-profile-v1"
+}

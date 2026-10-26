@@ -6,10 +6,11 @@
     "dev": "next dev",
     "build": "next build",
     "export": "node scripts/export.mjs",
+    "verify:deploy": "node scripts/verify-web-deploy.mjs",
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
-    "test:unit": "node test/comparisonAndGrouping.test.mjs && node test/firebaseConfigGuard.test.mjs && node test/billingNavigation.test.mjs && node test/complianceMapping.test.mjs && node test/sixViewContract.test.mjs && node test/conformanceLegacy.test.mjs && node test/owaspProfile.test.mjs",
+    "test:unit": "node test/comparisonAndGrouping.test.mjs && node test/firebaseConfigGuard.test.mjs && node test/billingNavigation.test.mjs && node test/complianceMapping.test.mjs && node test/sixViewContract.test.mjs && node test/conformanceLegacy.test.mjs && node test/owaspProfile.test.mjs && node test/siteContent.test.mjs",
     "test:e2e": "playwright test"
   },
   "dependencies": {

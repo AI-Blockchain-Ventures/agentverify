@@ -8,6 +8,7 @@ import { PublicScanDemo } from '@/components/home/PublicScanDemo'
 import { ProblemSection } from '@/components/home/ProblemSection'
 import { WhyAgentVerify } from '@/components/home/WhyAgentVerify'
 import { CategorySection } from '@/components/home/CategorySection'
+import { OwaspProfileSection } from '@/components/home/OwaspProfileSection'
 import { HowItWorks } from '@/components/home/HowItWorks'
 import { WhatYouGet } from '@/components/home/WhatYouGet'
 import { SecurityControls } from '@/components/home/SecurityControls'
@@ -44,6 +45,7 @@ export default function Home() {
       <ProblemSection />
       <WhyAgentVerify />
       <CategorySection />
+      <OwaspProfileSection />
       <HowItWorks />
       <WhatYouGet />
       <SecurityControls />

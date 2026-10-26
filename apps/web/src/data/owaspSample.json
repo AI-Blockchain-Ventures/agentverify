@@ -1,0 +1,668 @@
+{
+  "skillFiles": [
+    {
+      "path": "SKILL.md",
+      "content": "---\nname: expense-approver\ndescription: Reviews expense reports and submits approved ones to the finance system.\nversion: 1.2.0\nauthor: Example Finance Tools\nlicense: MIT\ntools:\n  - shell_exec\n  - http_request\npermissions:\n  - filesystem:write\n  - network:external\n---\n\n# Expense Approver\n\nReads an expense report, checks each line item against policy, and submits the approved report to the finance API.\n\n## Instructions\n\n1. Read the report from the path the user provides.\n2. Validate each line item against the expense policy.\n3. POST the approved report to the finance API.\n"
+    },
+    {
+      "path": "package.json",
+      "content": "{\n  \"name\": \"expense-approver\",\n  \"version\": \"1.2.0\",\n  \"dependencies\": {\n    \"requests\": \"^2.25.0\",\n    \"finance-sdk\": \"latest\"\n  },\n  \"scripts\": {\n    \"postinstall\": \"node scripts/setup.js\"\n  }\n}"
+    }
+  ],
+  "assessment": {
+    "schemaVersion": "1.1.0",
+    "profile": {
+      "profileId": "owasp-agentic-skills-2026",
+      "framework": "OWASP_AGENTIC_SKILLS_TOP_10",
+      "upstreamRepo": "OWASP/www-project-agentic-skills-top-10",
+      "upstreamCommit": "d6f7d7d0de314f52a83a85d1828e06ab096e595c",
+      "upstreamStatus": "public-review",
+      "upstreamLicense": "CC-BY-SA-4.0",
+      "agentverifyProfileVersion": "1.0.0-alpha.1",
+      "implementedControls": [
+        "AST02",
+        "AST03",
+        "AST04"
+      ],
+      "scannerVersion": "1.4.0",
+      "assessmentEngineVersion": "1.0.1",
+      "riskRubricVersion": "1.0.0",
+      "keyAllowlistVersion": "1.0.0",
+      "normalizationVersion": "1.0.0"
+    },
+    "controls": [
+      {
+        "framework": "OWASP_AGENTIC_SKILLS_TOP_10",
+        "controlId": "AST02",
+        "title": "Supply Chain Compromise",
+        "upstreamSeverity": "Critical",
+        "status": "GAP_IDENTIFIED",
+        "confidence": "high",
+        "explanation": "2 of 7 checks show a gap.",
+        "checks": [
+          {
+            "checkId": "2.1",
+            "title": "Publisher identity verified against a code-signing key",
+            "status": "NOT_ASSESSED",
+            "confidence": "low",
+            "provenance": [],
+            "supportingEvidenceIds": [],
+            "explanation": "Verifying a publisher needs an external trust anchor (a signing key or verified organization identity that Agent Verify has been told to trust); nothing inside a package can establish it."
+          },
+          {
+            "checkId": "2.2",
+            "title": "Skill version pinned to an immutable content hash bound to its distribution record",
+            "status": "NOT_ASSESSED",
+            "confidence": "low",
+            "provenance": [],
+            "supportingEvidenceIds": [],
+            "explanation": "This needs an immutable hash tied to the skill's distribution or registry record, which Agent Verify does not have. Agent Verify computed its own package identity (avpkg-sha256:422bf4c622d647475f45b1fa65a79690d588b584c97ea54fec65a66a2b56eb81) for this scan. That proves what Agent Verify received, not that it matches a registry record, so it is deliberately not counted here."
+          },
+          {
+            "checkId": "2.3",
+            "title": "Dependencies pinned to immutable hashes, not ranges, sources or unlocked trees",
+            "status": "GAP_IDENTIFIED",
+            "confidence": "high",
+            "provenance": [
+              "STATICALLY_OBSERVED",
+              "DECLARED"
+            ],
+            "supportingEvidenceIds": [
+              "deps.lockfile_absent@package.json",
+              "deps.unpinned_range@package.json"
+            ],
+            "explanation": "package.json declares 2 dependencies but no lockfile sits beside it, so nested dependencies are not pinned. (1 more gap for this check)"
+          },
+          {
+            "checkId": "2.4",
+            "title": "SBOM available in a standard format",
+            "status": "NOT_ASSESSED",
+            "confidence": "low",
+            "provenance": [],
+            "supportingEvidenceIds": [],
+            "explanation": "No SBOM file was found in the package. One may exist outside the package, so its absence is not treated as a gap."
+          },
+          {
+            "checkId": "2.5",
+            "title": "Executable repository configuration treated as code with trust gates",
+            "status": "GAP_IDENTIFIED",
+            "confidence": "high",
+            "provenance": [
+              "STATICALLY_OBSERVED"
+            ],
+            "supportingEvidenceIds": [
+              "exec.install_time_script@package.json#scripts.postinstall"
+            ],
+            "explanation": "package.json defines a postinstall script, which runs automatically when the package is installed."
+          },
+          {
+            "checkId": "2.6",
+            "title": "Recursive dependency tree scanned, not just top-level files",
+            "status": "NOT_ASSESSED",
+            "confidence": "low",
+            "provenance": [],
+            "supportingEvidenceIds": [],
+            "explanation": "A recursive scan needs a deep-scan report covering transitive dependencies; none was supplied. Where a lockfile lists the transitive packages that inventory is noted as context, but an inventory is not a scan."
+          },
+          {
+            "checkId": "2.7",
+            "title": "Installer emits a reviewable pre-mutation receipt",
+            "status": "NOT_ASSESSED",
+            "confidence": "low",
+            "provenance": [],
+            "supportingEvidenceIds": [],
+            "explanation": "Pre-mutation receipts are a property of the installer that installs the skill, not of the skill package."
+          }
+        ],
+        "coverage": {
+          "evidenceObserved": 0,
+          "gapIdentified": 2,
+          "notAssessed": 5,
+          "total": 7
+        }
+      },
+      {
+        "framework": "OWASP_AGENTIC_SKILLS_TOP_10",
+        "controlId": "AST03",
+        "title": "Over-Privileged Skills",
+        "upstreamSeverity": "High",
+        "status": "GAP_IDENTIFIED",
+        "confidence": "high",
+        "explanation": "1 of 8 checks show a gap.",
+        "checks": [
+          {
+            "checkId": "3.1",
+            "title": "Skill declares an explicit, enumerated permission manifest",
+            "status": "GAP_IDENTIFIED",
+            "confidence": "high",
+            "provenance": [
+              "STATICALLY_OBSERVED"
+            ],
+            "supportingEvidenceIds": [
+              "permissions.manifest_absent@SKILL.md"
+            ],
+            "explanation": "SKILL.md parsed successfully but declares no permissions (no `permissions` block and no allowed-tools list)."
+          },
+          {
+            "checkId": "3.2",
+            "title": "Declared permissions are minimal relative to observable need",
+            "status": "NOT_ASSESSED",
+            "confidence": "low",
+            "provenance": [
+              "STATICALLY_OBSERVED"
+            ],
+            "supportingEvidenceIds": [
+              "shell.consistent@SKILL.md#permissions",
+              "filesystem.consistent@SKILL.md#permissions.files.read"
+            ],
+            "explanation": "Needs consistent declared-versus-observed evidence for network, shell and filesystem access; at least one of those axes was not established. Established so far: shell, filesystem."
+          },
+          {
+            "checkId": "3.3",
+            "title": "Shell access is absent or scoped to specific commands",
+            "status": "EVIDENCE_OBSERVED",
+            "confidence": "medium",
+            "provenance": [
+              "STATICALLY_OBSERVED"
+            ],
+            "supportingEvidenceIds": [
+              "shell.consistent@SKILL.md#permissions"
+            ],
+            "explanation": "No shell access is declared and no command execution was found in the scanned files."
+          },
+          {
+            "checkId": "3.4",
+            "title": "File access is scoped to specific paths, not broad globs",
+            "status": "EVIDENCE_OBSERVED",
+            "confidence": "medium",
+            "provenance": [
+              "STATICALLY_OBSERVED"
+            ],
+            "supportingEvidenceIds": [
+              "filesystem.consistent@SKILL.md#permissions.files.read"
+            ],
+            "explanation": "File access is either scoped to declared paths or absent, and no scanned file reads or writes outside that scope."
+          },
+          {
+            "checkId": "3.5",
+            "title": "Credentials are scoped per skill rather than shared agent-level keys",
+            "status": "NOT_ASSESSED",
+            "confidence": "low",
+            "provenance": [],
+            "supportingEvidenceIds": [],
+            "explanation": "Per-skill credential scoping is a property of how the skill is deployed and provisioned; it cannot be determined from the package contents."
+          },
+          {
+            "checkId": "3.6",
+            "title": "Writes to agent identity files are absent or flagged for review",
+            "status": "EVIDENCE_OBSERVED",
+            "confidence": "medium",
+            "provenance": [
+              "STATICALLY_OBSERVED"
+            ],
+            "supportingEvidenceIds": [
+              "filesystem.identity_files_untouched@package"
+            ],
+            "explanation": "No write to SOUL.md, MEMORY.md or AGENTS.md is declared, and none was found in the scanned files."
+          },
+          {
+            "checkId": "3.7",
+            "title": "Network access is a domain allowlist with default deny",
+            "status": "NOT_ASSESSED",
+            "confidence": "low",
+            "provenance": [],
+            "supportingEvidenceIds": [],
+            "explanation": "No scanned code or instructions were available to check network use against the declaration."
+          },
+          {
+            "checkId": "3.8",
+            "title": "No credential-store access beyond the skill's stated function",
+            "status": "EVIDENCE_OBSERVED",
+            "confidence": "medium",
+            "provenance": [
+              "STATICALLY_OBSERVED"
+            ],
+            "supportingEvidenceIds": [
+              "filesystem.no_sensitive_path_access@package"
+            ],
+            "explanation": "No reference to a common credential location (dotenv, SSH, cloud CLI, wallet, browser data, system secrets) was found in the scanned files or declared paths."
+          }
+        ],
+        "coverage": {
+          "evidenceObserved": 4,
+          "gapIdentified": 1,
+          "notAssessed": 3,
+          "total": 8
+        }
+      },
+      {
+        "framework": "OWASP_AGENTIC_SKILLS_TOP_10",
+        "controlId": "AST04",
+        "title": "Insecure Metadata",
+        "upstreamSeverity": "High",
+        "status": "GAP_IDENTIFIED",
+        "confidence": "high",
+        "explanation": "1 of 12 checks show a gap.",
+        "checks": [
+          {
+            "checkId": "4.1",
+            "title": "Description accurately and completely reflects actual functionality",
+            "status": "NOT_ASSESSED",
+            "confidence": "low",
+            "provenance": [],
+            "supportingEvidenceIds": [],
+            "explanation": "Whether a description is accurate and complete cannot be affirmed from a package. Only explicit contradictions with declared or observed behaviour can be detected, and none was found. Omission is not treated as deception."
+          },
+          {
+            "checkId": "4.2",
+            "title": "Metadata and instructions scanned for hidden or encoded content",
+            "status": "EVIDENCE_OBSERVED",
+            "confidence": "medium",
+            "provenance": [
+              "STATICALLY_OBSERVED"
+            ],
+            "supportingEvidenceIds": [
+              "metadata.no_hidden_content@package"
+            ],
+            "explanation": "No hidden or invisible Unicode, control characters, mixed-script words, decodable encoded strings, or decode-and-execute instructions were found in 2 metadata and instruction files. This is scoped to those files and patterns."
+          },
+          {
+            "checkId": "4.3",
+            "title": "Defaults are secure: dangerous capabilities need an explicit manifest opt-in",
+            "status": "NOT_ASSESSED",
+            "confidence": "low",
+            "provenance": [],
+            "supportingEvidenceIds": [],
+            "explanation": "Whether a loader defaults to permissive access is a property of the runtime. Only use of a dangerous capability with no explicit declaration can be detected here, and none was found."
+          },
+          {
+            "checkId": "4.4",
+            "title": "Metadata validated against a security schema, with no unexpected fields",
+            "status": "GAP_IDENTIFIED",
+            "confidence": "high",
+            "provenance": [
+              "STATICALLY_OBSERVED"
+            ],
+            "supportingEvidenceIds": [
+              "metadata.type_mismatch@SKILL.md"
+            ],
+            "explanation": "SKILL.md has known fields with the wrong type (permissions is not a mapping). Agent Verify ignored them rather than guess, but a looser loader might read them differently."
+          },
+          {
+            "checkId": "4.5",
+            "title": "Declared risk tier consistent with the actual permission scope",
+            "status": "NOT_ASSESSED",
+            "confidence": "low",
+            "provenance": [],
+            "supportingEvidenceIds": [],
+            "explanation": "No recognizable risk_tier declaration was available to compare with capabilities. A missing or unrecognized tier is unverifiable, not misleading."
+          },
+          {
+            "checkId": "4.6",
+            "title": "Skill name does not impersonate a known brand",
+            "status": "NOT_ASSESSED",
+            "confidence": "low",
+            "provenance": [],
+            "supportingEvidenceIds": [],
+            "explanation": "Brand impersonation cannot be verified from a package: Agent Verify has no authoritative brand registry, and a name containing a brand is not evidence of misrepresentation. Only mixed-script (homoglyph) names are detected as deceptive."
+          },
+          {
+            "checkId": "4.7",
+            "title": "YAML files contain no unsafe tags",
+            "status": "EVIDENCE_OBSERVED",
+            "confidence": "medium",
+            "provenance": [
+              "STATICALLY_OBSERVED"
+            ],
+            "supportingEvidenceIds": [
+              "metadata.yaml_no_unsafe_tags@package"
+            ],
+            "explanation": "No explicit YAML tags were found in 1 YAML documents (frontmatter and YAML files). This is a property of the files; whether a given loader parses them safely is not assessed."
+          },
+          {
+            "checkId": "4.8",
+            "title": "Skill configuration parsed in an isolated context",
+            "status": "NOT_ASSESSED",
+            "confidence": "low",
+            "provenance": [],
+            "supportingEvidenceIds": [],
+            "explanation": "Whether configuration is parsed in a sandbox is a property of the skill loader, not of the package."
+          },
+          {
+            "checkId": "4.9",
+            "title": "Allowlist of permitted keys enforced",
+            "status": "NOT_ASSESSED",
+            "confidence": "low",
+            "provenance": [
+              "STATICALLY_OBSERVED"
+            ],
+            "supportingEvidenceIds": [
+              "metadata.unexpected_keys@SKILL.md"
+            ],
+            "explanation": "SKILL.md has top-level keys outside Agent Verify's key allowlist v1.0.0 (tools). They may be legitimate platform fields; their meaning cannot be judged from the package."
+          },
+          {
+            "checkId": "4.10",
+            "title": "Dependency files treated as untrusted code, with sandboxed installation",
+            "status": "NOT_ASSESSED",
+            "confidence": "low",
+            "provenance": [],
+            "supportingEvidenceIds": [],
+            "explanation": "Whether installation is sandboxed is a property of the installer. Install-time scripts and dependency sources found in the package are reported under the supply-chain control."
+          },
+          {
+            "checkId": "4.11",
+            "title": "Schema validation applied before deserialization",
+            "status": "NOT_ASSESSED",
+            "confidence": "low",
+            "provenance": [],
+            "supportingEvidenceIds": [],
+            "explanation": "Validation ahead of deserialization is a property of the skill loader pipeline."
+          },
+          {
+            "checkId": "4.12",
+            "title": "Deserialization runs with minimum privileges",
+            "status": "NOT_ASSESSED",
+            "confidence": "low",
+            "provenance": [],
+            "supportingEvidenceIds": [],
+            "explanation": "The privileges a loader deserializes with are a property of the loader."
+          }
+        ],
+        "coverage": {
+          "evidenceObserved": 2,
+          "gapIdentified": 1,
+          "notAssessed": 9,
+          "total": 12
+        }
+      }
+    ],
+    "notImplementedControls": [
+      "AST01",
+      "AST05",
+      "AST06",
+      "AST07",
+      "AST08",
+      "AST09",
+      "AST10"
+    ],
+    "evidence": [
+      {
+        "kind": "permissions.manifest_absent",
+        "axis": "manifest",
+        "polarity": "gap",
+        "severity": "medium",
+        "confidence": "high",
+        "provenance": [
+          "STATICALLY_OBSERVED"
+        ],
+        "summary": "SKILL.md parsed successfully but declares no permissions (no `permissions` block and no allowed-tools list).",
+        "expected": "An explicit, enumerated permissions declaration.",
+        "remediation": "Add a permissions block that lists the files, network hosts, shell commands and tools the skill needs.",
+        "locations": [
+          {
+            "file": "SKILL.md"
+          }
+        ],
+        "facts": {},
+        "id": "permissions.manifest_absent@SKILL.md"
+      },
+      {
+        "kind": "shell.consistent",
+        "axis": "shell",
+        "polarity": "positive",
+        "severity": "low",
+        "confidence": "medium",
+        "provenance": [
+          "STATICALLY_OBSERVED"
+        ],
+        "summary": "No shell access is declared and no command execution was found in the scanned files.",
+        "expected": "No shell access without a declared scope.",
+        "remediation": "None needed.",
+        "locations": [
+          {
+            "file": "SKILL.md",
+            "keyPath": "permissions"
+          }
+        ],
+        "facts": {
+          "form": "none_declared"
+        },
+        "id": "shell.consistent@SKILL.md#permissions"
+      },
+      {
+        "kind": "filesystem.consistent",
+        "axis": "filesystem",
+        "polarity": "positive",
+        "severity": "low",
+        "confidence": "medium",
+        "provenance": [
+          "STATICALLY_OBSERVED"
+        ],
+        "summary": "File access is either scoped to declared paths or absent, and no scanned file reads or writes outside that scope.",
+        "expected": "Scoped file permissions.",
+        "remediation": "None needed.",
+        "locations": [
+          {
+            "file": "SKILL.md",
+            "keyPath": "permissions.files.read"
+          }
+        ],
+        "facts": {
+          "readPaths": [],
+          "writePaths": []
+        },
+        "id": "filesystem.consistent@SKILL.md#permissions.files.read"
+      },
+      {
+        "kind": "filesystem.no_sensitive_path_access",
+        "axis": "sensitive",
+        "polarity": "positive",
+        "severity": "low",
+        "confidence": "medium",
+        "provenance": [
+          "STATICALLY_OBSERVED"
+        ],
+        "summary": "No reference to a common credential location (dotenv, SSH, cloud CLI, wallet, browser data, system secrets) was found in the scanned files or declared paths.",
+        "expected": "No credential-store access beyond stated function.",
+        "remediation": "None needed.",
+        "locations": [],
+        "facts": {
+          "scannedFiles": 1
+        },
+        "id": "filesystem.no_sensitive_path_access@package"
+      },
+      {
+        "kind": "filesystem.identity_files_untouched",
+        "axis": "identity",
+        "polarity": "positive",
+        "severity": "low",
+        "confidence": "medium",
+        "provenance": [
+          "STATICALLY_OBSERVED"
+        ],
+        "summary": "No write to SOUL.md, MEMORY.md or AGENTS.md is declared, and none was found in the scanned files.",
+        "expected": "No identity-file writes.",
+        "remediation": "None needed.",
+        "locations": [],
+        "facts": {
+          "scannedFiles": 1
+        },
+        "id": "filesystem.identity_files_untouched@package"
+      },
+      {
+        "kind": "deps.lockfile_absent",
+        "axis": "lockfile",
+        "polarity": "gap",
+        "severity": "medium",
+        "confidence": "high",
+        "summary": "package.json declares 2 dependencies but no lockfile sits beside it, so nested dependencies are not pinned.",
+        "expected": "A lockfile with integrity hashes committed alongside the manifest.",
+        "remediation": "Generate and include package-lock.json (or the equivalent) with integrity values.",
+        "locations": [
+          {
+            "file": "package.json"
+          }
+        ],
+        "facts": {
+          "dependencyCount": 2,
+          "rangedCount": 2
+        },
+        "provenance": [
+          "STATICALLY_OBSERVED"
+        ],
+        "id": "deps.lockfile_absent@package.json"
+      },
+      {
+        "kind": "deps.unpinned_range",
+        "axis": "dependencies",
+        "polarity": "gap",
+        "severity": "medium",
+        "confidence": "high",
+        "provenance": [
+          "STATICALLY_OBSERVED",
+          "DECLARED"
+        ],
+        "summary": "2 dependencies use version ranges or floating tags (requests@^2.25.0, finance-sdk@latest) and no integrity-bearing lockfile resolves them, so the installed code can change without any edit to the package.",
+        "expected": "Exact versions with a hash-bearing lockfile.",
+        "remediation": "Pin exact versions and commit a lockfile with integrity hashes.",
+        "locations": [
+          {
+            "file": "package.json"
+          }
+        ],
+        "facts": {
+          "ranged": [
+            "requests@^2.25.0",
+            "finance-sdk@latest"
+          ]
+        },
+        "id": "deps.unpinned_range@package.json"
+      },
+      {
+        "kind": "exec.install_time_script",
+        "axis": "execution-config",
+        "polarity": "gap",
+        "severity": "medium",
+        "confidence": "high",
+        "summary": "package.json defines a postinstall script, which runs automatically when the package is installed.",
+        "expected": "No dependency-time execution, or scripts that are reviewed and fixed.",
+        "remediation": "Remove the lifecycle script, or make it a fixed local command and review it.",
+        "locations": [
+          {
+            "file": "package.json",
+            "keyPath": "scripts.postinstall"
+          }
+        ],
+        "facts": {
+          "script": "postinstall",
+          "fetchesRemote": false,
+          "pipesToShell": false
+        },
+        "provenance": [
+          "STATICALLY_OBSERVED"
+        ],
+        "id": "exec.install_time_script@package.json#scripts.postinstall"
+      },
+      {
+        "kind": "metadata.no_hidden_content",
+        "polarity": "positive",
+        "severity": "low",
+        "confidence": "medium",
+        "summary": "No hidden or invisible Unicode, control characters, mixed-script words, decodable encoded strings, or decode-and-execute instructions were found in 2 metadata and instruction files. This is scoped to those files and patterns.",
+        "expected": "Plain, reviewable metadata.",
+        "remediation": "None needed.",
+        "locations": [],
+        "facts": {
+          "filesScanned": 2
+        },
+        "axis": "metadata",
+        "provenance": [
+          "STATICALLY_OBSERVED"
+        ],
+        "id": "metadata.no_hidden_content@package"
+      },
+      {
+        "kind": "metadata.yaml_no_unsafe_tags",
+        "polarity": "positive",
+        "severity": "low",
+        "confidence": "medium",
+        "summary": "No explicit YAML tags were found in 1 YAML documents (frontmatter and YAML files). This is a property of the files; whether a given loader parses them safely is not assessed.",
+        "expected": "YAML without tags.",
+        "remediation": "None needed.",
+        "locations": [],
+        "facts": {
+          "documents": 1
+        },
+        "axis": "metadata",
+        "provenance": [
+          "STATICALLY_OBSERVED"
+        ],
+        "id": "metadata.yaml_no_unsafe_tags@package"
+      },
+      {
+        "kind": "metadata.unexpected_keys",
+        "polarity": "context",
+        "severity": "low",
+        "confidence": "medium",
+        "summary": "SKILL.md has top-level keys outside Agent Verify's key allowlist v1.0.0 (tools). They may be legitimate platform fields; their meaning cannot be judged from the package.",
+        "expected": "Only documented metadata keys.",
+        "remediation": "Remove keys the target platform does not define.",
+        "locations": [
+          {
+            "file": "SKILL.md"
+          }
+        ],
+        "facts": {
+          "unexpected": [
+            "tools"
+          ],
+          "allowlistVersion": "1.0.0"
+        },
+        "axis": "metadata",
+        "provenance": [
+          "STATICALLY_OBSERVED"
+        ],
+        "id": "metadata.unexpected_keys@SKILL.md"
+      },
+      {
+        "kind": "metadata.type_mismatch",
+        "polarity": "gap",
+        "severity": "low",
+        "confidence": "high",
+        "summary": "SKILL.md has known fields with the wrong type (permissions is not a mapping). Agent Verify ignored them rather than guess, but a looser loader might read them differently.",
+        "expected": "Fields with the types the format defines.",
+        "remediation": "Correct the field types.",
+        "locations": [
+          {
+            "file": "SKILL.md"
+          }
+        ],
+        "facts": {
+          "issues": [
+            "permissions is not a mapping; not extracted"
+          ]
+        },
+        "axis": "metadata",
+        "provenance": [
+          "STATICALLY_OBSERVED"
+        ],
+        "id": "metadata.type_mismatch@SKILL.md"
+      }
+    ],
+    "unmappedEvidenceIds": [],
+    "package": {
+      "digest": "avpkg-sha256:422bf4c622d647475f45b1fa65a79690d588b584c97ea54fec65a66a2b56eb81",
+      "fileCount": 2,
+      "manifestFiles": [
+        "SKILL.md",
+        "package.json"
+      ]
+    },
+    "notes": [
+      "Assessed against the OWASP Agentic Skills Top 10 (CC-BY-SA-4.0) at the pinned upstream commit. Not an OWASP certification or endorsement.",
+      "Only AST02, AST03 and AST04 are implemented in this profile version; every other control is not assessed, which is not a pass.",
+      "Declared metadata is context, not proof; findings compare declarations with observed package behaviour."
+    ]
+  }
+}

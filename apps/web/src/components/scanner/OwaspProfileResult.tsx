@@ -11,7 +11,8 @@ import { copyToClipboard } from '@/lib/clipboard'
 
 interface OwaspProfileResultProps {
   response: ProfileAssessmentResponse
-  onNewAssessment: () => void
+  /** Omitted for the read-only public sample, which has no form to return to; the button is then not rendered. */
+  onNewAssessment?: () => void
   /** Testability only (default false, matching the real product default: technical details start collapsed —
    * requirement 12). Static server rendering cannot simulate the "expand" click a real visitor makes, so tests
    * that need to assert on the collapsed content's presence pass this rather than changing the shipped default. */
@@ -33,6 +34,8 @@ export function OwaspProfileResult({ response, onNewAssessment, initiallyShowDet
 
   const gapCount = assessment.controls.filter(c => c.status === 'GAP_IDENTIFIED').length
   const observedCount = assessment.controls.filter(c => c.status === 'EVIDENCE_OBSERVED').length
+  // The three counts always add up to the ten controls: unimplemented controls plus any implemented control whose own status is NOT_ASSESSED.
+  const notAssessedCount = 10 - gapCount - observedCount
 
   const exportBundle = attestation
     ? { bundleVersion: response.bundleVersion ?? '1.0.0', attestation, assessment }
@@ -64,15 +67,17 @@ export function OwaspProfileResult({ response, onNewAssessment, initiallyShowDet
             <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[color:var(--accent-purple-text)]">OWASP profile assessment</p>
             <h1 style={{ color: 'var(--text-primary)' }} className="mt-2 text-2xl font-semibold tracking-tight">OWASP Agentic Skills Top 10</h1>
           </div>
-          <button onClick={onNewAssessment} style={{ border: '1px solid var(--border)', color: 'var(--text-primary)' }} className="no-print rounded-xl px-3.5 py-2 text-xs font-semibold hover:opacity-70">
-            New assessment
-          </button>
+          {onNewAssessment && (
+            <button onClick={onNewAssessment} style={{ border: '1px solid var(--border)', color: 'var(--text-primary)' }} className="no-print rounded-xl px-3.5 py-2 text-xs font-semibold hover:opacity-70">
+              New assessment
+            </button>
+          )}
         </div>
 
         <div className="mt-5 flex flex-wrap gap-2">
-          <SummaryStat label="Assessed" value={String(observedCount)} tone="green" />
+          <SummaryStat label="Evidence observed" value={String(observedCount)} tone="green" />
           <SummaryStat label="Gaps identified" value={String(gapCount)} tone={gapCount > 0 ? 'red' : 'muted'} />
-          <SummaryStat label="Not assessed" value={String(10 - assessment.controls.length)} tone="muted" />
+          <SummaryStat label="Not assessed" value={String(notAssessedCount)} tone="muted" />
           <div className={`flex items-center gap-2 rounded-2xl border px-4 py-2.5 ${attestation ? 'border-[#00B37E]/25 bg-[#00B37E]/10' : 'border-[var(--border)] bg-[var(--surface)]'}`}>
             <span className={`h-2 w-2 rounded-full ${attestation ? 'bg-[#00B37E]' : 'bg-[var(--text-muted)]'}`} aria-hidden />
             <span style={{ color: attestation ? undefined : 'var(--text-secondary)' }} className={`text-xs font-semibold ${attestation ? 'text-[color:var(--accent-green-text)]' : ''}`}>

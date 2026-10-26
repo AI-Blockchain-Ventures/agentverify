@@ -12,6 +12,8 @@ export function Footer() {
           <Link className="transition-opacity hover:opacity-70" href="/agentspoofed">Live Demo</Link>
           <Link className="transition-opacity hover:opacity-70" href="/docs">Docs</Link>
           <Link className="transition-opacity hover:opacity-70" href="/pricing">Pricing</Link>
+          <Link className="transition-opacity hover:opacity-70" href="/owasp-agentic-skills">OWASP Profile</Link>
+          <Link className="transition-opacity hover:opacity-70" href="/profile-attestation">Signing Key</Link>
           <Link className="transition-opacity hover:opacity-70" href="/privacy">Privacy</Link>
           <Link className="transition-opacity hover:opacity-70" href="/terms">Terms</Link>
           <a className="transition-opacity hover:opacity-70" href="https://github.com/AI-Blockchain-Ventures/agentverify" target="_blank" rel="noreferrer">GitHub</a>

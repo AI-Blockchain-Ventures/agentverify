@@ -100,6 +100,21 @@
 
 ---
 
+## ✅ v1.5.0 — OWASP Agentic Skills Assessment and Signed Attestations (Shipped)
+
+**OWASP Agentic Skills Top 10 profile (`owasp-agentic-skills-2026`, alpha mapping `1.0.0-alpha.1`)**
+- Evidence-based assessment of AST02 (Supply Chain Compromise), AST03 (Over-Privileged Skills), and
+  AST04 (Insecure Metadata); AST01 and AST05–AST10 always reported as not assessed
+- Three statuses — evidence observed, gap identified, not assessed — never a pass/fail
+- Available in the dashboard, the CLI (`--profile`), and the API; one scan from the monthly quota,
+  signed or unsigned
+
+**Signed profile attestations**
+- Optional ECDSA P-256 signature over the exact assessment, verifiable against a signing key published
+  independently of the API
+
+---
+
 ## v2.0.0 — Enterprise
 
 **Enterprise Dashboard**

@@ -134,6 +134,9 @@ console.log('✓ all ten AST controls are represented')
   assert.equal(notAssessedCount, 9, `expected 9 "Not assessed" occurrences (7 unimplemented + AST04's status + the summary stat label), got ${notAssessedCount}`)
   assert.match(signed, /Gap identified/, 'AST03\'s GAP_IDENTIFIED status must render')
   assert.match(signed, /Evidence observed/, 'AST02\'s EVIDENCE_OBSERVED status must render')
+  // The summary counts always add up to the ten controls: 1 observed (AST02) + 1 gap (AST03) + 8 not assessed (AST04 and the 7 unimplemented).
+  const stat = label => Number(new RegExp(`font-semibold">(\\d+)</span><span[^>]*>${label}</span>`).exec(signed)?.[1])
+  assert.deepEqual([stat('Evidence observed'), stat('Gaps identified'), stat('Not assessed')], [1, 1, 8], 'summary stats are labelled with the exact statuses and sum to ten')
 }
 console.log('✓ only AST02/03/04 can show assessed results; the other seven are always NOT_ASSESSED')
 

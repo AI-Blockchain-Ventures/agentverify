@@ -23,6 +23,7 @@ const nav = [
   { id: 'workspaces', label: 'Workspaces' },
   { id: 'webhooks', label: 'Webhooks' },
   { id: 'api', label: 'API' },
+  { id: 'owasp-profile', label: 'OWASP Agentic Skills Profile' },
   { id: 'ci-cd', label: 'CI/CD & GitHub Actions' },
   { id: 'scan-results', label: 'Scan Results' },
   { id: 'security-score', label: 'Security Score' },
@@ -287,6 +288,51 @@ Content-Type: application/json
               <p>The Worker also serves a live SVG badge at <code>GET /v1/badge/:reportId</code> for saved reports, and the billing endpoints used by the dashboard (<code>/v1/billing/status</code>, <code>/checkout</code>, <code>/portal</code>) which require a signed-in Firebase session, not an API key.</p>
             </Section>
 
+            <Section id="owasp-profile" title="OWASP Agentic Skills Profile">
+              <p>Assess an agent skill package against the OWASP Agentic Skills Top 10. Profile <code>owasp-agentic-skills-2026</code> implements three controls &mdash; <strong>AST02</strong> Supply Chain Compromise, <strong>AST03</strong> Over-Privileged Skills, and <strong>AST04</strong> Insecure Metadata. AST01 and AST05&ndash;AST10 are always returned as <code>NOT_ASSESSED</code>, which is not a pass. See a <Link href="/owasp-agentic-skills" className="underline">sample assessment</Link>.</p>
+              <p>Assessed against the OWASP Agentic Skills Top 10 (CC-BY-SA-4.0) at a pinned upstream commit. This is not an OWASP certification or endorsement.</p>
+              <p><strong>Statuses.</strong> Each control, and each of its checks, is exactly one of:</p>
+              <ul className="ml-4 list-disc space-y-1">
+                <li><code>EVIDENCE_OBSERVED</code> &mdash; evidence supporting the expected security property was observed.</li>
+                <li><code>GAP_IDENTIFIED</code> &mdash; evidence of a security gap was observed.</li>
+                <li><code>NOT_ASSESSED</code> &mdash; there was not enough evidence to reach a determination.</li>
+              </ul>
+              <p><strong>Versions.</strong> <code>1.0.0-alpha.1</code> is the version of the OWASP profile mapping, and <code>1.1.0</code> is the assessment schema. Neither is the Agent Verify product version.</p>
+
+              <p><strong>CLI</strong> &mdash; scans a directory and prints the assessment (<code>--json</code> prints the service response unmodified). A <code>GAP_IDENTIFIED</code> result is a normal result and exits <code>0</code>; execution errors exit <code>3</code>. The CLI does not request signing.</p>
+              <CodeBlock>{`agentverify scan ./my-skill --profile owasp-agentic-skills-2026 --key av_your_key`}</CodeBlock>
+
+              <p><strong>API</strong> &mdash; the same <code>/v1/scan</code> endpoint with a <code>profile</code> and the package files. Add <code>&quot;attest&quot;: true</code> for a signed assessment.</p>
+              <CodeBlock>{`POST https://agentverify-api.agentverify.workers.dev/v1/scan
+Authorization: Bearer av_your_key
+Content-Type: application/json
+
+{
+  "profile": "owasp-agentic-skills-2026",
+  "files": [{ "path": "SKILL.md", "content": "..." }],
+  "attest": true
+}`}</CodeBlock>
+              <p>A <code>200</code> response is <code>{`{ profile, assessment, attestation, saved: false }`}</code>. <code>attestation</code> is <code>null</code> unless you asked for signing; a signed response also carries <code>bundleVersion</code> (<code>&quot;1.0.0&quot;</code>). Profile assessments are not saved as reports.</p>
+
+              <p><strong>Signing.</strong> A signature proves this exact assessment was issued by Agent Verify and has not been altered. It does not independently prove that every finding is correct or complete. The signing key is published on the <Link href="/profile-attestation" className="underline">signing key page</Link> and at <code>GET /v1/profile-attestation/public-key</code>; verify against that key, not the key inside the bundle.</p>
+              <p><strong>Metering.</strong> A completed profile assessment uses one scan from your monthly quota, signed or unsigned. A request rejected before assessment (malformed, too large, unsafe package, over quota) uses none. If the assessment completes but signing then fails, that one scan is still used, and a retry is a new request.</p>
+
+              <p><strong>Errors.</strong></p>
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs">
+                  <thead><tr style={{ borderBottom: '1px solid var(--border)' }}><th className="py-1.5 pr-4 text-left">Status</th><th className="py-1.5 text-left">Meaning</th></tr></thead>
+                  <tbody>
+                    <tr style={{ borderBottom: '1px solid var(--border)' }}><td className="py-1.5 pr-4 font-mono">400 / 413</td><td className="py-1.5">The request could not be read, or the package is too large.</td></tr>
+                    <tr style={{ borderBottom: '1px solid var(--border)' }}><td className="py-1.5 pr-4 font-mono">401</td><td className="py-1.5">Missing, malformed, or revoked credentials.</td></tr>
+                    <tr style={{ borderBottom: '1px solid var(--border)' }}><td className="py-1.5 pr-4 font-mono">422</td><td className="py-1.5">The package, or the assessment, could not be admitted &mdash; for example an unsafe file path. A signed request that cannot be signed is also refused here rather than returned unsigned.</td></tr>
+                    <tr style={{ borderBottom: '1px solid var(--border)' }}><td className="py-1.5 pr-4 font-mono">429</td><td className="py-1.5">Monthly scan quota reached, or too many profile assessments this hour.</td></tr>
+                    <tr style={{ borderBottom: '1px solid var(--border)' }}><td className="py-1.5 pr-4 font-mono">503</td><td className="py-1.5">Signing is currently unavailable. Retry, or request an unsigned assessment.</td></tr>
+                    <tr><td className="py-1.5 pr-4 font-mono">500</td><td className="py-1.5">Internal failure. The response never includes internal detail.</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </Section>
+
             <Section id="ci-cd" title="CI/CD & GitHub Actions">
               <p>Run Agent Verify as a required PR check:</p>
               <CodeBlock>{`- uses: AI-Blockchain-Ventures/agentverify@v1
@@ -459,6 +505,7 @@ Content-Type: application/json
               <p><strong>Can a report be forged or edited after it&apos;s created?</strong> A report&apos;s verdict, score, and findings are immutable once saved &mdash; only visibility (public/private) can change afterward.</p>
               <p><strong>What happens to scans over my plan&apos;s limit?</strong> The API returns <code>429</code> and no scan is performed or counted against your quota.</p>
               <p><strong>Is the scanner open source?</strong> The web app, CLI, and Worker API are open source. The detection engine (<code>@agentverify/scanner</code>) is proprietary and lives only in the private build behind the API &mdash; the published CLI package is a pure HTTP client and does not bundle it.</p>
+              <p><strong>Is an OWASP Agentic Skills assessment a certification?</strong> No. It is an assessment against the OWASP Agentic Skills Top 10, using evidence Agent Verify observed in your package. Controls that are not implemented are shown as not assessed, which is not a pass, and the result is not an OWASP certification or endorsement.</p>
               <p><strong>Does the CLI send my code anywhere?</strong> Yes &mdash; each scanned file&apos;s content is sent to the Agent Verify API over HTTPS to be analyzed server-side; nothing is scanned locally by the CLI itself. Don&apos;t scan files containing production secrets you aren&apos;t comfortable transmitting.</p>
             </Section>
           </div>

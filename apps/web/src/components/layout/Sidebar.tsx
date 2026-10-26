@@ -57,7 +57,7 @@ export function Sidebar({
         <Image src={assetUrl('/agentverify-icon.png')} alt="Agent Verify" width={34} height={34} className="h-8 w-8 rounded-xl object-contain" />
         <div className="leading-tight">
           <p style={{ color: 'var(--text-primary)' }} className="text-sm font-bold tracking-tight">Agent Verify</p>
-          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[color:var(--accent-purple-text)]">v1.4 · {planLabel}</p>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[color:var(--accent-purple-text)]">v1.5 · {planLabel}</p>
         </div>
       </Link>
 

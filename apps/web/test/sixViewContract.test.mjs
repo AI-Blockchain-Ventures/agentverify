@@ -151,6 +151,13 @@ outputs.fullTechnical = await renderView('FullTechnicalReportView.tsx', 'FullTec
   assert.match(outputs.developer, /critical/i)
   assert.match(outputs.developer, /[Dd]efinite/) // evidence type / confidence
 
+  // v1.6: on Free, the Developer view shows the same findings but never renders the fix itself —
+  // only the locked Pro preview.
+  const developerFree = await renderView('DeveloperReportView.tsx', 'DeveloperReportView', { data: canonicalFixture, canViewFixes: false })
+  assert.match(developerFree, /HARDCODED_CREDENTIALS/, 'Free still sees the finding')
+  assert.doesNotMatch(developerFree, /process\.env\.API_KEY/, 'Free must not receive the fix snippet')
+  assert.match(developerFree, /Unlock fixes with Pro/, 'Free sees the locked Pro preview instead')
+
   // Compliance: framework names, real status vocabulary, and NEVER "compliant"/"certified".
   assert.match(outputs.compliance, /OWASP LLM Top 10/)
   assert.match(outputs.compliance, /NIST AI Risk Management Framework/)

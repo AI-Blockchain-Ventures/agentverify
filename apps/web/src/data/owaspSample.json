@@ -24,7 +24,7 @@
         "AST03",
         "AST04"
       ],
-      "scannerVersion": "1.4.0",
+      "scannerVersion": "1.6.0",
       "assessmentEngineVersion": "1.0.1",
       "riskRubricVersion": "1.0.0",
       "keyAllowlistVersion": "1.0.0",

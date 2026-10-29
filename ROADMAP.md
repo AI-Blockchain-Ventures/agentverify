@@ -115,6 +115,26 @@
 
 ---
 
+## ✅ v1.6.0 — More Checks, Easier Scans, Clearer Reports (Shipped)
+
+**Threat coverage (44 → 76 checks)**
+- SQL injection, SSRF, unsafe deserialization, path traversal, insecure model-output handling,
+  indirect prompt injection, disabled safety switches, unbounded agent loops, TLS verification off,
+  sensitive data in logs, secrets in system prompts, unpinned MCP servers
+- 7 more secret types (Google, Hugging Face, SendGrid, Twilio, npm, Azure Storage, Discord)
+- Framework packs: LangChain, CrewAI, AutoGen, OpenAI Agents SDK, Claude Agent SDK, computer use
+- Data-exfiltration path ("lethal trifecta") detection
+- MCP config scanner for Claude Desktop, Claude Code, Cursor, VS Code, Windsurf, Cline
+
+**Easier to use**
+- Scan a public GitHub repo or a project .zip, multi-file dashboard scans, more file types, one-click examples on the free homepage scan,
+  "What to do next" guidance after every public scan, copyable fix checklist
+
+**Better reports**
+- Score ring and severity bar, sticky section menu, findings filter/search/expand-all, "New in v1.6" tags
+
+---
+
 ## v2.0.0 — Enterprise
 
 **Enterprise Dashboard**
@@ -158,5 +178,5 @@ Core intelligence (scoring engine, execution trust methodology, A2SPA protocol) 
 
 ---
 
-*Last updated: September 2026*
+*Last updated: October 2026*
 *AI Blockchain Ventures LLC — hello@aiblockchainventures.com*

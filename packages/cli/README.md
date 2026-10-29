@@ -116,7 +116,7 @@ The workflow requires a valid `AGENTVERIFY_API_KEY`. The local Worker code path 
 
 Saved CLI reports sync to the dashboard through the API `cliReports` save path. If the API cannot save the report, the CLI still prints local scan output and tells you dashboard sync did not complete.
 
-Verified reports can expose a README badge from the report page. A packaged Agent Verify GitHub Action (`AI-Blockchain-Ventures/agentverify@v1`) already exists and produces text/Markdown/JSON output plus an optional workflow artifact — see below. Automatically posting that output as a PR comment (rather than just producing it for you to post) is still a planned enhancement, not yet built.
+Verified reports can expose a README badge from the report page. A packaged Agent Verify GitHub Action (`AI-Blockchain-Ventures/agentverify@v1.4.0`) already exists and produces text/Markdown/JSON output plus an optional workflow artifact — see below. Automatically posting that output as a PR comment (rather than just producing it for you to post) is still a planned enhancement, not yet built.
 
 See the full GitHub Action guide at `docs/github-action.md` for composite action inputs, JSON/Markdown examples, branch protection, optional PR comments, and badge guidance.
 

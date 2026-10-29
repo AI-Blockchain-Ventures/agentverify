@@ -4,7 +4,7 @@ export function billingGateTestMatrix() {
   return {
     freePdf: canUseProFeature(freeBillingStatus, 'pdfExport'),
     proPdf: canUseProFeature(proBillingStatus, 'pdfExport'),
-    teamDisabled: getPlanAction('team').disabled === true,
+    teamContactOnly: getPlanAction('team').href.startsWith('mailto:') && getPlanAction('team').disabled !== true,
     enterpriseContactOnly: getPlanAction('enterprise').href.startsWith('mailto:'),
   }
 }

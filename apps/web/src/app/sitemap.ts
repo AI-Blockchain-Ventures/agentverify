@@ -7,6 +7,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { path: '/', priority: 1, changeFrequency: 'weekly' },
     { path: '/docs/', priority: 0.9, changeFrequency: 'weekly' },
     { path: '/pricing/', priority: 0.8, changeFrequency: 'weekly' },
+    { path: '/developers/', priority: 0.8, changeFrequency: 'monthly' },
     { path: '/owasp-agentic-skills/', priority: 0.8, changeFrequency: 'monthly' },
     { path: '/profile-attestation/', priority: 0.6, changeFrequency: 'monthly' },
     { path: '/report/demo/', priority: 0.7, changeFrequency: 'monthly' },

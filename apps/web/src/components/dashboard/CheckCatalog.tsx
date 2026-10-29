@@ -18,6 +18,8 @@ interface VerificationCheck {
   whyItMatters: string
   remediation: string
   status: string
+  addedIn?: string
+  pack?: 'core' | 'framework' | 'mcp'
 }
 
 interface RiskFamily {
@@ -36,6 +38,7 @@ interface CatalogSummary {
   capabilityChainRules: number
   threatCategories: number
   securityCategories: number
+  newInRelease?: number
 }
 
 const SEVERITY_ORDER: Record<string, number> = { critical: 0, high: 1, medium: 2, low: 3, info: 4 }
@@ -83,7 +86,10 @@ export function CheckCatalog() {
 
   const filtered = useMemo(() => {
     let list = [...(checks ?? [])]
-    if (categoryFilter !== 'all') list = list.filter(c => c.category === categoryFilter)
+    if (categoryFilter === 'new') list = list.filter(c => c.addedIn === '1.6.0')
+    else if (categoryFilter === 'pack:framework') list = list.filter(c => c.pack === 'framework')
+    else if (categoryFilter === 'pack:mcp') list = list.filter(c => c.pack === 'mcp' || c.category === 'mcp')
+    else if (categoryFilter !== 'all') list = list.filter(c => c.category === categoryFilter)
     if (query.trim()) {
       const q = query.trim().toLowerCase()
       list = list.filter(c => c.name.toLowerCase().includes(q) || c.whatItDetects.toLowerCase().includes(q) || c.id.toLowerCase().includes(q))
@@ -144,6 +150,24 @@ export function CheckCatalog() {
           >
             All families
           </button>
+          <button
+            onClick={() => setCategoryFilter('new')}
+            style={{ backgroundColor: categoryFilter === 'new' ? '#7C3AED' : 'var(--card)', color: categoryFilter === 'new' ? '#fff' : 'var(--accent-purple-text)', border: '1px solid var(--border)' }}
+            className="av-transition rounded-full px-3 py-1.5 text-xs font-semibold"
+            title="Checks added in Agent Verify v1.6"
+          >
+            New in v1.6{summary.newInRelease ? ` (${summary.newInRelease})` : ''}
+          </button>
+          {([['pack:framework', 'Framework packs'], ['pack:mcp', 'MCP']] as const).map(([value, label]) => (
+            <button
+              key={value}
+              onClick={() => setCategoryFilter(value)}
+              style={{ backgroundColor: categoryFilter === value ? 'var(--text-primary)' : 'var(--card)', color: categoryFilter === value ? 'var(--bg)' : 'var(--text-muted)', border: '1px solid var(--border)' }}
+              className="av-transition rounded-full px-3 py-1.5 text-xs font-medium"
+            >
+              {label}
+            </button>
+          ))}
           {riskTaxonomy.map(family => (
             <button
               key={family.id}
@@ -183,6 +207,7 @@ function CheckRow({ check, family }: { check: VerificationCheck; family: RiskFam
       <button onClick={() => setOpen(o => !o)} className="flex w-full items-center gap-3 px-4 py-3.5 text-left" aria-expanded={open}>
         <span style={{ color: 'var(--text-muted)' }} className="w-24 shrink-0 font-mono text-[11px]">{check.id}</span>
         <span style={{ color: 'var(--text-primary)' }} className="min-w-0 flex-1 truncate text-sm font-semibold">{check.name}</span>
+        {check.addedIn === '1.6.0' && <span className="shrink-0 rounded-full bg-[#7C3AED]/12 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[color:var(--accent-purple-text)]">New</span>}
         <span className={`hidden shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold sm:inline ${SEVERITY_STYLE[check.severity] ?? ''}`}>{check.severity}</span>
         <span style={{ color: 'var(--text-muted)' }} className="hidden shrink-0 text-xs md:inline">{family?.label ?? check.category}</span>
         <span style={{ color: 'var(--text-muted)', transform: open ? 'rotate(180deg)' : undefined }} className="av-transition shrink-0 text-xs">▾</span>

@@ -1,6 +1,6 @@
 const steps = [
-  ['01', 'Scan agent', 'Paste code or upload a config file. Dashboard scans run in your browser.'],
-  ['02', 'Review findings', 'See the verdict, risk score, severity, evidence, and affected controls.'],
+  ['01', 'Scan agent', 'Paste code or drop in your agent files — code and config together. Scans run on Agent Verify’s secure server.'],
+  ['02', 'Review findings', 'See the verdict, a 0–100 security score (higher is safer), severity, evidence, and affected controls.'],
   ['03', 'Apply fixes', 'Use recommended fixes, corrected code, and A2SPA guidance where available.'],
   ['04', 'Re-scan and share', 'Re-scan after changes, then keep the report private or share it when ready.'],
 ]

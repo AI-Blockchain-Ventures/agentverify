@@ -8,6 +8,7 @@ import { groupReportsByAgent, agentGroupSlug } from '@/lib/agentGrouping'
 import { compareReports } from '@/lib/compareReports'
 import { normalizeVerdict, verdictLabel } from '@/lib/verdict'
 import type { StoredReport } from '@/types'
+import { GettingStarted } from './GettingStarted'
 
 const reportScore = (r: StoredReport) => r.riskScore ?? r.result?.riskScore ?? 0
 const findingsOf = (r: StoredReport) => (Array.isArray(r.findings) ? r.findings : Array.isArray(r.result?.findings) ? r.result.findings : []) as Array<{ severity?: string; title?: string }>
@@ -96,20 +97,7 @@ export function DashboardOverview({ user, onGoToScan, onGoToAgent }: { user: Use
         <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#7C3AED]/10 text-lg font-semibold text-[color:var(--accent-purple-text)]">◧</div>
         <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[color:var(--accent-purple-text)]">Welcome to Agent Verify</p>
         <h3 style={{ color: 'var(--text-primary)' }} className="mt-1 text-lg font-semibold">Understand what your AI agents can actually do</h3>
-        <ol className="av-stagger mx-auto mt-5 max-w-sm space-y-2 text-left text-sm">
-          {[
-            'Scan your first agent',
-            'Review what it can do',
-            'Fix high-risk capabilities',
-            'Verify again',
-            'Add Agent Verify to CI',
-          ].map((step, i) => (
-            <li key={step} style={{ color: 'var(--text-secondary)' }} className="flex items-center gap-3">
-              <span style={{ backgroundColor: 'var(--surface)', color: 'var(--text-muted)', border: '1px solid var(--border)' }} className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold">{i + 1}</span>
-              {step}
-            </li>
-          ))}
-        </ol>
+        <GettingStarted reports={reports} onGoToScan={onGoToScan} variant="hero" />
         <div className="mt-7 flex flex-col items-center gap-2.5 sm:flex-row sm:justify-center">
           <button onClick={onGoToScan} className="av-press w-full rounded-2xl bg-[#06B6D4] px-5 py-3 text-sm font-semibold text-[#080B14] transition-opacity hover:opacity-90 sm:w-auto">Scan your first agent</button>
           <Link href="/report/demo" style={{ border: '1px solid var(--border)', color: 'var(--text-primary)' }} className="av-press w-full rounded-2xl bg-[var(--surface)] px-5 py-3 text-sm font-semibold transition-opacity hover:opacity-90 sm:w-auto">Try the demo report</Link>
@@ -121,6 +109,7 @@ export function DashboardOverview({ user, onGoToScan, onGoToAgent }: { user: Use
 
   return (
     <div className="space-y-5">
+      <GettingStarted reports={reports} onGoToScan={onGoToScan} />
       <div className="av-stagger grid grid-cols-2 gap-3 lg:grid-cols-5">
         {[
           ['Agents tracked', stats.totalAgents, 'var(--text-primary)'],

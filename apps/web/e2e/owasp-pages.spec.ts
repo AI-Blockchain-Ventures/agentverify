@@ -21,7 +21,7 @@ test('sample assessment: a control expands to its checks and evidence, and techn
   await expect(page.getByText(/Checks \(\d+ of \d+ checks assessed\)/)).toBeVisible()
   await page.getByRole('heading', { name: 'Profile & technical details' }).click()
   await expect(page.getByText('1.0.0-alpha.1')).toBeVisible()
-  await expect(page.getByText('Agent Verify is released as v1.5.0')).toBeVisible()
+  await expect(page.getByText('Agent Verify is released as v1.6.0')).toBeVisible()
 })
 
 test('signing key page publishes the key and the verification steps', async ({ page }) => {

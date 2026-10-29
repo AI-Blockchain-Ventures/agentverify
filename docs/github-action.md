@@ -35,7 +35,7 @@ The local Worker code path fails closed for missing, malformed, invalid, disable
 When using this repository as an action, call the composite wrapper:
 
 ```yaml
-- uses: AI-Blockchain-Ventures/agentverify@v1
+- uses: AI-Blockchain-Ventures/agentverify@v1.4.0
   with:
     path: ./agents
     api-key: ${{ secrets.AGENTVERIFY_API_KEY }}
@@ -104,7 +104,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: AI-Blockchain-Ventures/agentverify@v1
+      - uses: AI-Blockchain-Ventures/agentverify@v1.4.0
         with:
           path: ./agents
           api-key: ${{ secrets.AGENTVERIFY_API_KEY }}

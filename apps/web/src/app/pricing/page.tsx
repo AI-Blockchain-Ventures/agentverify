@@ -7,6 +7,7 @@ import { AuthModal } from '@/components/auth/AuthModal'
 import { plans } from '@/lib/pricing'
 import { billingRoutes, getApiBaseUrl, getPlanAction, openBillingPortal, summarizeBillingState } from '@/lib/billing'
 import { useBillingStatusState } from '@/lib/useBillingStatus'
+import { PlanComparison, PricingFaq, ProPreview } from '@/components/pricing/PlanComparison'
 
 export default function PricingPage() {
   const { user } = useAuth()
@@ -51,7 +52,7 @@ export default function PricingPage() {
         return
       }
       if (res.status === 400 || res.status === 403) {
-        setMessage({ text: 'This plan is not available for checkout. Team is coming soon and Enterprise is contact-only.' })
+        setMessage({ text: 'This plan is not available for online checkout. Team and Enterprise are set up with our team — use Talk to us.' })
         return
       }
       if (res.status === 503) {
@@ -85,13 +86,13 @@ export default function PricingPage() {
       <section className="mx-auto max-w-6xl">
         <div className="mx-auto max-w-3xl text-center">
           <p className="mb-3 text-xs font-semibold uppercase tracking-[0.3em] text-[color:var(--accent-cyan-text)]">Pricing</p>
-          <h1 style={{ color: 'var(--text-primary)' }} className="text-4xl font-semibold tracking-tight md:text-6xl">Simple plans for safer agent releases.</h1>
-          <p style={{ color: 'var(--text-secondary)' }} className="mt-5 text-base leading-7 md:text-lg">Start with basic findings. Upgrade when you need full remediation, corrected code, A2SPA guidance, and PDF export.</p>
+          <h1 style={{ color: 'var(--text-primary)' }} className="text-4xl font-semibold tracking-tight md:text-6xl">Ship AI agents you can prove are safe.</h1>
+          <p style={{ color: 'var(--text-secondary)' }} className="mt-5 text-base leading-7 md:text-lg">Every plan runs all 76 checks. Upgrade to Pro for the corrected code, step-by-step fixes, A2SPA guidance, and a PDF report you can hand to clients and auditors.</p>
         </div>
 
         <div style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }} className="mx-auto mt-8 max-w-3xl rounded-3xl p-5 text-center shadow-xl shadow-black/5">
           <p style={{ color: 'var(--text-primary)' }} className="text-sm font-semibold">Billing status</p>
-          <p style={{ color: 'var(--text-muted)' }} className="mt-1 text-sm">Pro checkout runs through Stripe. Team is coming soon; Enterprise is contact-only.</p>
+          <p style={{ color: 'var(--text-muted)' }} className="mt-1 text-sm">Pro checkout runs securely through Stripe — cancel anytime. Team and Enterprise are set up with our team.</p>
           {message && (
             <p className="mt-3 text-sm" style={{ color: message.reviewMode ? 'var(--text-muted)' : 'var(--accent-orange-text)' }}>
               {message.text}
@@ -172,10 +173,14 @@ export default function PricingPage() {
         </div>
 
         <div style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }} className="mt-10 rounded-3xl p-6 text-center shadow-xl shadow-black/5">
-          <p style={{ color: 'var(--text-primary)' }} className="font-semibold">Pro is for remediation-ready reports</p>
-          <p style={{ color: 'var(--text-muted)' }} className="mx-auto mt-2 max-w-2xl text-sm leading-6">Free includes 10 scans/month and basic findings. Pro adds 100 scans/month, full remediation, corrected code, A2SPA guidance, and PDF export.</p>
+          <p style={{ color: 'var(--text-primary)' }} className="font-semibold">How scans are counted</p>
+          <p style={{ color: 'var(--text-muted)' }} className="mx-auto mt-2 max-w-2xl text-sm leading-6">Free includes 10 scans/month; Pro includes 100. Dashboard, CLI, API, and GitHub Action scans all share the same monthly quota, and scanning a whole GitHub repo or .zip counts as one scan.</p>
           <p style={{ color: 'var(--text-muted)' }} className="mx-auto mt-2 max-w-2xl text-sm leading-6">An OWASP Agentic Skills assessment uses one scan from the same monthly quota, whether or not you ask for a signature.</p>
         </div>
+
+        <PlanComparison />
+        <ProPreview />
+        <PricingFaq />
       </section>
       <AuthModal open={authOpen} defaultMode="signIn" onClose={() => setAuthOpen(false)} />
     </main>

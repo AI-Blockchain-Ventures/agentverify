@@ -74,7 +74,7 @@ export function getSalesUrl(plan: PlanId): string {
  */
 export function getPlanAction(plan: PlanId): { href: string; label: string; disabled?: boolean } {
   if (plan === 'free') return { href: '/dashboard', label: 'Start free' }
-  if (plan === 'team') return { href: getSalesUrl('team'), label: 'Join waitlist', disabled: true }
+  if (plan === 'team') return { href: getSalesUrl('team'), label: 'Talk to us' }
   if (plan === 'enterprise') return { href: getSalesUrl('enterprise'), label: 'Contact us' }
   return { href: `${getApiBaseUrl()}${billingRoutes.checkout}`, label: 'Start Pro checkout' }
 }

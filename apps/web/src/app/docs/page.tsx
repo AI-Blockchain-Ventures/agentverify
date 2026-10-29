@@ -1,17 +1,8 @@
 import type { Metadata } from 'next'
+import { pageMetadata } from '@/lib/seo'
 import Link from 'next/link'
 
-export const metadata: Metadata = {
-  title: 'Docs',
-  description: 'How Agent Verify’s AI agent security scanner checks permissions, MCP servers, secrets, and execution controls, what VERIFIED/NOT VERIFIED/NOT ASSESSED mean, and how to use the web scanner, CLI, npm package, and CI integration.',
-  openGraph: {
-    title: 'Docs — Agent Verify',
-    description: 'How Agent Verify’s AI agent security scanner checks permissions, MCP servers, secrets, and execution controls, what VERIFIED/NOT VERIFIED/NOT ASSESSED mean, and how to use the web scanner, CLI, npm package, and CI integration.',
-    url: 'https://aimodularity.com/agentverify/docs/',
-    siteName: 'Agent Verify',
-    type: 'website',
-  },
-}
+export const metadata: Metadata = pageMetadata('/docs', 'Docs', 'How Agent Verify’s AI agent security scanner checks permissions, MCP servers, secrets, and execution controls, what VERIFIED/NOT VERIFIED/NOT ASSESSED mean, and how to use the web scanner, CLI, npm package, and CI integration.')
 
 const nav = [
   { id: 'overview', label: 'Overview' },
@@ -336,7 +327,7 @@ Content-Type: application/json
 
             <Section id="ci-cd" title="CI/CD & GitHub Actions">
               <p>Run Agent Verify as a required PR check:</p>
-              <CodeBlock>{`- uses: AI-Blockchain-Ventures/agentverify@v1
+              <CodeBlock>{`- uses: AI-Blockchain-Ventures/agentverify@v1.4.0
   with:
     path: ./agents
     api-key: \${{ secrets.AGENTVERIFY_API_KEY }}
@@ -374,7 +365,7 @@ Content-Type: application/json
             </Section>
 
             <Section id="catalog" title="Verification Check Catalog">
-              <p>Agent Verify runs <strong>44 distinct, independently-tested verification checks</strong> &mdash; not a marketing round number. Each check has a stable ID (e.g. <code>AV-SECRET-003</code>, <code>AV-MCP-005</code>), a category, severity, detection type, and its own regression test asserting it actually fires. Every check the scanner can produce is cross-checked in both directions against a real test suite: no catalog entry exists without a working code path, and no working code path exists without a catalog entry.</p>
+              <p>Agent Verify runs <strong>76 distinct, independently-tested verification checks</strong> (32 of them new in v1.6, including framework-specific packs for LangChain, CrewAI, AutoGen, the OpenAI Agents SDK, and the Claude Agent SDK, plus an MCP configuration pack) &mdash; not a marketing round number. Each check has a stable ID (e.g. <code>AV-SECRET-003</code>, <code>AV-MCP-005</code>), a category, severity, detection type, and its own regression test asserting it actually fires. Every check the scanner can produce is cross-checked in both directions against a real test suite: no catalog entry exists without a working code path, and no working code path exists without a catalog entry.</p>
               <table className="w-full border-collapse text-xs">
                 <thead>
                   <tr style={{ borderBottom: '1px solid var(--border)' }}>
@@ -388,7 +379,7 @@ Content-Type: application/json
                   ))}
                 </tbody>
               </table>
-              <p>Beyond the 44 checks, the scanner separately runs 19 capability detectors (what an agent can do), 10 MCP tool classifiers, 8 capability-chain (&quot;blast radius&quot;) combination rules, and 14 threat-category assessments &mdash; these are classification/context systems, not pass/fail checks, and are counted separately so the 44 stays an honest number of real, distinct checks rather than an inflated one.</p>
+              <p>Beyond the 76 checks, the scanner separately runs 19 capability detectors (what an agent can do), 10 MCP tool classifiers, 8 capability-chain (&quot;blast radius&quot;) combination rules, and 14 threat-category assessments &mdash; these are classification/context systems, not pass/fail checks, and are counted separately so the 76 stays an honest number of real, distinct checks rather than an inflated one.</p>
             </Section>
 
             <Section id="taxonomy" title="Risk Taxonomy">

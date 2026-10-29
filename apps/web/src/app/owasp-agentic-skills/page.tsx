@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { pageMetadata } from '@/lib/seo'
 import Link from 'next/link'
 import sample from '@/data/owaspSample.json'
 import { OwaspProfileResult } from '@/components/scanner/OwaspProfileResult'
@@ -6,17 +7,7 @@ import { StatusPill } from '@/components/scanner/OwaspControlCard'
 import { IMPLEMENTED_CONTROLS_DISCLAIMER, OWASP_ATTRIBUTION_DISCLAIMER, OWASP_PROFILE_ID, STATUS_MEANING } from '@/lib/owaspProfile'
 import type { ProfileAssessmentResponse, SkillAstAssessment } from '@/types/profileAssessment'
 
-export const metadata: Metadata = {
-  title: 'OWASP Agentic Skills Assessment',
-  description: 'Assess an agent skill package against the OWASP Agentic Skills Top 10. See a sample assessment: what was assessed, what evidence was observed, which gaps were identified, and what could not be assessed.',
-  openGraph: {
-    title: 'OWASP Agentic Skills Assessment — Agent Verify',
-    description: 'Assess an agent skill package against the OWASP Agentic Skills Top 10. See a sample assessment with evidence, gaps, and honest not-assessed results.',
-    url: 'https://aimodularity.com/agentverify/owasp-agentic-skills/',
-    siteName: 'Agent Verify',
-    type: 'website',
-  },
-}
+export const metadata: Metadata = pageMetadata('/owasp-agentic-skills', 'OWASP Agentic Skills Assessment', 'Assess an agent skill package against the OWASP Agentic Skills Top 10. See a sample assessment: what was assessed, what evidence was observed, which gaps were identified, and what could not be assessed.')
 
 const assessment = sample.assessment as unknown as SkillAstAssessment
 const sampleResponse: ProfileAssessmentResponse = { profile: OWASP_PROFILE_ID, assessment, attestation: null, saved: false }

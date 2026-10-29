@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Hero } from '@/components/home/Hero'
 import { TrustSignals } from '@/components/home/TrustSignals'
+import { ProofStrip } from '@/components/home/ProofStrip'
 import { PublicScanDemo } from '@/components/home/PublicScanDemo'
 import { ProblemSection } from '@/components/home/ProblemSection'
 import { WhyAgentVerify } from '@/components/home/WhyAgentVerify'
@@ -40,8 +41,9 @@ export default function Home() {
   return (
     <main>
       <Hero openAuth={openAuth} />
+      <PublicScanDemo openAuth={openAuth} />
+      <ProofStrip />
       <TrustSignals />
-      <PublicScanDemo />
       <ProblemSection />
       <WhyAgentVerify />
       <CategorySection />

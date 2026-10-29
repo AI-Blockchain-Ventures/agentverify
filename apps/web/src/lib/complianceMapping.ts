@@ -56,7 +56,7 @@ const ALL_FRAMEWORKS: ComplianceFramework[] = ['NIST_AI_RMF', 'OWASP_LLM', 'SOC2
 // evidence for that specific control — keep this list short and reviewed, exactly like
 // check-private-boundary.mjs's ALLOWED_VALUE_IMPORT_FILES convention elsewhere in this codebase.
 const STRONG_CATEGORY_EVIDENCE: Array<{ category: SecurityCategoryId; framework: ComplianceFramework; controlId: string; rationale: string }> = [
-  { category: 'secrets', framework: 'OWASP_LLM', controlId: 'LLM06 - Sensitive Information Disclosure', rationale: 'The scanner ran its full secret-detection check set (12 checks — see docs #catalog) against the submitted content and found no hardcoded credential or exposed sensitive value.' },
+  { category: 'secrets', framework: 'OWASP_LLM', controlId: 'LLM06 - Sensitive Information Disclosure', rationale: 'The scanner ran its full secret-detection check set (23 checks: 19 credential patterns plus MCP-config secrets, sensitive data in logs, secrets in prompts, and data-exfiltration paths — see docs #catalog) against the submitted content and found no hardcoded credential or exposed sensitive value.' },
   { category: 'secrets', framework: 'SOC2', controlId: 'CC6.1 - Logical Access Controls', rationale: 'No hardcoded credential was found across the full secret-detection check set.' },
   { category: 'human-oversight', framework: 'SOC2', controlId: 'CC6.1 - Logical Access Controls', rationale: 'The human-oversight check set found scoped, non-wildcard permissions and/or a human approval gate present.' },
   { category: 'auditability', framework: 'SOC2', controlId: 'CC7.2 - Monitoring', rationale: 'The auditability check found audit logging present.' },

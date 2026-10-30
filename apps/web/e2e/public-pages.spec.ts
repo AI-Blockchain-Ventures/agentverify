@@ -8,7 +8,8 @@ test('landing page loads with the real hero copy and CTAs', async ({ page }) => 
   await page.goto('./')
   await expect(page).toHaveTitle(/Know What Your AI Agent Can Do Before You Deploy It/)
   await expect(page.getByRole('heading', { name: /Know what your AI agent can do before you deploy it/i })).toBeVisible()
-  await expect(page.getByRole('button', { name: 'Scan an Agent' })).toBeVisible()
+  await expect(page.getByRole('link', { name: 'Scan an agent free' })).toHaveAttribute('href', '#public-scan')
+  await expect(page.getByRole('button', { name: 'Create free account' })).toBeVisible()
   await expect(page.getByRole('link', { name: 'View Sample Report' })).toHaveAttribute('href', '/agentverify/report/demo/')
 })
 
@@ -105,4 +106,13 @@ test('mobile: hamburger menu opens and navigates to Docs', async ({ page, isMobi
   await page.getByRole('button', { name: /open menu/i }).click()
   await page.locator('#mobile-nav-menu').getByRole('link', { name: 'Docs', exact: true }).click()
   await expect(page).toHaveURL(/\/docs\/?$/)
+})
+
+test('each public page has its own title, canonical URL, and share card', async ({ page }) => {
+  for (const [path, title] of [['pricing/', /^Pricing — Agent Verify$/], ['developers/', /^For Developers — Agent Verify$/], ['report/demo/', /^Demo Report — Agent Verify$/]] as const) {
+    await page.goto(path)
+    await expect(page).toHaveTitle(title)
+    await expect(page.locator('link[rel="canonical"]')).toHaveAttribute('href', `https://aimodularity.com/agentverify/${path}`)
+    await expect(page.locator('meta[property="og:image"]').first()).toHaveAttribute('content', 'https://aimodularity.com/agentverify/og-image.png')
+  }
 })

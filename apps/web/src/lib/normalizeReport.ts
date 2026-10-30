@@ -201,6 +201,7 @@ export function normalizeReportData(input: NormalizeReportInput): NormalizedRepo
       evidenceType: finding.evidenceType === 'definite' || finding.evidenceType === 'heuristic' || finding.evidenceType === 'informational' ? finding.evidenceType : undefined,
       securityCategory: (finding.securityCategory || undefined) as Finding['securityCategory'],
       capabilityImpact: finding.capabilityImpact || undefined,
+      ...(finding.fixLocked === true ? { fixLocked: true } : {}),
     }
   })
 

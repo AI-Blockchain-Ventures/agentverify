@@ -2,6 +2,12 @@
   RewriteEngine On
   RewriteBase /agentverify/
 
+  # A page folder asked for without its ending slash (e.g. /agentverify/pricing):
+  # add the slash. Otherwise the main aimodularity.com app answers with a 404.
+  # The query string (e.g. ?id=...) is kept.
+  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteRule ^(.*[^/])$ /agentverify/$1/ [R=301,L]
+
   # Serve existing files and directories directly
   RewriteCond %{REQUEST_FILENAME} !-f
   RewriteCond %{REQUEST_FILENAME} !-d

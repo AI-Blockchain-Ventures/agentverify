@@ -6,7 +6,7 @@ import { scan } from './sdk'
 import type { ScanResult } from './types'
 import { PackageError, SUPPORTED_ASSESSMENT_SCHEMA, SUPPORTED_PROFILES, buildPackage, displayPath, formatAssessment, postProfile, safeText, serializeRequest } from './profile'
 
-const VERSION = '1.5.0'
+const VERSION = '1.6.0'
 const API_URL = process.env.AGENTVERIFY_API_URL ?? 'https://agentverify-api.agentverify.workers.dev/v1/scan'
 const A2SPA_DOCS_URL = 'https://aimodularity.com/A2SPA/docs'
 
@@ -34,7 +34,7 @@ const c = {
 
 const write = (value = '') => process.stdout.write(`${value}\n`)
 
-const SUPPORTED_EXTENSIONS = new Set(['.js', '.ts', '.py', '.json', '.yaml', '.yml', '.md', '.mjs', '.cjs'])
+const SUPPORTED_EXTENSIONS = new Set(['.js', '.jsx', '.ts', '.tsx', '.py', '.json', '.yaml', '.yml', '.toml', '.md', '.mjs', '.cjs', '.sh'])
 const MAX_SCAN_FILE_BYTES = 5 * 1024 * 1024 // 5MB — matches the web scanner's upload limit
 const SKIP_DIRS = new Set(['node_modules', '.git', 'dist', 'build', '.next', 'vendor', 'coverage', '.cache'])
 
@@ -248,6 +248,8 @@ function printDetailedSummary(result: ScanResult, fileName: string) {
   if (fixes.length) fixes.forEach((item, index) => write(`  ${index + 1}. ${item}`))
   else write(`  No blocking fixes detected. Re-scan after any material change.`)
   if (result.reportInsights?.nextAction) write(`\n${c.bold}Next action:${c.reset} ${result.reportInsights.nextAction}`)
+  const lockedFixes = (result.findings ?? []).filter(f => f.fixLocked).length
+  if (lockedFixes > 0) write(`${c.gray}Step-by-step fixes and corrected code for ${lockedFixes} finding${lockedFixes === 1 ? '' : 's'} are included with Pro: https://aimodularity.com/agentverify/pricing/${c.reset}`)
   const threats = getRelevantThreatCategories(result)
   if (threats.length) {
     write(`\n${c.bold}Threat categories:${c.reset}`)
@@ -355,7 +357,7 @@ async function runScan(args: ReturnType<typeof parseArgs>) {
     files = collectFiles(dir)
     if (files.length === 0) {
       write(`${c.yellow}No agent files found in ${dir}${c.reset}`)
-      write(`${c.gray}Supported: .js .ts .py .json .yaml .yml .md${c.reset}\n`)
+      write(`${c.gray}Supported: .js .jsx .ts .tsx .py .json .yaml .yml .toml .md .sh${c.reset}\n`)
       process.exit(0)
     }
   }

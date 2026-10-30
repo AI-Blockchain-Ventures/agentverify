@@ -12,6 +12,7 @@ interface NavbarProps {
 
 const mobileLinks = [
   { href: '/agentspoofed', label: 'Live Demo' },
+  { href: '/developers', label: 'Developers' },
   { href: '/docs', label: 'Docs' },
   { href: '/pricing', label: 'Pricing' },
 ]
@@ -44,6 +45,9 @@ export function Navbar({ openAuth }: NavbarProps) {
         <div className="flex items-center gap-2 md:gap-3">
           <Link href="/agentspoofed" style={{ color: 'var(--text-secondary)' }} className="hidden px-3 py-2 text-sm font-medium transition-opacity hover:opacity-70 md:inline-flex">
             Live Demo
+          </Link>
+          <Link href="/developers" style={{ color: 'var(--text-secondary)' }} className="hidden px-3 py-2 text-sm font-medium transition-opacity hover:opacity-70 lg:inline-flex">
+            Developers
           </Link>
           <Link href="/docs" style={{ color: 'var(--text-secondary)' }} className="hidden px-3 py-2 text-sm font-medium transition-opacity hover:opacity-70 md:inline-flex">
             Docs

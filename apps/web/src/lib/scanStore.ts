@@ -92,6 +92,7 @@ const normalizeFindings = (raw: unknown): Finding[] => {
       securityCategory: typeof finding.securityCategory === 'string' ? finding.securityCategory as Finding['securityCategory'] : undefined,
       capabilityImpact: typeof finding.capabilityImpact === 'string' ? finding.capabilityImpact : undefined,
       fixCode: typeof finding.fixCode === 'string' ? finding.fixCode : undefined,
+      ...(finding.fixLocked === true ? { fixLocked: true } : {}),
     }
   })
 }

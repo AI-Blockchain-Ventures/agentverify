@@ -160,7 +160,7 @@ function ReportPageInner() {
       verified ? [0, 150, 100] : [200, 50, 50],
       true
     )
-    addText(`Risk Score: ${getText(reportData.riskScore, '0')}/100`, 14, [20, 20, 20], true)
+    addText(`Security Score: ${getText(reportData.riskScore, '0')}/100 (higher is safer)`, 14, [20, 20, 20], true)
     addText(`Risk Level: ${getText(reportData.riskLevel)}`, 10, [100, 100, 100])
     addText(`File: ${getText(reportData.fileName)}`, 10, [100, 100, 100])
     y += 4

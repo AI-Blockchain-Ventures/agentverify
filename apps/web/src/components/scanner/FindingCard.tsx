@@ -3,6 +3,43 @@
 import { useState } from 'react'
 import type { Finding } from '@/types'
 import { copyToClipboard } from '@/lib/clipboard'
+import Link from 'next/link'
+import { isNewInV16 } from '@/lib/release'
+
+/**
+ * What a Free report shows where the Pro fix would be: a blurred placeholder (never the real fix —
+ * it is not rendered at all, so nothing leaks through the page source) and a direct upgrade link.
+ */
+/** Shown to a Pro user viewing a report that was created on the Free plan (its fixes were never stored). */
+export function RescanForFix() {
+  return (
+    <div className="rounded-lg border border-[#06B6D4]/30 bg-[#06B6D4]/10 p-3">
+      <p style={{ color: 'var(--text-primary)' }} className="text-xs font-semibold">Re-scan to get the fix</p>
+      <p style={{ color: 'var(--text-secondary)' }} className="mt-1 text-xs">This report was created on the Free plan, so its fixes weren&apos;t included. Scan this agent again on Pro to get step-by-step guidance and corrected code.</p>
+    </div>
+  )
+}
+
+export function LockedFixPreview({ hasCode }: { hasCode: boolean }) {
+  return (
+    <div className="relative overflow-hidden rounded-lg border border-[#7C3AED]/30 bg-[#7C3AED]/5">
+      {hasCode && (
+        <pre aria-hidden="true" className="select-none px-4 py-3 font-mono text-xs leading-relaxed text-[color:var(--accent-green-text)] blur-[3px]">
+{`const fixed = await safeCall({
+  input: validate(request.input),
+  allowlist: APPROVED_ACTIONS,
+  requireApproval: true,
+})`}
+        </pre>
+      )}
+      <div className={`${hasCode ? 'absolute inset-0 flex flex-col items-center justify-center bg-[var(--card)]/70 text-center backdrop-blur-[1px]' : ''} p-3`}>
+        <p style={{ color: 'var(--text-primary)' }} className="text-xs font-semibold">{hasCode ? 'The corrected code for this finding is ready' : 'Step-by-step fix guidance is ready'}</p>
+        <p style={{ color: 'var(--text-secondary)' }} className="mt-1 text-xs">Pro shows exactly how to fix it{hasCode ? ', with copy-ready code' : ''}.</p>
+        <Link href="/pricing" className="mt-2 inline-flex rounded-lg bg-[#7C3AED] px-3 py-1.5 text-xs font-semibold text-white hover:opacity-90">Unlock fixes with Pro — $19.99/mo</Link>
+      </div>
+    </div>
+  )
+}
 
 const severityColors: Record<string, string> = {
   critical: 'bg-[#EF4444]',
@@ -53,13 +90,16 @@ export function FindingCard({
   showFullRemediation = true,
   showCorrectedSnippets = true,
   showA2spaGuidance = true,
+  defaultOpen = false,
 }: {
   finding: Finding
   showFullRemediation?: boolean
   showCorrectedSnippets?: boolean
   showA2spaGuidance?: boolean
+  /** Initial expanded state; the findings list remounts cards to apply "Expand all / Collapse all". */
+  defaultOpen?: boolean
 }) {
-  const [open, setOpen] = useState(false)
+  const [open, setOpen] = useState(defaultOpen)
   const [copied, setCopied] = useState<string | null>(null)
   const isA = finding.category === 'A'
   const categoryLabel = finding.category === 'A' ? 'Protocol' : 'Security'
@@ -124,7 +164,7 @@ if not verified:
         isA ? 'border-l-2 border-l-[#EF4444]' : 'border-l-2 border-l-[#F59E0B]'
       }`}
     >
-      <button onClick={() => setOpen(!open)} className="flex w-full items-start justify-between gap-3 text-left">
+      <button onClick={() => setOpen(!open)} aria-expanded={open} className="flex w-full items-start justify-between gap-3 text-left">
         <div className="flex-1">
           <div className="mb-1 flex flex-wrap items-center gap-2">
             <span className={`h-2 w-2 rounded-full shrink-0 ${severityColors[finding.severity] ?? 'bg-[#4B6080]'}`} />
@@ -133,6 +173,8 @@ if not verified:
             </span>
             <span style={{ color: 'var(--text-muted)' }} className="text-xs">{severityLabel[finding.severity]}</span>
             <span style={{ color: 'var(--text-primary)' }} className="text-sm font-medium">{finding.title}</span>
+            {isNewInV16(finding.code) && <span className="rounded-full bg-[#7C3AED]/12 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[color:var(--accent-purple-text)]" title="This check was added in Agent Verify v1.6">New in v1.6</span>}
+            {typeof finding.line === 'number' && <span style={{ color: 'var(--text-muted)' }} className="font-mono text-[11px]">line {finding.line}</span>}
           </div>
           {!open && (
             <p style={{ color: 'var(--text-muted)' }} className="mt-1 text-xs line-clamp-1">{finding.whatIsWrong}</p>
@@ -173,18 +215,17 @@ if not verified:
               {finding.evidenceType && <p style={{ color: 'var(--text-muted)' }} className="mt-1 text-[11px]">{evidenceTypeLabel[finding.evidenceType]}</p>}
             </div>
           )}
-          {showFullRemediation ? (
+          {finding.fixLocked && showFullRemediation ? (
+            <RescanForFix />
+          ) : showFullRemediation ? (
             <div>
               <span className="text-xs font-semibold uppercase tracking-wider text-[color:var(--accent-green-text)]">How to fix it</span>
               <p style={{ color: 'var(--text-secondary)' }} className="mt-1">{finding.recommendedFix}</p>
             </div>
           ) : (
-            <div className="rounded-lg border border-[#7C3AED]/30 bg-[#7C3AED]/10 p-3">
-              <p style={{ color: 'var(--text-primary)' }} className="text-xs font-semibold">Full remediation requires Pro</p>
-              <p style={{ color: 'var(--text-secondary)' }} className="mt-1 text-xs">Free reports show basic finding context. Pro unlocks corrected snippets, A2SPA guidance, and PDF export.</p>
-            </div>
+            <LockedFixPreview hasCode={Boolean(fixSnippet) || finding.fixLocked === true} />
           )}
-          {showCorrectedSnippets && fixSnippet && (
+          {showCorrectedSnippets && fixSnippet && !finding.fixLocked && (
             <div className="mt-3">
               <div className="mb-1.5 flex items-center justify-between gap-3">
                 <span className="text-xs font-semibold uppercase tracking-wider text-[color:var(--accent-green-text)]">Corrected code or config</span>
@@ -197,12 +238,7 @@ if not verified:
               </pre>
             </div>
           )}
-          {!showCorrectedSnippets && fixSnippet && (
-            <div className="rounded-lg border border-[#7C3AED]/30 bg-[#7C3AED]/10 p-3">
-              <p style={{ color: 'var(--text-primary)' }} className="text-xs font-semibold">Corrected snippets require Pro</p>
-              <p style={{ color: 'var(--text-secondary)' }} className="mt-1 text-xs">Upgrade to view copy-ready code and configuration fixes.</p>
-            </div>
-          )}
+          {!showCorrectedSnippets && fixSnippet && showFullRemediation && <LockedFixPreview hasCode />}
           {showA2spaGuidance && isA && (
             <div
               style={{ border: '1px solid var(--border)', backgroundColor: 'var(--surface)' }}

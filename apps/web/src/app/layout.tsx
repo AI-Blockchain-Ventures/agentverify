@@ -4,6 +4,7 @@ import { AuthProvider } from "@/components/auth/AuthProvider";
 import { CookieBanner } from "@/components/CookieBanner";
 import { LayoutChrome } from "@/components/layout/LayoutChrome";
 import "./globals.css";
+import { OG_IMAGE } from "@/lib/seo";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -21,6 +22,7 @@ export const metadata: Metadata = {
     template: "%s — Agent Verify",
   },
   description: DESCRIPTION,
+  alternates: { canonical: SITE_URL },
   keywords: [
     "AI agent security",
     "agent verification",
@@ -44,14 +46,7 @@ export const metadata: Metadata = {
     description: DESCRIPTION,
     url: SITE_URL,
     siteName: "Agent Verify",
-    images: [
-      {
-        url: "https://aimodularity.com/agentverify/agentverify-icon.png",
-        width: 1200,
-        height: 630,
-        alt: "Agent Verify - Execution Trust Analysis",
-      },
-    ],
+    images: [OG_IMAGE],
     locale: "en_US",
     type: "website",
   },
@@ -59,7 +54,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Agent Verify — Know What Your AI Agent Can Do Before You Deploy It",
     description: DESCRIPTION,
-    images: ["https://aimodularity.com/agentverify/agentverify-icon.png"],
+    images: [OG_IMAGE.url],
   },
 };
 

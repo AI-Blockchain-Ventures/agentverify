@@ -70,7 +70,7 @@ CI exit codes distinguish a real security failure from an execution problem:
 ## GitHub Action
 
 ```yaml
-- uses: AI-Blockchain-Ventures/agentverify@v1
+- uses: AI-Blockchain-Ventures/agentverify@v1.4.0
   with:
     path: ./agents
     api-key: ${{ secrets.AGENTVERIFY_API_KEY }}

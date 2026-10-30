@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { pageMetadata } from '@/lib/seo'
 import Link from 'next/link'
 import { PROFILE_ATTESTATION_PUBLIC_IDENTITY as KEY, PROFILE_ATTESTATION_KEY_API_ROUTE } from '@/lib/profileAttestationKey'
 import { SIGNATURE_SCOPE_DISCLAIMER } from '@/lib/owaspProfile'
@@ -6,17 +7,7 @@ import { SIGNATURE_SCOPE_DISCLAIMER } from '@/lib/owaspProfile'
 const KEY_FILE_URL = 'https://aimodularity.com/agentverify/profile-attestation-key.json'
 const API_BASE_URL = 'https://agentverify-api.agentverify.workers.dev'
 
-export const metadata: Metadata = {
-  title: 'Profile Attestation Signing Key',
-  description: 'The public key Agent Verify uses to sign OWASP Agentic Skills profile assessments, published independently of the API, and how to verify a signed assessment against it.',
-  openGraph: {
-    title: 'Profile Attestation Signing Key — Agent Verify',
-    description: 'The public key Agent Verify uses to sign OWASP Agentic Skills profile assessments, published independently of the API, and how to verify a signed assessment against it.',
-    url: 'https://aimodularity.com/agentverify/profile-attestation/',
-    siteName: 'Agent Verify',
-    type: 'website',
-  },
-}
+export const metadata: Metadata = pageMetadata('/profile-attestation', 'Profile Attestation Signing Key', 'The public key Agent Verify uses to sign OWASP Agentic Skills profile assessments, published independently of the API, and how to verify a signed assessment against it.')
 
 function CodeBlock({ children, label = 'Code example' }: { children: string; label?: string }) {
   return (

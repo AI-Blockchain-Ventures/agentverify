@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import type { User } from 'firebase/auth'
 import type { CategoryScore, Finding, RuntimeBOM as RuntimeBOMType } from '@/types'
 import { Badge } from '@/components/ui/Badge'
-import { freeBillingStatus, type BillingStatus } from '@/lib/billing'
+import { canUseProFeature, freeBillingStatus, type BillingStatus } from '@/lib/billing'
 import { normalizeReportData, toHashableScanResult } from '@/lib/normalizeReport'
 import { computeReportHash } from '@/lib/reportIntegrity'
 import { ReportModeSelector, type ReportMode } from '@/components/report/ReportModeSelector'
@@ -14,6 +14,7 @@ import { DeveloperReportView } from '@/components/report/views/DeveloperReportVi
 import { ComplianceReportView } from '@/components/report/views/ComplianceReportView'
 import { AiJsonReportView } from '@/components/report/views/AiJsonReportView'
 import { FullTechnicalReportView } from '@/components/report/views/FullTechnicalReportView'
+import { ScoreRing, SeverityBar } from '@/components/report/ScoreRing'
 
 export interface ReportViewProps {
   report?: Record<string, unknown>
@@ -66,7 +67,7 @@ export function ReportView({
     riskScore: normalizedRiskScore, riskLevel: normalizedRiskLevel, confidence: normalizedConfidence,
     fileName: normalizedFileName, platform: normalizedPlatform, scannedAt: normalizedScannedAt, formattedDate,
     source: normalizedSource, findingCount,
-    criticalCount: critical, highCount: high, mediumCount: medium,
+    criticalCount: critical, highCount: high, mediumCount: medium, lowCount: low,
     reportInsights,
   } = normalized
   const normalizedReportId = normalized.reportId
@@ -100,11 +101,12 @@ export function ReportView({
               </div>
             </div>
             <div style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }} className="rounded-3xl p-6 text-center">
-              <div style={{ color: 'var(--text-muted)' }} className="text-xs font-medium uppercase tracking-widest">Risk Score</div>
-              <div style={{ color: 'var(--text-primary)' }} className="mt-2 text-6xl font-bold">{normalizedRiskScore}<span style={{ color: 'var(--text-muted)' }} className="text-2xl">/100</span></div>
+              <div style={{ color: 'var(--text-muted)' }} className="mb-3 text-xs font-medium uppercase tracking-widest">Security Score</div>
+              <ScoreRing score={normalizedRiskScore} verified={verified} />
               <div className="mt-4 flex justify-center gap-2"><Badge variant="muted">{normalizedRiskLevel}</Badge></div>
-              <div style={{ color: 'var(--text-muted)' }} className="mt-4 text-xs">{findingCount} finding{findingCount !== 1 ? 's' : ''} · {critical} critical / {high} high / {medium} medium</div>
-              <div style={{ color: 'var(--text-muted)' }} className="mt-2 text-xs">Confidence: {normalizedConfidence}/100</div>
+              <div style={{ color: 'var(--text-muted)' }} className="mt-3 text-xs">{findingCount} finding{findingCount !== 1 ? 's' : ''} · {critical} critical / {high} high / {medium} medium</div>
+              <div className="mt-3"><SeverityBar critical={critical} high={high} medium={medium} low={low} /></div>
+              <div style={{ color: 'var(--text-muted)' }} className="mt-2 text-xs">Higher is safer · confidence {normalizedConfidence}/100</div>
             </div>
           </div>
         </div>
@@ -119,7 +121,7 @@ export function ReportView({
       <ReportModeSelector mode={reportMode} onChange={setReportMode} />
 
       {reportMode === 'executive' && <ExecutiveReportView data={normalized} onSwitchToDeveloper={() => setReportMode('developer')} report={report} user={user} />}
-      {reportMode === 'developer' && <DeveloperReportView data={normalized} />}
+      {reportMode === 'developer' && <DeveloperReportView data={normalized} canViewFixes={canUseProFeature(billingStatus, 'correctedSnippets')} />}
       {reportMode === 'compliance' && <ComplianceReportView data={normalized} />}
       {reportMode === 'json' && <AiJsonReportView data={normalized} reportHash={reportHash} />}
       {reportMode === 'technical' && <FullTechnicalReportView data={normalized} reportHash={reportHash} scannerVersion={typeof report?.scannerVersion === 'string' ? report.scannerVersion : undefined} />}

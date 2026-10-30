@@ -7,7 +7,7 @@ mkdirSync('packages/scanner/dist', { recursive: true })
 
 writeFileSync('packages/scanner/package.json', `${JSON.stringify({
   name: '@agentverify/scanner',
-  version: '1.4.0',
+  version: '1.6.0',
   private: true,
   type: 'module',
   main: './dist/index.js',
@@ -92,6 +92,7 @@ export interface Finding {
   evidence?: string
   quickFix?: string
   fixCode?: string
+  fixLocked?: boolean
   line?: number
   capabilityImpact?: string
   evidenceType?: EvidenceType

@@ -1,4 +1,5 @@
 import type { NormalizedReport } from '@/lib/normalizeReport'
+import { LockedFixPreview, RescanForFix } from '@/components/scanner/FindingCard'
 
 const evidenceTypeLabel: Record<string, string> = {
   definite: 'Definite',
@@ -21,7 +22,8 @@ const severityColor: Record<string, string> = {
  * number was locatable in the submitted content), this says "Not available" explicitly rather
  * than omitting the row or guessing a value.
  */
-export function DeveloperReportView({ data }: { data: NormalizedReport }) {
+/** canViewFixes: Pro sees the fix guidance and example code; Free sees a locked preview (the fix is never rendered). */
+export function DeveloperReportView({ data, canViewFixes = true }: { data: NormalizedReport; canViewFixes?: boolean }) {
   const sorted = [...data.findings].sort((a, b) => {
     const rank = { critical: 4, high: 3, medium: 2, low: 1 }
     return rank[b.severity] - rank[a.severity]
@@ -79,11 +81,23 @@ export function DeveloperReportView({ data }: { data: NormalizedReport }) {
                 <code style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--accent-cyan-text)' }} className="mt-1 block overflow-x-auto rounded-lg px-3 py-2 font-mono text-xs">{f.evidence}</code>
               </div>
             )}
+            {!canViewFixes && (
+              <div className="mt-3">
+                <LockedFixPreview hasCode={Boolean(fixSnippet) || f.fixLocked === true} />
+              </div>
+            )}
+            {canViewFixes && f.fixLocked && (
+              <div className="mt-3">
+                <RescanForFix />
+              </div>
+            )}
+            {canViewFixes && !f.fixLocked && (
             <div className="mt-3">
               <p style={{ color: 'var(--text-muted)' }} className="text-[11px] font-semibold uppercase tracking-wider">How to fix it</p>
               <p style={{ color: 'var(--text-secondary)' }} className="mt-1 whitespace-pre-line text-sm">{f.recommendedFix}</p>
             </div>
-            {fixSnippet && (
+            )}
+            {canViewFixes && fixSnippet && (
               <div className="mt-3">
                 <p className="text-[11px] font-semibold uppercase tracking-wider text-[color:var(--accent-green-text)]">Example fix</p>
                 <pre tabIndex={0} role="region" aria-label="Example fix code" className="mt-1 overflow-x-auto rounded-lg border border-[#00B37E]/20 bg-[#00B37E]/5 px-3 py-2 font-mono text-xs leading-relaxed text-[color:var(--accent-green-text)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#06B6D4]">{fixSnippet}</pre>

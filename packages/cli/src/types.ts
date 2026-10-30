@@ -58,6 +58,8 @@ export interface Finding {
   recommendedFix: string
   fixCode?: string
   quickFix?: string
+  /** Set by the API when this finding has a fix your plan does not include (Pro). */
+  fixLocked?: boolean
   compliance?: {
     owasp?: string[]
     nist?: string[]

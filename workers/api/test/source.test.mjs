@@ -751,7 +751,9 @@ globalThis.fetch = originalFetchForDemo
 const webBillingSource = readFileSync(resolve(__dirname, '../../../apps/web/src/lib/billing.test-data.ts'), 'utf8')
 assert.match(webBillingSource, /freePdf: canUseProFeature\(freeBillingStatus, 'pdfExport'\)/)
 assert.match(webBillingSource, /proPdf: canUseProFeature\(proBillingStatus, 'pdfExport'\)/)
-assert.match(webBillingSource, /teamDisabled: getPlanAction\('team'\)\.disabled === true/)
+// v1.6: Team is "Talk to us" (a mailto sales link), still never a self-serve checkout — the Worker's
+// isPlanCheckoutAvailable() only accepts 'pro', which is what actually enforces that.
+assert.match(webBillingSource, /teamContactOnly: getPlanAction\('team'\)\.href\.startsWith\('mailto:'\)/)
 assert.match(webBillingSource, /enterpriseContactOnly: getPlanAction\('enterprise'\)\.href\.startsWith\('mailto:'\)/)
 
 // ============================================================================

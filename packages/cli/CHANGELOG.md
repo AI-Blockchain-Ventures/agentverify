@@ -2,6 +2,15 @@
 
 All notable changes to the `agentverify` CLI/SDK package are documented here.
 
+## [1.6.0] - 2026-10-27
+
+### Added
+
+- Scans now run Agent Verify's v1.6 check set (76 checks, up from 44), including framework packs
+  and MCP configuration checks — no CLI change needed;
+  results come from the API. See the root CHANGELOG for the full list.
+- Directory scans now also pick up `.jsx`, `.tsx`, `.toml`, and `.sh` files.
+
 ## [1.5.0] - 2026-09-22
 
 ### Added

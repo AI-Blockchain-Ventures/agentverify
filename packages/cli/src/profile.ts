@@ -200,7 +200,7 @@ export async function postProfile(apiUrl: string, apiKey: string, body: string, 
   try {
     const response = await fetch(apiUrl, {
       method: 'POST',
-      headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json', 'User-Agent': 'agentverify-cli/1.5.0' },
+      headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json', 'User-Agent': 'agentverify-cli/1.6.0' },
       body,
       signal: controller.signal,
     })

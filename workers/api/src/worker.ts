@@ -1,5 +1,6 @@
 import type { ArtifactFingerprint, Finding, ScanInput, ScanResult, SignedAttestation } from '@agentverify/scanner'
 import { computeArtifactFingerprint, computeReportHash, buildAttestationPayload, findPolicyById, evaluatePolicy, VERIFICATION_CATALOG, catalogSummary, RISK_TAXONOMY } from '@agentverify/scanner'
+import { applyRemediationEntitlement, type LockableFinding } from './entitlementView'
 import { checkScanQuota, handleCheckout, handlePortal, handleStatus, handleWebhook, recordMonthlyUsage, type BillingEnv } from './billing'
 import { createScanResult } from './scanResponse'
 import { signAttestation, getAttestationPublicKeyInfo, type AttestationSigningEnv } from './attestationSigning'
@@ -85,6 +86,7 @@ async function saveReportToFirebase(
           evidenceType: { stringValue: f.evidenceType ?? '' },
           securityCategory: { stringValue: f.securityCategory ?? '' },
           capabilityImpact: { stringValue: f.capabilityImpact ?? '' },
+          fixLocked: { booleanValue: (f as LockableFinding).fixLocked === true },
         }
       }
     }))
@@ -205,12 +207,13 @@ async function handleDemoScan(request: Request, env: WorkerEnv): Promise<Respons
   }
 
   try {
-    const scanResult = createScanResult({
+    // The public demo is unauthenticated, so it is always the Free view: findings without fixes.
+    const scanResult = applyRemediationEntitlement(createScanResult({
       content: body.content,
       fileName: typeof body.fileName === 'string' && body.fileName ? body.fileName : 'demo-agent.txt',
       fileSize: body.content.length,
       platform: typeof body.platform === 'string' ? body.platform : undefined,
-    })
+    }), 'free')
     return json(scanResult)
   } catch (e) {
     console.error('Demo scan failed:', e instanceof Error ? e.stack ?? e.message : e)
@@ -273,12 +276,14 @@ async function handleVerifyFix(request: Request, env: WorkerEnv): Promise<Respon
   if (ownerUid !== principal.uid) return json({ error: 'You do not have access to that report.' }, 403)
 
   try {
-    const rescan = createScanResult({
+    // The re-scan follows the caller's plan, so it can never be used to read fixes a Free plan excludes.
+    const { plan } = await checkScanQuota(env, principal.uid)
+    const rescan = applyRemediationEntitlement(createScanResult({
       content: body.fixedContent,
       fileName: typeof body.fileName === 'string' && body.fileName ? body.fileName : 'fixed-agent.txt',
       fileSize: body.fixedContent.length,
       platform: typeof body.platform === 'string' ? body.platform : undefined,
-    })
+    }), plan === 'pro' ? 'pro' : 'free')
     return json({ reportId: body.reportId, findingCode: body.findingCode, rescan })
   } catch (e) {
     console.error('Fix verification failed:', e instanceof Error ? e.stack ?? e.message : e)
@@ -708,12 +713,14 @@ export default {
         return json({ error: `content exceeds the ${MAX_SCAN_CONTENT_LENGTH / 1024 / 1024}MB scan limit` }, 413)
       }
 
-      const scanResult = createScanResult({
+      // Free plans receive findings without fixes. Applied BEFORE hashing, signing, and saving so the
+      // stored report, its integrity hash, and its attestation all describe exactly what was returned.
+      const scanResult = applyRemediationEntitlement(createScanResult({
         content: body.content,
         fileName: body.fileName,
         fileSize: body.fileSize,
         platform: body.platform,
-      })
+      }), quota.plan === 'pro' ? 'pro' : 'free')
       // Fingerprints the exact submitted content — independent of the scan result itself, so the
       // same artifact always fingerprints identically even if the ruleset changes between scans.
       const artifactFingerprint = await computeArtifactFingerprint(body.content)

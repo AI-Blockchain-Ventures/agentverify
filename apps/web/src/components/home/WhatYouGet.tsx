@@ -1,5 +1,5 @@
 const cards = [
-  ['Verdict', 'Security report', 'A clear verdict, 100-point risk score, risk level, and finding count on the first screen.'],
+  ['Verdict', 'Security report', 'A clear verdict, a 100-point security score (higher is safer), risk level, and finding count on the first screen.'],
   ['Fix', 'Recommended fixes', 'Plain-English findings with corrected code or configuration snippets when available.'],
   ['Share', 'Private by default', 'Keep reports private, or share a public report link any time — Pro also unlocks PDF export.'],
 ]

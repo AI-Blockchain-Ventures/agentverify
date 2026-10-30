@@ -8,7 +8,9 @@ import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore'
 import type { ThreatCategoryStatus } from '@/types'
 import { Badge } from '@/components/ui/Badge'
 import { CategoryScores } from '@/components/scanner/CategoryScores'
-import { FindingCard } from '@/components/scanner/FindingCard'
+import { FindingsList } from '@/components/report/FindingsList'
+import { LockedFixPreview, RescanForFix } from '@/components/scanner/FindingCard'
+import { buildFixChecklist } from '@/lib/fixChecklist'
 import { RuntimeBOM } from '@/components/scanner/RuntimeBOM'
 import { ScanComparison } from '@/components/report/ScanComparison'
 import { BlastRadius } from '@/components/scanner/BlastRadius'
@@ -58,6 +60,25 @@ export function SecurityReportView({ data, report, reportId, user = null, isOwne
   const [saved, setSaved] = useState(false)
   const [shareError, setShareError] = useState<string | null>(null)
   const [shareSettings, setShareSettings] = useState({ isPublic: report?.isPublic === true })
+  // The section menu sticks just below whatever sticky/fixed top bar the page has (public pages have
+  // a 65px site header; the dashboard has none) so it is never hidden underneath it.
+  const [stickyTop, setStickyTop] = useState(0)
+  useEffect(() => {
+    const measure = () => {
+      const header = document.querySelector('header')
+      const pos = header ? getComputedStyle(header).position : ''
+      setStickyTop(header && (pos === 'sticky' || pos === 'fixed') ? header.getBoundingClientRect().height : 0)
+    }
+    // The site header can mount after this view (it waits on auth state), so re-measure on scroll too;
+    // React skips the re-render when the height has not changed.
+    measure()
+    window.addEventListener('resize', measure)
+    window.addEventListener('scroll', measure, { passive: true })
+    return () => {
+      window.removeEventListener('resize', measure)
+      window.removeEventListener('scroll', measure)
+    }
+  }, [])
 
   useEffect(() => {
     setShareSettings({ isPublic: report?.isPublic === true })
@@ -173,9 +194,37 @@ export function SecurityReportView({ data, report, reportId, user = null, isOwne
     }
   }
 
+  const fixChecklist = buildFixChecklist({
+    fileName: data.fileName,
+    reportId: normalizedReportId,
+    riskScore: normalizedRiskScore,
+    verdictLabel: data.verdictLabel,
+    findings: safeFindings,
+    fixPriority: reportInsights.fixPriority,
+    reportUrl: reportUrl ? publicReportUrl : undefined,
+    includeFixes: canViewFullRemediation,
+  })
+  const fixableCount = safeFindings.filter(f => f.fixLocked || f.fixCode || f.quickFix || f.recommendedFix).length
+  const lockedFromFreeScan = canViewCorrectedSnippets && safeFindings.some(f => f.fixLocked)
+
+  // v1.6 quick navigation — only links to sections that actually render for this report.
+  const quickNav: Array<[string, string]> = [['av-hurt', 'Overview']]
+  if (!verified && reportInsights.highestRisks.length > 0) quickNav.push(['av-top-risks', 'Top risks'])
+  if (reportInsights.fixPriority.length > 0) quickNav.push(['av-fix-plan', 'Fix plan'])
+  quickNav.push(['av-findings', `Findings (${safeFindings.length})`])
+  if (owaspTags.length > 0 || nistTags.length > 0 || soc2Tags.length > 0) quickNav.push(['av-compliance', 'Compliance'])
+  if (safeFindings.length > 0) quickNav.push(['av-fixer', 'Code fixes'])
+  quickNav.push(['av-share', 'Share'])
+
   return (
     <>
-      <section style={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)' }} className="print-border mb-6 rounded-3xl p-6 shadow-xl shadow-black/5">
+      <nav aria-label="Report sections" style={{ top: stickyTop, backgroundColor: 'color-mix(in srgb, var(--bg) 88%, transparent)', borderBottom: '1px solid var(--border)' }} className="sticky z-20 -mx-4 mb-5 flex gap-1.5 overflow-x-auto px-4 py-2.5 backdrop-blur print:hidden md:-mx-6 md:px-6">
+        {quickNav.map(([id, label]) => (
+          <a key={id} href={`#${id}`} style={{ border: '1px solid var(--border)', color: 'var(--text-secondary)', backgroundColor: 'var(--card)' }} className="shrink-0 rounded-full px-3 py-1.5 text-xs font-medium transition-opacity hover:opacity-70">{label}</a>
+        ))}
+      </nav>
+
+      <section id="av-hurt" style={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)' }} className="print-border mb-6 scroll-mt-32 rounded-3xl p-6 shadow-xl shadow-black/5">
         <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[color:var(--accent-purple-text)]">Where can this agent hurt us?</p>
         <h2 style={{ color: 'var(--text-primary)' }} className="mt-1 text-lg font-semibold">Real evidence only — nothing below is inferred beyond what this scan found</h2>
         <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -299,7 +348,7 @@ export function SecurityReportView({ data, report, reportId, user = null, isOwne
       {isOwner && user && report && <ScanComparison report={report} user={user} />}
 
       {!verified && reportInsights.highestRisks.length > 0 && (
-        <section style={{ backgroundColor: 'var(--card)', border: '1px solid #E03E3E33' }} className="mb-6 rounded-3xl p-6 shadow-xl shadow-black/5">
+        <section id="av-top-risks" style={{ backgroundColor: 'var(--card)', border: '1px solid #E03E3E33' }} className="mb-6 scroll-mt-32 rounded-3xl p-6 shadow-xl shadow-black/5">
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[color:var(--accent-red-text)]">Highest risks</p>
           <h2 style={{ color: 'var(--text-primary)' }} className="mt-1 text-lg font-semibold">The {reportInsights.highestRisks.length} most important thing{reportInsights.highestRisks.length === 1 ? '' : 's'} to understand right now</h2>
           <ol className="mt-4 space-y-2">
@@ -404,9 +453,21 @@ export function SecurityReportView({ data, report, reportId, user = null, isOwne
       </section>
 
       {reportInsights.fixPriority.length > 0 && (
-        <section style={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)' }} className="mb-6 rounded-3xl p-6 shadow-xl shadow-black/5">
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[color:var(--accent-purple-text)]">Prioritized fix plan</p>
-          <h2 style={{ color: 'var(--text-primary)' }} className="mt-1 text-lg font-semibold">What to fix first</h2>
+        <section id="av-fix-plan" style={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)' }} className="mb-6 scroll-mt-32 rounded-3xl p-6 shadow-xl shadow-black/5">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[color:var(--accent-purple-text)]">Prioritized fix plan</p>
+              <h2 style={{ color: 'var(--text-primary)' }} className="mt-1 text-lg font-semibold">What to fix first</h2>
+            </div>
+            <button
+              onClick={() => copyText(fixChecklist, 'fix-checklist')}
+              title="Copies a Markdown checklist you can paste into GitHub, Jira, Slack, or a doc"
+              style={{ border: '1px solid var(--border)', color: copied === 'fix-checklist' ? 'var(--accent-green-text)' : 'var(--text-secondary)' }}
+              className="w-fit shrink-0 rounded-xl px-3 py-2 text-xs font-semibold transition-opacity hover:opacity-70 print:hidden"
+            >
+              {copied === 'fix-checklist' ? '✓ Checklist copied' : 'Copy fix checklist'}
+            </button>
+          </div>
           <div className="mt-4 grid gap-3">
             {reportInsights.fixPriority.slice(0, 7).map((item, index) => (
               <div key={`${item.title}-${index}`} style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }} className="rounded-2xl p-4">
@@ -459,7 +520,7 @@ export function SecurityReportView({ data, report, reportId, user = null, isOwne
           <div className="space-y-2">
             {evidenceFindings.map((finding, i) => (
               <div key={finding.id ?? i} style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }} className="flex items-start gap-3 rounded-lg px-4 py-3">
-                <span className={`mt-0.5 shrink-0 rounded px-1.5 py-0.5 text-xs font-bold ${finding.severity === 'critical' ? 'bg-[#E03E3E]/10 text-[color:var(--accent-red-text)]' : finding.severity === 'high' ? 'bg-[#E07B39]/10 text-[color:var(--accent-orange-text)]' : 'bg-[var(--text-muted)]/20 text-[var(--text-muted)]'}`}>
+                <span className={`mt-0.5 shrink-0 rounded px-1.5 py-0.5 text-xs font-bold ${finding.severity === 'critical' ? 'bg-[#E03E3E]/10 text-[color:var(--accent-red-text)]' : finding.severity === 'high' ? 'bg-[#E07B39]/10 text-[color:var(--accent-orange-text)]' : 'bg-[var(--text-muted)]/20 text-[var(--text-secondary)]'}`}>
                   {finding.severity}
                 </span>
                 <div className="min-w-0 flex-1">
@@ -472,20 +533,20 @@ export function SecurityReportView({ data, report, reportId, user = null, isOwne
         </div>
       )}
 
-      <section className="mb-6">
+      <section id="av-findings" className="mb-6 scroll-mt-32">
         <div style={{ borderBottom: '1px solid var(--border)' }} className="mb-4 pb-3"><p className="text-xs font-semibold uppercase tracking-[0.18em] text-[color:var(--accent-purple-text)]">Section 02</p><h2 style={{ color: 'var(--text-primary)' }} className="mt-1 font-semibold">Findings ({safeFindings.length})</h2></div>
         {safeFindings.length > 0 && !hasProAccess && (
           <div className="mb-4 rounded-xl border border-[#7C3AED]/30 bg-[#7C3AED]/10 p-4">
-            <p style={{ color: 'var(--text-primary)' }} className="text-sm font-semibold">Need corrected code and implementation guidance?</p>
-            <p style={{ color: 'var(--text-secondary)' }} className="mt-1 text-xs">Pro includes full remediation, corrected code, A2SPA guidance, and PDF export.</p>
-            <Link href="/pricing" className="mt-3 inline-flex rounded-lg bg-[#7C3AED] px-3 py-2 text-xs font-semibold text-white">View Pro</Link>
+            <p style={{ color: 'var(--text-primary)' }} className="text-sm font-semibold">Pro has the fix for {fixableCount === safeFindings.length ? `all ${fixableCount}` : fixableCount} of these finding{fixableCount === 1 ? '' : 's'}.</p>
+            <p style={{ color: 'var(--text-secondary)' }} className="mt-1 text-xs">Step-by-step guidance and copy-ready corrected code for each one, A2SPA guidance, a PDF report for clients and auditors, and 100 scans a month to re-check every change.</p>
+            <Link href="/pricing" className="mt-3 inline-flex rounded-lg bg-[#7C3AED] px-3 py-2 text-xs font-semibold text-white">See what Pro unlocks — $19.99/mo</Link>
           </div>
         )}
-        {safeFindings.length === 0 ? <div className="rounded-xl border border-[#10B981]/20 bg-[#10B981]/5 p-8 text-center"><div style={{ color: 'var(--text-primary)' }} className="font-semibold">No issues detected</div><div style={{ color: 'var(--text-muted)' }} className="mt-1 text-sm">This agent passed all security checks</div></div> : <div className="space-y-2">{safeFindings.map(finding => <FindingCard key={finding.id} finding={finding} showFullRemediation={canViewFullRemediation} showCorrectedSnippets={canViewCorrectedSnippets} showA2spaGuidance={canViewA2spaGuidance} />)}</div>}
+        {safeFindings.length === 0 ? <div className="rounded-xl border border-[#10B981]/20 bg-[#10B981]/5 p-8 text-center"><div style={{ color: 'var(--text-primary)' }} className="font-semibold">No issues detected</div><div style={{ color: 'var(--text-muted)' }} className="mt-1 text-sm">This agent passed all security checks</div></div> : <FindingsList findings={safeFindings} showFullRemediation={canViewFullRemediation} showCorrectedSnippets={canViewCorrectedSnippets} showA2spaGuidance={canViewA2spaGuidance} />}
       </section>
 
       {(owaspTags.length > 0 || nistTags.length > 0 || soc2Tags.length > 0) && (
-        <div className="mb-8">
+        <div id="av-compliance" className="mb-8 scroll-mt-32">
           <div className="mb-4 flex items-center gap-3">
             <h2 style={{ color: 'var(--text-primary)' }} className="text-sm font-bold uppercase tracking-widest">Compliance Mapping</h2>
             <div style={{ backgroundColor: 'var(--border)' }} className="h-px flex-1" />
@@ -521,14 +582,27 @@ export function SecurityReportView({ data, report, reportId, user = null, isOwne
       )}
 
       {safeFindings.length > 0 && (
-        <section className="mb-8">
+        <section id="av-fixer" className="mb-8 scroll-mt-32">
           <div className="mb-4 flex items-center gap-3"><h2 style={{ color: 'var(--text-primary)' }} className="text-sm font-bold uppercase tracking-widest">Agent Fixer</h2><div style={{ backgroundColor: 'var(--border)' }} className="h-px flex-1" /></div>
+          {!canViewCorrectedSnippets ? (
+            <div style={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)' }} className="rounded-xl p-5">
+              <p style={{ color: 'var(--text-primary)' }} className="text-sm font-semibold">Fixes are ready for {fixableCount} finding{fixableCount === 1 ? '' : 's'}</p>
+              <ul className="mt-2 space-y-1">
+                {safeFindings.filter(f => f.fixLocked || f.quickFix || f.recommendedFix).slice(0, 8).map((finding, i) => (
+                  <li key={finding.id ?? i} style={{ color: 'var(--text-secondary)' }} className="text-xs">• {finding.title}</li>
+                ))}
+              </ul>
+              <div className="mt-4"><LockedFixPreview hasCode /></div>
+            </div>
+          ) : (
           <div className="space-y-3">
+            {lockedFromFreeScan && <RescanForFix />}
             {safeFindings.map((finding, i) => {
               if (!finding.quickFix && !finding.recommendedFix) return null
               return <div key={finding.id ?? i} style={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)' }} className="rounded-xl p-5"><p style={{ color: 'var(--text-primary)' }} className="mb-3 text-sm font-semibold">{finding.title}</p>{finding.quickFix && <div className="mb-3"><p className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-[color:var(--accent-green-text)]">Quick Fix</p><pre tabIndex={0} role="region" aria-label="Quick fix code" className="overflow-x-auto rounded-lg border border-[#00B37E]/20 bg-[#00B37E]/5 px-4 py-3 font-mono text-xs leading-relaxed text-[color:var(--accent-green-text)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#06B6D4]">{finding.quickFix}</pre></div>}{finding.recommendedFix && <div><p style={{ color: 'var(--text-muted)' }} className="mb-1.5 text-xs font-semibold uppercase tracking-wider">Full Guidance</p><p style={{ color: 'var(--text-secondary)' }} className="whitespace-pre-line text-sm leading-relaxed">{finding.recommendedFix}</p></div>}</div>
             })}
           </div>
+          )}
         </section>
       )}
 
@@ -536,7 +610,7 @@ export function SecurityReportView({ data, report, reportId, user = null, isOwne
 
       {(onNewScan || reportUrl) && <div className="mt-8 flex flex-col gap-3 sm:flex-row">{onNewScan && <button onClick={onNewScan} className="rounded-lg bg-[#06B6D4] px-5 py-2.5 text-sm font-semibold text-[#080B14] transition-colors hover:bg-[#06B6D4]">Run New Scan</button>}{reportUrl && <button onClick={() => copyText(publicReportUrl, 'report-link')} style={{ backgroundColor: copied === 'report-link' ? '#7C3AED' : 'var(--card)', color: copied === 'report-link' ? '#060A0F' : 'var(--text-muted)', border: '1px solid var(--border)' }} className="rounded-lg px-5 py-2.5 text-sm font-semibold transition-all hover:opacity-70">{copied === 'report-link' ? '✓ Copied' : 'Copy Report Link'}</button>}</div>}
 
-      <div style={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)' }} className="mt-8 rounded-xl p-6">
+      <div id="av-share" style={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)' }} className="mt-8 scroll-mt-32 rounded-xl p-6">
         <div className="mb-4 flex items-center gap-3">
           <h2 style={{ color: 'var(--text-primary)' }} className="text-sm font-bold uppercase tracking-widest">Share Report</h2>
           <div style={{ backgroundColor: 'var(--border)' }} className="h-px flex-1" />

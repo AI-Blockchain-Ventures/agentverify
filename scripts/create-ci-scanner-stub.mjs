@@ -92,6 +92,7 @@ export interface Finding {
   evidence?: string
   quickFix?: string
   fixCode?: string
+  fixLocked?: boolean
   line?: number
   capabilityImpact?: string
   evidenceType?: EvidenceType

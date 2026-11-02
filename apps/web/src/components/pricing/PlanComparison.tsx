@@ -143,6 +143,7 @@ export function ProPreview() {
 }
 
 const FAQ: Array<[string, string]> = [
+  ['Can I try Pro before paying?', 'Yes. New Pro customers get 14 days free. Checkout asks for a card, and you are only charged when the trial ends — cancel any time before then in Manage billing and you pay nothing.'],
   ['Do free scans run fewer checks?', 'No. Every plan runs all 124 checks. Free shows you what is wrong; Pro adds the step-by-step fix, corrected code, A2SPA guidance, and PDF export.'],
   ['Can my developers use it before every deploy?', 'Yes, on any plan. Create an API key in the dashboard, then run the CLI or the GitHub Action — risky changes fail the check before they merge. See the Developers page.'],
   ['What counts as a scan?', 'Each scan you run — from the dashboard, the CLI, the API, or the GitHub Action — uses one scan from the same monthly quota. Scanning a whole GitHub repo or .zip is still one scan.'],

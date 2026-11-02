@@ -84,7 +84,7 @@ Agent Verify now runs where you build agents: in your editor, inside your AI cod
   A three-email welcome series (welcome, connect a repo, what Pro adds) for verified new accounts, with one-click
   opt-out — off until `ONBOARDING_EMAILS = "true"`.
 - **Plans.** Pro's price is read from Stripe (like Team's), optional yearly Pro (`STRIPE_PRO_ANNUAL_PRICE_ID`) with a
-  Monthly/Yearly switch, and an optional free trial for first-time Pro buyers (`PRO_TRIAL_DAYS`). Cleaner pricing page.
+  Monthly/Yearly switch, and a free trial for first-time Pro buyers (`PRO_TRIAL_DAYS`, set to 14 days). Cleaner pricing page.
 - **Ready for marketplaces.** GitHub Action branding for the Marketplace, MCP Registry metadata (`mcpName`,
   `packages/cli/server.json`), updated VS Code description.
 - **Public demo limit.** Repeat scans of the same code (the Live Demo, the homepage examples) reuse a saved result and

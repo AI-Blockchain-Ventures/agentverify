@@ -29,6 +29,9 @@ ASK_DAILY_CAP = "150"
 # Welcome email series (src/ops.ts): 3 short emails over a new account's first week, sent through
 # Resend (needs RESEND_API_KEY + ALERT_FROM_EMAIL). Change to "true" when you are ready to send them.
 ONBOARDING_EMAILS = "false"
+# Free trial for first-time Pro buyers, in days (1–30; "0" turns it off). Stripe Checkout still takes a
+# card up front and charges when the trial ends unless the customer cancels.
+PRO_TRIAL_DAYS = "14"
 
 # Cloudflare's built-in rate limiter for public routes (free scan, Ask): 10 requests a minute per
 # network (Ask: per account when signed in), shared across each Cloudflare location. On top of the

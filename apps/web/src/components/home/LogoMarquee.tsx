@@ -22,7 +22,7 @@ export function LogoMarquee() {
     </span>
   ))
   return (
-    <section aria-label="Works with" className="py-12 md:py-14" style={{ borderBottom: '1px solid var(--border)' }}>
+    <section aria-label="Works with" className="py-12 md:py-14">
       <div className="av-container">
         <h2 className="mb-8 text-center text-lg font-semibold tracking-tight md:text-xl" style={{ color: 'var(--text-primary)' }}>Works with the tools your team already uses</h2>
         <div className="av-marquee">

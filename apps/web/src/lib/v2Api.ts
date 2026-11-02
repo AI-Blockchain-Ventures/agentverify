@@ -46,6 +46,11 @@ export interface PlanAvailability {
   teamSeatPrice?: { unitAmount: number; currency: string; interval: string } | null
   teamMinSeats: number
   teamMaxSeats: number
+  /** Live Pro prices from Stripe (null until configured / if Stripe can't be reached). */
+  proPrice?: { unitAmount: number; currency: string; interval: string } | null
+  proAnnualPrice?: { unitAmount: number; currency: string; interval: string } | null
+  /** Free-trial days for first-time Pro buyers (0 = no trial). */
+  proTrialDays?: number
 }
 
 /** Public: whether self-serve Team checkout is switched on yet (it needs a Stripe Team price). */

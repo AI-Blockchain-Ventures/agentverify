@@ -1,6 +1,8 @@
 'use client'
 
+import { useEffect } from 'react'
 import { usePathname } from 'next/navigation'
+import { installErrorReporter } from '@/lib/errorReporter'
 import { useAuthNav } from '@/components/auth/useAuthNav'
 import { Footer } from '@/components/layout/Footer'
 import { Navbar } from '@/components/layout/Navbar'
@@ -19,6 +21,8 @@ export function LayoutChrome({ children }: { children: React.ReactNode }) {
     pathname === '/signup' || pathname.startsWith('/signup/') ||
     pathname === '/login' || pathname.startsWith('/login/')
   const openAuth = useAuthNav()
+  // Report crashes on any page to the admin (see lib/errorReporter.ts).
+  useEffect(() => installErrorReporter(), [])
 
   return (
     <>

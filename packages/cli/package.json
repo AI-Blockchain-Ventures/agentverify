@@ -1,6 +1,7 @@
 {
   "name": "agentverify",
   "version": "2.0.0",
+  "mcpName": "io.github.AI-Blockchain-Ventures/agentverify",
   "description": "CLI and SDK for Agent Verify — execution trust analysis for AI agents",
   "bin": {
     "agentverify": "dist/cli.js"
@@ -21,17 +22,31 @@
     },
     "./cli": "./dist/cli.js"
   },
-  "files": ["dist", "README.md", "LICENSE", "CHANGELOG.md"],
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
   "scripts": {
     "build": "tsup src/cli.ts src/sdk.ts src/guard.ts --format cjs,esm --dts --clean",
     "dev": "tsup src/cli.ts src/sdk.ts src/guard.ts --format cjs,esm --dts --watch",
     "test": "npm run build && node test/cli.test.mjs && node --test test/profile.test.mjs test/mcp.test.mjs test/guard.test.mjs",
     "prepublishOnly": "npm run build"
   },
-  "engines": { "node": ">=18.0.0" },
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "keywords": [
-    "ai", "agents", "security", "verification", "a2spa",
-    "agent-security", "llm", "ai-safety", "cli"
+    "ai",
+    "agents",
+    "security",
+    "verification",
+    "a2spa",
+    "agent-security",
+    "llm",
+    "ai-safety",
+    "cli"
   ],
   "author": "AI Blockchain Ventures LLC <hello@aiblockchainventures.com>",
   "license": "MIT",

@@ -6,6 +6,7 @@ import { useAuth } from '@/components/auth/AuthProvider'
 import { Brand } from '@/components/layout/Brand'
 import { NavIcon } from '@/components/layout/NavIcon'
 import { APP_VERSION_SHORT } from '@/lib/release'
+import { openFeedback } from '@/components/growth/FeedbackDialog'
 
 interface NavItem {
   id: DashboardTab
@@ -139,7 +140,7 @@ export function Sidebar({
 
       <div style={{ borderTop: '1px solid var(--border)', color: 'var(--text-muted)' }} className="flex items-center justify-between px-4 py-3 text-xs">
         <span>{APP_VERSION_SHORT}</span>
-        <a href="mailto:hello@aiblockchainventures.com" className="transition-colors hover:text-[color:var(--accent-purple-text)]">Support</a>
+        <button onClick={openFeedback} className="cursor-pointer transition-colors hover:text-[color:var(--accent-purple-text)]">Feedback</button>
         <button onClick={signOut} className="cursor-pointer transition-colors hover:text-[color:var(--accent-red-text)]">Sign out</button>
       </div>
     </aside>

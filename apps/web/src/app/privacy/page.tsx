@@ -20,6 +20,9 @@ const COLLECT: Array<[string, string, string]> = [
   ['Billing', 'Plan, Stripe customer ID and seats. Card details are handled by Stripe; we never see them.', 'Billing.'],
   ['Referrals', 'Who invited whom.', 'Giving referral rewards.'],
   ['Weekly email', 'Your preference (off unless you turn it on).', 'Sending the Monday summary.'],
+  ['Getting-started emails', 'Up to three short tips emails in your first week (for example, how to connect a repo), only after you verify your email. Every one has a one-click "stop these tips" link.', 'Helping new accounts get set up.'],
+  ['Feedback you send', 'Your message, the type (bug, idea, other), the page you were on, and your account email so we can reply.', 'Fixing problems and improving the product.'],
+  ['Error reports', 'If a page or our API crashes: the error message, technical details (a stack trace), the page path (never the rest of the address), and your browser type. No page content or anything you typed. Deleted after 90 days.', 'Finding and fixing bugs quickly.'],
   ['Analytics', 'Usage data from Google Analytics for Firebase — only if you click Accept on the cookie banner.', 'Understanding how the product is used, in aggregate.'],
 ]
 
@@ -75,6 +78,7 @@ const sections: LegalSection[] = [
       <Bullets items={[
         'Reports and account data: until you delete them or close your account.',
         'Agent Guard events: 30 days.',
+        'Error reports: 90 days after the error was last seen.',
         'Free-scan results for identical code: up to 6 hours in cache.',
         'You can delete reports, repository connections and injection-test targets yourself in the dashboard.',
         <>To close your account and delete its data, email {mail}. We do this within 30 days, except billing records we must keep by law.</>,

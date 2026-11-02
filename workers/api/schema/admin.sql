@@ -6,6 +6,7 @@
 CREATE TABLE IF NOT EXISTS user_profiles (
   uid TEXT PRIMARY KEY,
   email TEXT,
+  email_verified INTEGER NOT NULL DEFAULT 0,  -- 1 once Firebase says the email is verified
   name TEXT,
   company TEXT,
   role TEXT,

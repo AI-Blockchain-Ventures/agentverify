@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect } from 'react'
+import { openFeedback } from '@/components/growth/FeedbackDialog'
 import Link from 'next/link'
 import Image from 'next/image'
 import type { DashboardTab } from '@/types'
@@ -126,7 +127,10 @@ export function MobileNavDrawer({
 
         <div style={{ borderTop: '1px solid var(--border)' }} className="px-4 py-3.5">
           <div style={{ color: 'var(--text-muted)' }} className="mb-2 truncate text-xs">{user?.email ?? ''}</div>
-          <button onClick={signOut} style={{ color: 'var(--accent-red-text)' }} className="text-xs font-semibold">Sign out</button>
+          <div className="flex items-center gap-4">
+            <button onClick={() => { onClose(); openFeedback() }} style={{ color: 'var(--accent-purple-text)' }} className="text-xs font-semibold">Send feedback</button>
+            <button onClick={signOut} style={{ color: 'var(--accent-red-text)' }} className="text-xs font-semibold">Sign out</button>
+          </div>
         </div>
       </div>
     </div>

@@ -1,6 +1,9 @@
 name: Agent Verify
-description: Scan AI agents for execution-risk findings in pull requests.
+description: Security checks for AI agents and MCP configs on every pull request — 124 tested checks, PR comments, pass/fail.
 author: AI Blockchain Ventures LLC
+branding:
+  icon: shield
+  color: purple
 
 inputs:
   path:

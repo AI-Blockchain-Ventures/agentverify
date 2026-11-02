@@ -21,6 +21,12 @@ export default function PricingPage() {
   const goAuth = useAuthNav()
   const [pendingCheckout, setPendingCheckout] = useState(false)
   const [availability, setAvailability] = useState<PlanAvailability | null>(null)
+  const [interval, setBillingInterval] = useState<'month' | 'year'>('month')
+  const yearly = availability?.proAnnualPrice ?? null
+  const monthly = availability?.proPrice ?? null
+  const trialDays = availability?.proTrialDays ?? 0
+  // "2 months free"-style saving, from the real Stripe prices.
+  const yearlySavingPct = yearly && monthly && monthly.unitAmount > 0 ? Math.round((1 - yearly.unitAmount / (monthly.unitAmount * 12)) * 100) : 0
   useEffect(() => { void fetchPlanAvailability().then(setAvailability) }, [])
   // Back from /signup with ?checkout=pro: continue straight into Pro checkout.
   useEffect(() => {
@@ -51,7 +57,7 @@ export default function PricingPage() {
           Authorization: `Bearer ${await user.getIdToken()}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ plan: 'pro' }),
+        body: JSON.stringify({ plan: 'pro', interval: interval === 'year' && yearly ? 'year' : 'month' }),
       })
       const data = await res.json().catch(() => ({})) as { url?: string; error?: string; reviewMode?: boolean }
       if (res.status === 401) {
@@ -79,7 +85,7 @@ export default function PricingPage() {
     } finally {
       setCheckoutLoading(false)
     }
-  }, [user, goAuth])
+  }, [user, goAuth, interval, yearly])
 
   useEffect(() => {
     if (!user || !pendingCheckout || checkoutLoading) return
@@ -96,15 +102,32 @@ export default function PricingPage() {
           <p style={{ color: 'var(--text-secondary)' }} className="mt-5 text-base leading-7 md:text-lg">Every plan runs all 124 checks. Upgrade to Pro for the corrected code, step-by-step fixes, A2SPA guidance, and a PDF report you can hand to clients and auditors.</p>
         </div>
 
-        <div style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }} className="mx-auto mt-8 max-w-3xl rounded-3xl p-5 text-center shadow-xl shadow-black/5">
-          <p style={{ color: 'var(--text-primary)' }} className="text-sm font-semibold">Billing status</p>
-          <p style={{ color: 'var(--text-muted)' }} className="mt-1 text-sm">Pro checkout runs securely through Stripe — cancel anytime. Team and Enterprise are set up with our team.</p>
-          {message && (
-            <p className="mt-3 text-sm" style={{ color: message.reviewMode ? 'var(--text-muted)' : 'var(--accent-orange-text)' }}>
-              {message.text}
-            </p>
-          )}
-        </div>
+        <p style={{ color: 'var(--text-muted)' }} className="mt-6 text-center text-sm">Secure checkout with Stripe · Cancel anytime · No credit card for Free</p>
+        {yearly && (
+          <div className="mt-6 flex justify-center">
+            <div role="radiogroup" aria-label="Billing period" style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }} className="inline-flex rounded-lg p-1 text-sm">
+              {(['month', 'year'] as const).map(value => (
+                <button
+                  key={value}
+                  type="button"
+                  role="radio"
+                  aria-checked={interval === value}
+                  onClick={() => setBillingInterval(value)}
+                  style={interval === value ? { backgroundColor: 'var(--card)', color: 'var(--text-primary)' } : { color: 'var(--text-muted)' }}
+                  className="rounded-md px-4 py-1.5 font-semibold"
+                >
+                  {value === 'month' ? 'Monthly' : 'Yearly'}
+                  {value === 'year' && yearlySavingPct > 0 && <span className="ml-1.5 text-xs text-[color:var(--accent-green-text)]">save {yearlySavingPct}%</span>}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+        {message && (
+          <p role="alert" className="mx-auto mt-4 max-w-2xl text-center text-sm" style={{ color: message.reviewMode ? 'var(--text-muted)' : 'var(--accent-orange-text)' }}>
+            {message.text}
+          </p>
+        )}
 
         <div className="mt-12 grid gap-5 lg:grid-cols-4">
           {plans.map(plan => {
@@ -112,10 +135,10 @@ export default function PricingPage() {
             return (
               <article
                 key={plan.id}
-                style={{ backgroundColor: 'var(--card)', border: plan.highlighted ? '1px solid #06B6D4' : '1px solid var(--border)' }}
+                style={{ backgroundColor: 'var(--card)', border: plan.highlighted ? '1px solid #7C3AED' : '1px solid var(--border)' }}
                 className={`relative flex rounded-3xl p-6 shadow-2xl shadow-black/5 backdrop-blur ${plan.highlighted ? 'lg:-mt-4 lg:mb-4' : ''}`}
               >
-                {plan.highlighted && <div className="absolute right-4 top-4 rounded-full bg-[#06B6D4]/10 px-3 py-1 text-xs font-semibold text-[color:var(--accent-cyan-text)]">Best value</div>}
+                {plan.highlighted && <div className="absolute right-4 top-4 rounded-full bg-[#7C3AED]/10 px-3 py-1 text-xs font-semibold text-[color:var(--accent-purple-text)]">{plan.id === 'pro' && trialDays > 0 ? `${trialDays}-day free trial` : 'Most popular'}</div>}
                 {plan.comingSoon && <div className="absolute right-4 top-4 rounded-full bg-[#E07B39]/10 px-3 py-1 text-xs font-semibold text-[color:var(--accent-orange-text)]">Coming soon</div>}
                 <div className="flex w-full flex-col">
                   <h2 style={{ color: 'var(--text-primary)' }} className="text-xl font-semibold">{plan.name}</h2>
@@ -125,6 +148,16 @@ export default function PricingPage() {
                       <>
                         <span style={{ color: 'var(--text-primary)' }} className="text-4xl font-bold">{formatSeatPrice(availability.teamSeatPrice)}</span>
                         <span style={{ color: 'var(--text-muted)' }} className="pb-1 text-sm">/seat/{availability.teamSeatPrice.interval}</span>
+                      </>
+                    ) : plan.id === 'pro' && interval === 'year' && yearly ? (
+                      <>
+                        <span style={{ color: 'var(--text-primary)' }} className="text-4xl font-bold">{formatSeatPrice(yearly)}</span>
+                        <span style={{ color: 'var(--text-muted)' }} className="pb-1 text-sm">/year</span>
+                      </>
+                    ) : plan.id === 'pro' && monthly ? (
+                      <>
+                        <span style={{ color: 'var(--text-primary)' }} className="text-4xl font-bold">{formatSeatPrice(monthly)}</span>
+                        <span style={{ color: 'var(--text-muted)' }} className="pb-1 text-sm">/{monthly.interval}</span>
                       </>
                     ) : (
                       <>
@@ -182,7 +215,7 @@ export default function PricingPage() {
                     <TeamCheckout user={user} availability={availability} onNeedSignIn={() => goAuth('signUp', '/pricing')} />
                   ) : plan.id === 'pro' ? (
                     <button onClick={startProCheckout} disabled={checkoutLoading} className="mt-8 block w-full rounded-2xl bg-[#7C3AED] px-4 py-3 text-center text-sm font-semibold text-white transition-opacity hover:opacity-85 disabled:opacity-60">
-                      {checkoutLoading ? 'Starting checkout...' : user ? 'Start Pro Checkout' : 'Sign in to start Pro'}
+                      {checkoutLoading ? 'Starting checkout…' : trialDays > 0 ? `Start ${trialDays}-day free trial` : user ? 'Upgrade to Pro' : 'Get Pro'}
                     </button>
                   ) : (
                     <Link

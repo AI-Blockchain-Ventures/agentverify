@@ -1,6 +1,7 @@
 'use client'
 
 import { Component, type ReactNode } from 'react'
+import { reportClientError } from '@/lib/errorReporter'
 
 /**
  * Keeps one broken section from taking down the whole page ("Application error"). Shows a short
@@ -15,6 +16,7 @@ export class SectionErrorBoundary extends Component<{ children: ReactNode; label
 
   componentDidCatch(error: unknown) {
     console.error('Section failed to render:', error)
+    reportClientError(error, this.props.label ?? 'section')
   }
 
   render() {

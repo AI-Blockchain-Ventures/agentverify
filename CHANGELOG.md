@@ -77,6 +77,16 @@ Agent Verify now runs where you build agents: in your editor, inside your AI cod
 - **State of MCP Security report** (`/state-of-mcp-security`), computed from the MCP directory data at build time.
 - **What's new in 2.0** page (`/whats-new`), linked from the homepage announcement.
 - **Three new one-click examples** on the homepage scan: a poisoned MCP tool, an AI agent in CI, and a payments agent.
+- **Running the product.** Website and API errors are grouped and emailed to the admin the first time each one
+  happens (at most 10 alerts an hour), with a friendly error page instead of a blank crash. A "Growth funnel" in the
+  admin panel shows demo scans → accounts → verified → first scan → connected repo → paying, from existing data. A
+  **Feedback** button in the dashboard sends messages to the admin panel and by email (reply goes straight to the user).
+  A three-email welcome series (welcome, connect a repo, what Pro adds) for verified new accounts, with one-click
+  opt-out — off until `ONBOARDING_EMAILS = "true"`.
+- **Plans.** Pro's price is read from Stripe (like Team's), optional yearly Pro (`STRIPE_PRO_ANNUAL_PRICE_ID`) with a
+  Monthly/Yearly switch, and an optional free trial for first-time Pro buyers (`PRO_TRIAL_DAYS`). Cleaner pricing page.
+- **Ready for marketplaces.** GitHub Action branding for the Marketplace, MCP Registry metadata (`mcpName`,
+  `packages/cli/server.json`), updated VS Code description.
 - **Public demo limit.** Repeat scans of the same code (the Live Demo, the homepage examples) reuse a saved result and
   don't count toward the limit; new code gets 20 public scans per network per hour (was 5).
 
@@ -93,7 +103,8 @@ Agent Verify now runs where you build agents: in your editor, inside your AI cod
 ### Deploy notes
 
 - New database tables: `workers/api/schema/` — `github.sql`, `team.sql`, `growth.sql`, `guard.sql`, `vcs.sql`,
-  `slack.sql`, `redteam.sql`, `admin.sql`.
+  `slack.sql`, `redteam.sql`, `admin.sql`, `ops.sql`.
+- Optional vars: `ONBOARDING_EMAILS` (welcome emails, default off), `PRO_TRIAL_DAYS`, `STRIPE_PRO_ANNUAL_PRICE_ID`.
 - `ADMIN_EMAILS` Worker secret (comma-separated) — who can open `/admin`. Workers AI is bound as `AI` in
   `wrangler.toml`; `ASK_DAILY_CAP` (default 150) keeps Ask inside the free daily allowance.
 - New Worker secrets (only needed for the features that use them): `GITHUB_APP_ID`, `GITHUB_APP_PRIVATE_KEY`,

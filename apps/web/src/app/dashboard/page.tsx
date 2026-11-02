@@ -26,6 +26,7 @@ import { useBillingStatusState } from '@/lib/useBillingStatus'
 import { summarizeBillingState } from '@/lib/billing'
 import { apiCall } from '@/lib/v2Api'
 import { openAsk } from '@/components/ask/askEvents'
+import { FeedbackDialog, openFeedback } from '@/components/growth/FeedbackDialog'
 import { DASHBOARD_TAB_EVENT } from '@/components/ask/AskPalette'
 import { OnboardingProfile } from '@/components/growth/OnboardingProfile'
 import { SectionErrorBoundary } from '@/components/ui/SectionErrorBoundary'
@@ -171,9 +172,11 @@ export default function DashboardPage() {
             <span className="flex-1 truncate">Ask anything or search your findings, repos and docs…</span>
             <span className="av-kbd">Ctrl K</span>
           </button>
+          <button onClick={openFeedback} style={{ border: '1px solid var(--border-light)', color: 'var(--text-secondary)' }} className="shrink-0 rounded-md px-3 py-1.5 text-sm font-medium transition-colors hover:text-[var(--text-primary)]">Feedback</button>
           <button onClick={() => changeTab('scan')} className="shrink-0 rounded-md bg-[#7C3AED] px-3.5 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-[#6D28D9]">New scan</button>
         </header>
         <OnboardingProfile user={user} />
+        <FeedbackDialog user={user} />
         <div className="w-full max-w-[1600px] px-4 py-5 md:px-8 md:py-7">
           {(billingSuccess || billing.error || billing.status.status === 'past_due') && (
             <div style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }} className="av-animate-fade mb-5 flex flex-col gap-3 rounded-2xl p-4 sm:flex-row sm:items-center sm:justify-between">

@@ -1,7 +1,7 @@
 {
   "name": "agentverify-vscode",
   "displayName": "Agent Verify — AI Agent Security Scanner",
-  "description": "Scan AI agents for security risks while you code: dangerous tool permissions, prompt injection, exposed secrets, risky MCP servers, and framework issues (LangChain, CrewAI, AutoGen, OpenAI Agents SDK, Claude Agent SDK).",
+  "description": "Security checks for AI agents while you code: 124 tested checks for prompt injection, risky tools, exposed secrets, MCP tool poisoning and unsafe MCP servers, plus LangChain, LangGraph, CrewAI, AutoGen, OpenAI Agents SDK, Claude Agent SDK and more.",
   "version": "2.0.0",
   "publisher": "aiblockchainventures",
   "license": "MIT",

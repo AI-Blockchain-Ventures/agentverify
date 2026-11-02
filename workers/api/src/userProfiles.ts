@@ -15,12 +15,13 @@ const clean = (v: unknown, max: number): string | null => {
 const pick = <T extends readonly string[]>(v: unknown, allowed: T): T[number] | null => (typeof v === 'string' && (allowed as readonly string[]).includes(v) ? v as T[number] : null)
 
 /** Records that this account exists / was just seen. Cheap, and never throws. */
-export async function touchUserProfile(db: D1Database | undefined, uid: string, email?: string, now = nowSec()): Promise<void> {
+export async function touchUserProfile(db: D1Database | undefined, uid: string, email?: string, now = nowSec(), emailVerified = false): Promise<void> {
   if (!db) return
   try {
-    await db.prepare(`INSERT INTO user_profiles (uid, email, created_at, last_seen_at) VALUES (?, ?, ?, ?)
-      ON CONFLICT(uid) DO UPDATE SET last_seen_at = excluded.last_seen_at, email = COALESCE(excluded.email, user_profiles.email)`)
-      .bind(uid, email ?? null, now, now).run()
+    await db.prepare(`INSERT INTO user_profiles (uid, email, email_verified, created_at, last_seen_at) VALUES (?, ?, ?, ?, ?)
+      ON CONFLICT(uid) DO UPDATE SET last_seen_at = excluded.last_seen_at, email = COALESCE(excluded.email, user_profiles.email),
+        email_verified = MAX(user_profiles.email_verified, excluded.email_verified)`)
+      .bind(uid, email ?? null, emailVerified ? 1 : 0, now, now).run()
   } catch {
     // admin.sql not applied yet
   }

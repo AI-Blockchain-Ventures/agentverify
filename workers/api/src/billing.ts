@@ -30,6 +30,10 @@ export interface BillingEnv extends FirebaseServiceAccountEnv {
   STRIPE_PRO_PRICE_ID?: string
   /** Per-seat Team price. Team checkout stays off until this is set. */
   STRIPE_TEAM_PRICE_ID?: string
+  /** Optional yearly Pro price. The pricing page shows a Monthly/Yearly switch only when this is set. */
+  STRIPE_PRO_ANNUAL_PRICE_ID?: string
+  /** Optional free trial for Pro, in days (1–30), for people who have never subscribed. Unset or 0 = no trial. */
+  PRO_TRIAL_DAYS?: string
   STRIPE_PORTAL_CONFIGURATION_ID?: string
   BILLING_SUCCESS_URL?: string
   BILLING_CANCEL_URL?: string
@@ -144,7 +148,7 @@ const safeStatus = (state?: Partial<SubscriptionState> | null) => {
 }
 
 /** Thin wrapper around the shared verifyFirebaseIdToken — extracts the Bearer token from this request's Authorization header first. */
-async function verifyFirebaseUser(request: Request, env: BillingEnv): Promise<{ uid: string; email?: string } | null> {
+async function verifyFirebaseUser(request: Request, env: BillingEnv): Promise<{ uid: string; email?: string; emailVerified?: boolean } | null> {
   const token = request.headers.get('Authorization')?.replace(/^Bearer\s+/i, '').trim()
   return verifyFirebaseIdToken(token, env)
 }
@@ -348,15 +352,18 @@ export async function handleCheckout(request: Request, env: BillingEnv): Promise
 
   let requestedPlan = 'pro'
   let requestedSeats: unknown = undefined
+  let requestedInterval: 'month' | 'year' = 'month'
   try {
-    const body = await request.json() as { plan?: string; seats?: unknown }
+    const body = await request.json() as { plan?: string; seats?: unknown; interval?: unknown }
     requestedPlan = body.plan ?? 'pro'
     requestedSeats = body.seats
+    requestedInterval = body.interval === 'year' ? 'year' : 'month'
   } catch {
     requestedPlan = 'pro'
   }
   if (!isPlanCheckoutAvailable(requestedPlan, env)) return billingJson({ error: 'Checkout is unavailable for this plan' }, 400)
   const isTeam = requestedPlan === 'team'
+  if (!isTeam && requestedInterval === 'year' && !env.STRIPE_PRO_ANNUAL_PRICE_ID) return billingJson({ error: 'Yearly billing is not available yet.' }, 400)
   const seats = isTeam ? Number(requestedSeats ?? TEAM_MIN_SEATS) : 1
   if (isTeam && (!Number.isInteger(seats) || seats < TEAM_MIN_SEATS || seats > TEAM_MAX_SEATS)) {
     return billingJson({ error: `Team plans have ${TEAM_MIN_SEATS} to ${TEAM_MAX_SEATS} seats.` }, 400)
@@ -391,12 +398,15 @@ export async function handleCheckout(request: Request, env: BillingEnv): Promise
     mode: 'subscription',
     success_url: env.BILLING_SUCCESS_URL!,
     cancel_url: env.BILLING_CANCEL_URL!,
-    'line_items[0][price]': isTeam ? env.STRIPE_TEAM_PRICE_ID! : env.STRIPE_PRO_PRICE_ID!,
+    'line_items[0][price]': isTeam ? env.STRIPE_TEAM_PRICE_ID! : requestedInterval === 'year' ? env.STRIPE_PRO_ANNUAL_PRICE_ID! : env.STRIPE_PRO_PRICE_ID!,
     'line_items[0][quantity]': String(seats),
     client_reference_id: user.uid,
     'metadata[uid]': user.uid,
     'subscription_data[metadata][uid]': user.uid,
   })
+  // Free trial for first-time Pro buyers only (no Stripe customer on file = never subscribed).
+  const trialDays = proTrialDays(env)
+  if (!isTeam && trialDays > 0 && !existingState?.stripeCustomerId) body.set('subscription_data[trial_period_days]', String(trialDays))
   if (isTeam) {
     body.set('metadata[plan]', 'team')
     body.set('subscription_data[metadata][plan]', 'team')
@@ -452,7 +462,7 @@ export async function handleStatus(request: Request, env: BillingEnv): Promise<R
   }
   if (!user || !env.BILLING_DB) return billingJson({ ...safeStatus(null), used: 0 })
   // Every dashboard visit loads billing status, so this is where an account first appears in the admin panel.
-  await touchUserProfile(env.BILLING_DB, user.uid, user.email)
+  await touchUserProfile(env.BILLING_DB, user.uid, user.email, undefined, user.emailVerified === true)
   const [state, quota] = await Promise.all([loadEffectiveSubscription(env, user.uid), checkScanQuota(env, user.uid)])
   // `used` reflects the SAME usage_monthly ledger checkScanQuota enforces against on every real
   // scan (web, CLI, and API alike) — this is real remaining-quota display, not a separate,
@@ -692,6 +702,12 @@ let teamPriceCache: { id: string; at: number; value: { unitAmount: number; curre
 const priceCache = new Map<string, { at: number; value: { unitAmount: number; currency: string; interval: string } | null }>()
 
 /** Unit price of any Stripe price id (cached 1h). Used by the admin panel's revenue estimate. */
+/** PRO_TRIAL_DAYS as a whole number of days, 0 when unset or out of range (1–30). */
+export function proTrialDays(env: Pick<BillingEnv, 'PRO_TRIAL_DAYS'>): number {
+  const n = Math.floor(Number(env.PRO_TRIAL_DAYS ?? 0))
+  return Number.isFinite(n) && n >= 1 && n <= 30 ? n : 0
+}
+
 export async function getPriceInfo(env: BillingEnv, priceId: string | undefined): Promise<{ unitAmount: number; currency: string; interval: string } | null> {
   if (!priceId || !env.STRIPE_SECRET_KEY) return null
   const hit = priceCache.get(priceId)

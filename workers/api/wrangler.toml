@@ -26,6 +26,9 @@ PROFILE_ATTESTATION_EXPECTED_KEY_ID = "eIO7_uhceQOQ0FDx5bGCODcYEUPkbSgAcuXczunT1
 # "Ask anything" AI answers (src/ask.ts): hard daily cap across everyone, sized to stay inside the
 # Workers AI free daily allowance. When it is reached the site falls back to search only.
 ASK_DAILY_CAP = "150"
+# Welcome email series (src/ops.ts): 3 short emails over a new account's first week, sent through
+# Resend (needs RESEND_API_KEY + ALERT_FROM_EMAIL). Change to "true" when you are ready to send them.
+ONBOARDING_EMAILS = "false"
 
 # Cloudflare's built-in rate limiter for public routes (free scan, Ask): 10 requests a minute per
 # network (Ask: per account when signed in), shared across each Cloudflare location. On top of the

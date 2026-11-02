@@ -151,3 +151,39 @@ test('team routes require a signed-in user', async () => {
     assert.equal(res.status, 401, `${method} ${path}`)
   }
 })
+
+test('Pro checkout: optional yearly price and first-time free trial', async () => {
+  const { proTrialDays } = await import('../dist/billing.mjs')
+  assert.equal(proTrialDays({}), 0)
+  assert.equal(proTrialDays({ PRO_TRIAL_DAYS: '14' }), 14)
+  assert.equal(proTrialDays({ PRO_TRIAL_DAYS: '90' }), 0, 'out of range is ignored')
+  assert.equal(proTrialDays({ PRO_TRIAL_DAYS: 'abc' }), 0)
+
+  const db = makeDb()
+  const { token, jwk } = await firebaseToken()
+  const original = globalThis.fetch
+  let sent = null
+  globalThis.fetch = async (url, init) => {
+    const href = String(url)
+    if (href.includes('securetoken@system.gserviceaccount.com')) return new Response(JSON.stringify({ keys: [jwk] }), { status: 200, headers: { 'content-type': 'application/json' } })
+    if (href.includes('/v1/checkout/sessions')) { sent = new URLSearchParams(String(init.body)); return new Response(JSON.stringify({ url: 'https://checkout.stripe.test/s' }), { status: 200 }) }
+    return new Response('{}', { status: 404 })
+  }
+  const checkout = (body, extraEnv = {}) => worker.fetch(new Request('https://api.test/v1/billing/checkout', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify(body) }), { ...baseEnv(db), ...extraEnv })
+  try {
+    // Yearly is refused until a yearly price is configured.
+    assert.equal((await checkout({ plan: 'pro', interval: 'year' })).status, 400)
+    assert.equal((await checkout({ plan: 'pro', interval: 'year' }, { STRIPE_PRO_ANNUAL_PRICE_ID: 'price_pro_year' })).status, 200)
+    assert.equal(sent.get('line_items[0][price]'), 'price_pro_year')
+    assert.equal(sent.get('subscription_data[trial_period_days]'), null, 'no trial unless configured')
+    // Monthly with a trial for someone who never subscribed.
+    assert.equal((await checkout({ plan: 'pro' }, { PRO_TRIAL_DAYS: '14' })).status, 200)
+    assert.notEqual(sent.get('line_items[0][price]'), 'price_pro_year')
+    assert.equal(sent.get('subscription_data[trial_period_days]'), '14')
+    // Team never gets the Pro trial.
+    assert.equal((await checkout({ plan: 'team', seats: 3 }, { PRO_TRIAL_DAYS: '14' })).status, 200)
+    assert.equal(sent.get('subscription_data[trial_period_days]'), null)
+  } finally {
+    globalThis.fetch = original
+  }
+})

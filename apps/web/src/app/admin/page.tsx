@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { Brand } from '@/components/layout/Brand'
 import { apiCall } from '@/lib/v2Api'
+import { AdminInsights } from '@/components/admin/AdminInsights'
 
 interface Overview { totalUsers: number; newThisWeek: number; paying: number; payingPro: number; payingTeam: number; granted: number; referral: number; mrrCents: number | null; currency: string }
 interface AdminUser {
@@ -198,6 +199,13 @@ export default function AdminPage() {
             </table>
           </div>
         </section>
+
+        {user && (
+          <div>
+            <h2 className="mb-2 text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>Growth, feedback &amp; errors</h2>
+            <AdminInsights user={user} />
+          </div>
+        )}
       </div>
 
       {editing && user && (

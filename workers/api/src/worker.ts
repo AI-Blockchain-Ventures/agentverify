@@ -1,7 +1,7 @@
 import type { ArtifactFingerprint, Finding, ScanInput, ScanResult, SignedAttestation } from '@agentverify/scanner'
 import { computeArtifactFingerprint, computeReportHash, buildAttestationPayload, findPolicyById, evaluatePolicy, VERIFICATION_CATALOG, catalogSummary, RISK_TAXONOMY } from '@agentverify/scanner'
 import { applyRemediationEntitlement, type LockableFinding } from './entitlementView'
-import { checkScanQuota, handleCheckout, handlePortal, handleStatus, handleWebhook, getTeamSeatPrice, hasProFeatures, isPlanCheckoutAvailable, recordMonthlyUsage, TEAM_MAX_SEATS, TEAM_MIN_SEATS, type BillingEnv } from './billing'
+import { checkScanQuota, getPriceInfo, proTrialDays, handleCheckout, handlePortal, handleStatus, handleWebhook, getTeamSeatPrice, hasProFeatures, isPlanCheckoutAvailable, recordMonthlyUsage, TEAM_MAX_SEATS, TEAM_MIN_SEATS, type BillingEnv } from './billing'
 import { createScanResult } from './scanResponse'
 import { signAttestation, getAttestationPublicKeyInfo, type AttestationSigningEnv } from './attestationSigning'
 import { lookupVerificationStatus } from './verificationStatus'
@@ -27,6 +27,7 @@ import { createConnection, deleteConnection, handleVcsWebhook, listConnections, 
 import { addMember as addTeamMember, getTeam, removeMember as removeTeamMember } from './team'
 import { adminGrant, adminImportFirebaseUsers, adminOverview, adminUsers, isAdmin, type AdminEnv } from './admin'
 import { handleAsk, type AskEnv } from './ask'
+import { bumpCounter, funnel, listErrors, pruneErrors, listFeedback, onboardingUnsubscribe, recordError, saveFeedback, sendOnboardingBatch, setFeedbackStatus, type OpsEnv } from './ops'
 import { getUserProfile, saveUserProfile } from './userProfiles'
 
 const json = (body: unknown, status = 200): Response =>
@@ -161,7 +162,7 @@ async function saveReportToFirebase(
   }
 }
 
-type WorkerEnv = BillingEnv & AdminEnv & AskEnv & AttestationSigningEnv & ProfileAttestationSigningEnv & OrganizationsEnv & AuditLogEnv & WebhooksEnv & WebhooksDeliveryEnv & GithubEnv & GrowthEnv & VcsEnv & SlackEnv & {
+type WorkerEnv = BillingEnv & AdminEnv & AskEnv & OpsEnv & AttestationSigningEnv & ProfileAttestationSigningEnv & OrganizationsEnv & AuditLogEnv & WebhooksEnv & WebhooksDeliveryEnv & GithubEnv & GrowthEnv & VcsEnv & SlackEnv & {
   FIREBASE_API_KEY?: string
   FIREBASE_CLIENT_EMAIL?: string
   FIREBASE_PRIVATE_KEY?: string
@@ -220,7 +221,10 @@ async function handleDemoScan(request: Request, env: WorkerEnv): Promise<Respons
   // no scanner time, so it doesn't count toward the visitor's demo allowance.
   const cacheKey = await demoCacheKey(body.content, fileName, platform)
   const cached = await readDemoCache(cacheKey)
-  if (cached) return json(JSON.parse(cached))
+  if (cached) {
+    await bumpCounter(env.BILLING_DB, 'demo_scan')
+    return json(JSON.parse(cached))
+  }
 
   // Best-effort per-IP throttle — see rateLimit.ts for why this isn't a complete answer alone;
   // the real production requirement is a Cloudflare Rate Limiting rule bound to this route.
@@ -238,6 +242,7 @@ async function handleDemoScan(request: Request, env: WorkerEnv): Promise<Respons
     }), 'free')
     const response = json(scanResult)
     await writeDemoCache(cacheKey, JSON.stringify(scanResult))
+    await bumpCounter(env.BILLING_DB, 'demo_scan')
     return response
   } catch (e) {
     console.error('Demo scan failed:', e instanceof Error ? e.stack ?? e.message : e)
@@ -315,8 +320,7 @@ async function handleVerifyFix(request: Request, env: WorkerEnv): Promise<Respon
   }
 }
 
-export default {
-  async fetch(request: Request, env: WorkerEnv, ctx?: ExecutionContext): Promise<Response> {
+async function routeRequest(request: Request, env: WorkerEnv, ctx?: ExecutionContext): Promise<Response> {
     const url = new URL(request.url)
 
     if (request.method === 'OPTIONS') return json({ ok: true })
@@ -325,7 +329,8 @@ export default {
     if (url.pathname === '/v1/billing/status' && request.method === 'GET') return handleStatus(request, env)
     if (url.pathname === '/v1/billing/plans' && request.method === 'GET') {
       const teamCheckout = isPlanCheckoutAvailable('team', env) && env.BILLING_ENABLED === 'true'
-      return json({ teamCheckout, teamSeatPrice: teamCheckout ? await getTeamSeatPrice(env) : null, teamMinSeats: TEAM_MIN_SEATS, teamMaxSeats: TEAM_MAX_SEATS })
+      const [proPrice, proAnnualPrice] = await Promise.all([getPriceInfo(env, env.STRIPE_PRO_PRICE_ID), getPriceInfo(env, env.STRIPE_PRO_ANNUAL_PRICE_ID)])
+      return json({ teamCheckout, teamSeatPrice: teamCheckout ? await getTeamSeatPrice(env) : null, teamMinSeats: TEAM_MIN_SEATS, teamMaxSeats: TEAM_MAX_SEATS, proPrice, proAnnualPrice, proTrialDays: proTrialDays(env) })
     }
     if (url.pathname === '/v1/billing/checkout' && request.method === 'POST') return handleCheckout(request, env)
     if (url.pathname === '/v1/billing/portal' && request.method === 'POST') return handlePortal(request, env)
@@ -372,6 +377,29 @@ export default {
         return json({ error: 'Profiles are not available yet' }, 503)
       }
     }
+    // ── 2.0: error reports (public), feedback (signed in), welcome-email opt-out ──
+    if (url.pathname === '/v1/errors' && request.method === 'POST') {
+      const ip = clientIp(request)
+      if (await edgeRateLimited(env.PUBLIC_LIMITER, `err:${ip}`) || isRateLimited(`err:${ip}`, 30, 60 * 60 * 1000)) return json({ ok: true })
+      const raw = await readBoundedBody(request)
+      if (!raw.ok) return json({ error: 'Request body too large' }, 413)
+      let body: Record<string, unknown>
+      try { body = JSON.parse(decodeBody(raw.bytes)) as Record<string, unknown> } catch { return json({ error: 'Invalid JSON body' }, 400) }
+      await recordError(env, { source: 'web', message: String(body.message ?? ''), stack: typeof body.stack === 'string' ? body.stack : undefined, path: typeof body.path === 'string' ? body.path : undefined, userAgent: request.headers.get('User-Agent') ?? undefined })
+      return json({ ok: true })
+    }
+    if (url.pathname === '/v1/feedback' && request.method === 'POST') {
+      const principal = await authenticateRequest(request, env)
+      if (!principal || principal.type !== 'USER') return unauthorized()
+      if (isRateLimited(`feedback:${principal.uid}`, 10, 60 * 60 * 1000)) return json({ error: 'You have sent a lot of feedback this hour. Thank you! Try again a bit later.' }, 429)
+      const body = await request.json().catch(() => ({})) as Record<string, unknown>
+      const res = await saveFeedback(env, principal.uid, principal.email, body)
+      return json(res.body, res.status)
+    }
+    if (url.pathname === '/v1/onboarding/unsubscribe' && request.method === 'GET') {
+      const done = await onboardingUnsubscribe(env.BILLING_DB, url.searchParams.get('token') ?? '')
+      return new Response(`<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>Agent Verify</title><body style="font-family:system-ui,sans-serif;max-width:32rem;margin:4rem auto;padding:0 1rem"><h1 style="font-size:1.25rem">${done ? 'Done — no more tips emails.' : 'That link is not valid.'}</h1><p>${done ? 'You will still get important account and billing emails.' : 'It may already have been used.'}</p><p><a href="https://aimodularity.com/agentverify/dashboard/">Open Agent Verify</a></p></body>`, { status: done ? 200 : 404, headers: { 'content-type': 'text/html; charset=utf-8' } })
+    }
     if (url.pathname.startsWith('/v1/admin/')) {
       const principal = await authenticateRequest(request, env)
       // Not found (not 403) for everyone else, so the admin API does not advertise itself.
@@ -388,6 +416,24 @@ export default {
       if (url.pathname === '/v1/admin/grants' && request.method === 'POST') {
         const body = await request.json().catch(() => ({})) as Record<string, unknown>
         const res = await adminGrant(env, principal.email ?? 'admin', body, query => lookupAccount(env, query))
+        return json(res.body, res.status)
+      }
+      if (url.pathname === '/v1/admin/funnel' && request.method === 'GET') {
+        if (!env.BILLING_DB) return json({ error: 'Database not available' }, 503)
+        return json(await funnel(env.BILLING_DB, Number(url.searchParams.get('days')) || 30))
+      }
+      if (url.pathname === '/v1/admin/errors' && request.method === 'GET') {
+        if (!env.BILLING_DB) return json({ error: 'Database not available' }, 503)
+        try { return json({ errors: await listErrors(env.BILLING_DB) }) } catch { return json({ errors: [], setup: 'Apply schema/ops.sql' }) }
+      }
+      if (url.pathname === '/v1/admin/feedback' && request.method === 'GET') {
+        if (!env.BILLING_DB) return json({ error: 'Database not available' }, 503)
+        try { return json({ feedback: await listFeedback(env.BILLING_DB) }) } catch { return json({ feedback: [], setup: 'Apply schema/ops.sql' }) }
+      }
+      if (url.pathname === '/v1/admin/feedback/status' && request.method === 'POST') {
+        if (!env.BILLING_DB) return json({ error: 'Database not available' }, 503)
+        const body = await request.json().catch(() => ({})) as Record<string, unknown>
+        const res = await setFeedbackStatus(env.BILLING_DB, String(body.id ?? ''), body.status)
         return json(res.body, res.status)
       }
       if (url.pathname === '/v1/admin/import' && request.method === 'POST') {
@@ -1039,6 +1085,21 @@ export default {
       console.error('Scan request failed:', e instanceof Error ? e.stack ?? e.message : e)
       return json({ error: 'Invalid JSON body' }, 400)
     }
+}
+
+export default {
+  /** Every request goes through routeRequest; anything it throws is recorded for the admin and answered with a plain 500. */
+  async fetch(request: Request, env: WorkerEnv, ctx?: ExecutionContext): Promise<Response> {
+    try {
+      return await routeRequest(request, env, ctx)
+    } catch (e) {
+      console.error('Unhandled API error:', e instanceof Error ? e.stack ?? e.message : e)
+      const err = e instanceof Error ? e : new Error(String(e))
+      const report = recordError(env, { source: 'api', message: err.message || 'Unknown error', stack: err.stack, path: `${request.method} ${new URL(request.url).pathname}` })
+      if (ctx) ctx.waitUntil(report)
+      else await report
+      return json({ error: 'Something went wrong on our side. Please try again.' }, 500)
+    }
   },
 
   /**
@@ -1048,6 +1109,11 @@ export default {
    * after the trigger's own event returns, same pattern any Workers scheduled handler uses.
    */
   async scheduled(_event: ScheduledEvent, env: WorkerEnv, ctx: ExecutionContext): Promise<void> {
+    // Welcome emails: once an hour is plenty (steps are minutes to days apart).
+    if (new Date().getUTCMinutes() === 7) {
+      ctx.waitUntil(pruneErrors(env.BILLING_DB))
+      ctx.waitUntil(sendOnboardingBatch(env).then(n => { if (n) console.log(`Welcome emails: sent ${n}`) }).catch(e => console.error('Welcome emails failed:', e instanceof Error ? e.message : e)))
+    }
     ctx.waitUntil(processRedteamTick(env).catch(e => console.error('Injection test tick failed:', e instanceof Error ? e.message : e)))
     if (inDigestWindow()) {
       ctx.waitUntil(sendDigestBatch(env, POPULAR_MCP_FOR_EMAIL).then(n => { if (n) console.log(`Weekly email: sent ${n}`) }).catch(e => console.error('Weekly email batch failed:', e instanceof Error ? e.message : e)))

@@ -143,7 +143,7 @@ export default function StateOfMcpSecurityPage() {
           <section className="mt-12">
             <h2 style={{ color: 'var(--text-primary)' }} className={h2}>Most-downloaded servers that can run commands</h2>
             <p style={{ color: 'var(--text-muted)' }} className="mt-2 text-sm">Not a list of bad servers — many are excellent tools. These are the ones to run in a container and keep on &quot;approve each call&quot;.</p>
-            <div className="mt-4 overflow-x-auto rounded-lg" style={card}>
+            <div tabIndex={0} role="region" aria-label="Most-downloaded servers that can run commands" className="mt-4 overflow-x-auto rounded-lg" style={card}>
               <table className="w-full text-sm">
                 <thead>
                   <tr style={{ borderBottom: '1px solid var(--border)', color: 'var(--text-muted)' }} className="text-left text-xs">

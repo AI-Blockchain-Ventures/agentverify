@@ -199,6 +199,11 @@ Agent Verify now runs where you build agents: in your editor, inside your AI cod
 
 ### Fixed
 
+- **Privacy Policy and Terms rewritten for 2.0.** They now list everything 2.0 collects and every service provider
+  (Firebase, Cloudflare incl. Workers AI, Stripe, GitHub/GitLab/Bitbucket/Slack, Resend), retention (Guard events 30
+  days, demo cache 6 hours, account deletion within 30 days), user rights, paid plans and refunds, acceptable use for
+  injection tests, AI-answer disclaimer, liability cap, and Florida governing law. The old text said data was never
+  shared with third parties and that paid plans were a future possibility.
 - Security hardening before launch: referral rewards only count accounts with a verified email (stops
   throwaway-account farming); admin plan grants confirm with Firebase that the account's email is verified (an
   impostor who signed up first with a partner's address can't receive it); a Slack `/agentverify connect` link now

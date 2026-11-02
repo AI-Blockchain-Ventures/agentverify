@@ -52,3 +52,11 @@ test('new homepage examples load into the free scan box', async ({ page }) => {
   await page.getByRole('button', { name: 'AI agent in CI' }).click()
   await expect(page.locator('#public-scan-input')).toHaveValue(/pull_request_target/)
 })
+
+test('no page scrolls sideways (phones included)', async ({ page }) => {
+  for (const path of ['./', 'pricing/', 'developers/', 'docs/', 'mcp/', 'checks/', 'checks/av-mcp-105/', 'state-of-mcp-security/', 'whats-new/', 'trust/', 'report/demo/', 'agentspoofed/', 'privacy/', 'terms/']) {
+    await page.goto(path)
+    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)
+    expect(overflow, `${path} scrolls sideways by ${overflow}px`).toBeLessThanOrEqual(1)
+  }
+})

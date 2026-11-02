@@ -26,7 +26,10 @@ export function Billing({ user }: { user: User }) {
   const billingState = summarizeBillingState(billing.status)
   const { team, reload: reloadTeam } = useTeam(user)
   const isTeamMember = team?.role === 'member'
-  const isReferralPro = billing.status.referralBonus === true
+  // Plans with no Stripe subscription behind them (invite rewards, or given by the Agent Verify team):
+  // never show "Manage billing", which would have nothing to open.
+  const isGranted = billing.status.granted === true
+  const isReferralPro = billing.status.referralBonus === true || isGranted
   const [portalBusy, setPortalBusy] = useState(false)
   const [portalMessage, setPortalMessage] = useState<{ text: string; reviewMode?: boolean } | null>(null)
 
@@ -36,7 +39,7 @@ export function Billing({ user }: { user: User }) {
       ? billingState.periodEndDate
         ? `${paidName} — cancels ${billingState.periodEndDate}`
         : `${paidName} — canceling`
-      : isTeamMember ? 'Team — member' : isReferralPro ? `Pro — free from invites${billingState.periodEndDate ? ` until ${billingState.periodEndDate}` : ''}` : `${paidName} — active`
+      : isTeamMember ? 'Team — member' : isGranted ? `${paidName} — given to you by Agent Verify${billingState.periodEndDate ? ` until ${billingState.periodEndDate}` : ''}` : isReferralPro ? `Pro — free from invites${billingState.periodEndDate ? ` until ${billingState.periodEndDate}` : ''}` : `${paidName} — active`
     : billing.status.status === 'past_due'
       ? 'Past due'
       : billing.status.status === 'canceled'
@@ -71,7 +74,7 @@ export function Billing({ user }: { user: User }) {
             <button onClick={manageBilling} disabled={portalBusy} className="av-press shrink-0 rounded-xl bg-[#7C3AED] px-4 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50">
               {portalBusy ? 'Opening…' : 'Manage billing →'}
             </button>
-          ) : isTeamMember ? null : isReferralPro ? (
+          ) : isTeamMember || (isGranted && !billingState.periodEndDate) ? null : isReferralPro ? (
             <Link href="/pricing" className="av-press shrink-0 rounded-xl bg-[#7C3AED] px-4 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90">
               Keep Pro →
             </Link>

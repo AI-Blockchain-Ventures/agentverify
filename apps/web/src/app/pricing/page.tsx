@@ -199,9 +199,13 @@ export default function PricingPage() {
                           </p>
                         )}
                       </div>
-                      <button onClick={manageBilling} disabled={portalLoading} className="mt-3 block w-full rounded-2xl border px-4 py-3 text-center text-sm font-semibold transition-opacity hover:opacity-85 disabled:opacity-60" style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }}>
-                        {portalLoading ? 'Opening…' : 'Manage Billing'}
-                      </button>
+                      {billing.status.granted || billing.status.referralBonus ? (
+                        <p style={{ color: 'var(--text-muted)' }} className="mt-3 text-center text-xs">{billing.status.granted ? 'Given to you by Agent Verify' : 'Free from invites'}{billingState.periodEndDate ? ` until ${billingState.periodEndDate}` : ''}. No card on file.</p>
+                      ) : (
+                        <button onClick={manageBilling} disabled={portalLoading} className="mt-3 block w-full rounded-2xl border px-4 py-3 text-center text-sm font-semibold transition-opacity hover:opacity-85 disabled:opacity-60" style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }}>
+                          {portalLoading ? 'Opening…' : 'Manage Billing'}
+                        </button>
+                      )}
                     </div>
                   ) : plan.id === 'team' && user && billingState.isTeam ? (
                     <div className="mt-8">

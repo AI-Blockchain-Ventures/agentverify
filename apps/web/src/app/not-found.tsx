@@ -5,7 +5,7 @@ export default function NotFound() {
     <div style={{ backgroundColor: 'var(--bg)' }} className="flex min-h-[70vh] items-center justify-center px-6 py-20">
       <div style={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)' }} className="max-w-md rounded-3xl p-8 text-center shadow-2xl shadow-black/5">
         <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#7C3AED]/10 text-lg font-semibold text-[color:var(--accent-purple-text)]">404</div>
-        <p style={{ color: 'var(--text-primary)' }} className="text-xl font-semibold">Page not found</p>
+        <h1 style={{ color: 'var(--text-primary)' }} className="text-xl font-semibold">Page not found</h1>
         <p style={{ color: 'var(--text-muted)' }} className="mt-2 text-sm">
           The page you&apos;re looking for doesn&apos;t exist, moved, or the link is incorrect.
         </p>

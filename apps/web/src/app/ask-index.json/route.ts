@@ -14,6 +14,6 @@ export function GET() {
     f: s.findings.length,
     w: s.weeklyDownloads,
   }))
-  const checks = checkLibrary.checks.map(c => ({ s: c.slug, n: c.name, i: c.id, v: c.severity, d: c.whatItDetects.slice(0, 220), r: c.remediation.slice(0, 220) }))
+  const checks = checkLibrary.checks.map(c => ({ s: c.slug, n: c.name, i: c.id, k: c.code.toLowerCase().replace(/_/g, ' '), v: c.severity, d: c.whatItDetects.slice(0, 220), r: c.remediation.slice(0, 220) }))
   return Response.json({ generatedAt: mcpSafety.generatedAt, servers, checks })
 }

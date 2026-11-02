@@ -29,6 +29,8 @@ export interface BillingStatus {
   cancelAtPeriodEnd: boolean
   /** Pro time earned from invites (no Stripe subscription to manage). */
   referralBonus?: boolean
+  /** A plan given by the Agent Verify team (no Stripe subscription to manage). */
+  granted?: boolean
 }
 
 export const freeBillingStatus: BillingStatus = {

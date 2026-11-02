@@ -430,7 +430,7 @@ export function ScannerPanel({ user, onScanComplete }: ScannerPanelProps) {
             {showAllExamples ? 'Show fewer' : `Show all ${Object.keys(examples).length}`}
           </button>
         </div>
-        <div className="mt-3 grid gap-2 sm:grid-cols-2">
+        <div className="mt-3 grid gap-2 sm:grid-cols-2 [&>*]:min-w-0">
           {Object.entries(examples).filter(([label]) => showAllExamples || FEATURED_EXAMPLES.includes(label)).map(([label, example]) => (
             <button
               key={label}

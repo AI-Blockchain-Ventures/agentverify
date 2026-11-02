@@ -106,15 +106,19 @@ function ensureDevSigningKey() {
 // first version of this harness hard to debug, so it's applied unconditionally and idempotently
 // (CREATE TABLE IF NOT EXISTS) on every run rather than only "if missing".
 function ensureLocalBillingSchema() {
-  console.log('Ensuring local D1 billing schema is applied (idempotent)...\n')
-  try {
-    execSync('npx wrangler d1 execute BILLING_DB --local --file=schema/billing.sql', {
-      cwd: path.join(repoRoot, 'workers', 'api'),
-      stdio: 'pipe',
-    })
-  } catch (e) {
-    console.warn('Warning: could not apply local D1 billing schema — scan quota checks may fail.')
-    console.warn((e.stdout ?? e.message ?? '').toString().slice(0, 500))
+  console.log('Ensuring local D1 schemas are applied (idempotent)...\n')
+  // 2.0: every feature table, not just billing — the same files the production deploy applies.
+  for (const file of ['billing.sql', 'webhooks.sql', 'github.sql', 'team.sql', 'growth.sql', 'guard.sql', 'vcs.sql', 'slack.sql', 'redteam.sql', 'admin.sql', 'ops.sql']) {
+    if (!existsSync(path.join(repoRoot, 'workers', 'api', 'schema', file))) continue
+    try {
+      execSync(`npx wrangler d1 execute BILLING_DB --local --file=schema/${file}`, {
+        cwd: path.join(repoRoot, 'workers', 'api'),
+        stdio: 'pipe',
+      })
+    } catch (e) {
+      console.warn(`Warning: could not apply local D1 schema ${file}.`)
+      console.warn((e.stdout ?? e.message ?? '').toString().slice(0, 500))
+    }
   }
 }
 
@@ -141,6 +145,8 @@ async function main() {
       '--var', 'FIRESTORE_EMULATOR_HOST:127.0.0.1:8180',
       '--var', 'FIREBASE_AUTH_EMULATOR_HOST:127.0.0.1:9099',
       '--var', 'FIREBASE_API_KEY:agentverify-review-local-key',
+      // Local admin for testing /admin (the emulator account is marked email-verified during testing).
+      '--var', 'ADMIN_EMAILS:review@agentverify.local',
     ],
     'Ready on',
     { cwd: path.join(repoRoot, 'workers', 'api') }

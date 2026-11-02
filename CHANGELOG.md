@@ -215,6 +215,12 @@ Agent Verify now runs where you build agents: in your editor, inside your AI cod
   days, demo cache 6 hours, account deletion within 30 days), user rights, paid plans and refunds, acceptable use for
   injection tests, AI-answer disclaimer, liability cap, and Florida governing law. The old text said data was never
   shared with third parties and that paid plans were a future possibility.
+- Full pre-launch walkthrough (every page crawled on desktop and phone, signed-in dashboard, admin, billing,
+  feedback, Slack link, rate limits — against the local 2.0 API): Pricing, Developers and the MCP directory no longer
+  scroll sideways on phones (grid columns can't be stretched by code examples); a plan given by the admin no longer
+  shows a "Manage billing" button that had nothing to open; Ask finds checks by their code ("tool poisoning");
+  the 404 and verify pages have proper headings; removed an internal note from the API page. `npm run review`
+  now creates every 2.0 table locally.
 - Security hardening before launch: referral rewards only count accounts with a verified email (stops
   throwaway-account farming); admin plan grants confirm with Firebase that the account's email is verified (an
   impostor who signed up first with a partner's address can't receive it); a Slack `/agentverify connect` link now

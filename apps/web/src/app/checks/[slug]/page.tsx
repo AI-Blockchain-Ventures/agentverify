@@ -114,7 +114,7 @@ export default function CheckPage({ params }: { params: { slug: string } }) {
         {related.length > 0 && (
           <section className="mt-10">
             <h2 style={{ color: 'var(--text-primary)' }} className="text-lg font-semibold">Related checks</h2>
-            <ul className="mt-3 grid gap-2 sm:grid-cols-2">
+            <ul className="mt-3 grid gap-2 sm:grid-cols-2 [&>*]:min-w-0">
               {related.map(r => (
                 <li key={r.slug}>
                   <Link href={`/checks/${r.slug}`} style={card} className="block rounded-lg p-3 text-sm transition-colors hover:border-[#7C3AED]">

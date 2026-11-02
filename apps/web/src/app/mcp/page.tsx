@@ -45,7 +45,7 @@ export default function McpIndexPage() {
             <h2 style={{ color: 'var(--text-primary)' }} className="text-lg font-semibold">Compare popular servers</h2>
             <Link href="/mcp/new/" className="text-sm font-semibold text-[color:var(--accent-purple-text)] hover:underline">New this month →</Link>
           </div>
-          <ul className="mt-3 grid gap-2 sm:grid-cols-2">
+          <ul className="mt-3 grid gap-2 sm:grid-cols-2 [&>*]:min-w-0 [&>*]:break-words">
             {mcpComparisons().slice(0, 24).map(c => (
               <li key={c.slug}>
                 <Link href={`/mcp/compare/${c.slug}/`} style={{ color: 'var(--text-secondary)', border: '1px solid var(--border)', backgroundColor: 'var(--card)' }} className="block truncate rounded-xl px-3 py-2 text-xs hover:opacity-80">

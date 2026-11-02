@@ -125,7 +125,7 @@ export default function DevelopersPage() {
           </div>
         </header>
 
-        <section className="mt-14 grid gap-5 md:grid-cols-2" aria-label="Where Agent Verify runs">
+        <section className="mt-14 grid gap-5 md:grid-cols-2 [&>*]:min-w-0" aria-label="Where Agent Verify runs">
           {WAYS.map(way => (
             <div key={way.id} id={way.id} style={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)' }} className="flex scroll-mt-24 flex-col rounded-3xl p-6">
               <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[color:var(--accent-cyan-text)]">{way.tag}</p>
@@ -160,7 +160,7 @@ export default function DevelopersPage() {
           ))}
         </section>
 
-        <section className="mt-14 grid gap-5 md:grid-cols-2">
+        <section className="mt-14 grid gap-5 md:grid-cols-2 [&>*]:min-w-0">
           <div style={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)' }} className="rounded-3xl p-6">
             <h2 style={{ color: 'var(--text-primary)' }} className="text-lg font-semibold">CI exit codes</h2>
             <p style={{ color: 'var(--text-muted)' }} className="mt-1 text-sm">With <code>--ci</code>, your pipeline can tell a real security failure apart from a broken run.</p>

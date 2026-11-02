@@ -13,7 +13,7 @@ import { STATIC_ENTRIES, looksLikeQuestion, scoreEntry, termWeights, tokenize, t
 export const DASHBOARD_TAB_EVENT = 'av:dashboard-tab'
 
 interface McpIndexItem { n: string; s: string; r: string; d: string; c: string[]; f: number; w: number }
-interface CheckIndexItem { s: string; n: string; i: string; v: string; d: string; r: string }
+interface CheckIndexItem { s: string; n: string; i: string; k?: string; v: string; d: string; r: string }
 
 type AiState = { status: 'idle' } | { status: 'loading'; question: string } | { status: 'done'; question: string; answer: string; sources: Array<{ title: string; url?: string }>; remaining?: number } | { status: 'fallback'; question: string; message: string }
 
@@ -104,7 +104,7 @@ export function AskPalette() {
   const checkEntries = useMemo<AskEntry[]>(() => checks.map(c => ({
     id: `c-${c.s}`, kind: 'check', title: c.n, url: `/checks/${c.s}/`,
     text: `${c.d} How to fix: ${c.r}`,
-    keywords: `${c.i} ${c.v} check finding fix`,
+    keywords: `${c.k ?? ''} ${c.i} ${c.v} check finding fix`,
   })), [checks])
 
   const results = useMemo(() => {

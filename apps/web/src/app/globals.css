@@ -200,3 +200,9 @@
   .av-marquee-track { animation: none; flex-wrap: wrap; justify-content: center; width: auto; row-gap: 1.25rem; }
   .av-marquee-dup { display: none; }
 }
+
+/* Grid columns never grow wider than the grid because of a long line inside them (code examples,
+   long package names). Without this, one wide <pre> pushed whole pages sideways on phones. */
+main .grid > * {
+  min-width: 0;
+}

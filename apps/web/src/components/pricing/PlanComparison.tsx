@@ -110,7 +110,7 @@ export function ProPreview() {
         <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[color:var(--accent-cyan-text)]">What Pro unlocks</p>
         <h2 id="pro-preview-heading" style={{ color: 'var(--text-primary)' }} className="mt-2 text-3xl font-semibold tracking-tight">Same finding. One tells you it&apos;s broken. One fixes it.</h2>
       </div>
-      <div className="mt-8 grid gap-4 md:grid-cols-2">
+      <div className="mt-8 grid gap-4 md:grid-cols-2 [&>*]:min-w-0">
         <div style={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)' }} className="rounded-3xl p-5">
           <p style={{ color: 'var(--text-muted)' }} className="text-xs font-semibold uppercase tracking-wider">Free</p>
           <p style={{ color: 'var(--text-primary)' }} className="mt-3 text-sm font-semibold">Critical · SQL query built from unescaped input</p>

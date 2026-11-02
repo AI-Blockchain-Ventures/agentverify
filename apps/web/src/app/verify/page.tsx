@@ -135,7 +135,7 @@ function TrustCard({ title, body }: { title: string; body: string }) {
   return (
     <div style={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)' }} className="w-full max-w-md rounded-3xl p-8 text-center shadow-2xl shadow-black/10">
       <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#E07B39]/10 text-lg font-semibold text-[color:var(--accent-orange-text)]">?</div>
-      <p style={{ color: 'var(--text-primary)' }} className="text-lg font-semibold">{title}</p>
+      <h1 style={{ color: 'var(--text-primary)' }} className="text-lg font-semibold">{title}</h1>
       <p style={{ color: 'var(--text-muted)' }} className="mt-2 text-sm leading-relaxed">{body}</p>
     </div>
   )

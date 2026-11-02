@@ -6,13 +6,13 @@ import { createScanResult } from './scanResponse'
 import { signAttestation, getAttestationPublicKeyInfo, type AttestationSigningEnv } from './attestationSigning'
 import { lookupVerificationStatus } from './verificationStatus'
 import { firestoreBaseUrl, firestoreAdminAuthHeader, apiKeyQueryParam, type FirebaseServiceAccountEnv } from './firebaseAuth'
-import { createOrganization, getMembership, listMembers, listMyOrganizations, requirePermission, resolveUidByEmail, removeMember, upsertMember, OrganizationsQueryError, type OrganizationsEnv } from './organizations'
+import { createOrganization, getMembership, listMembers, listMyOrganizations, lookupAccount, requirePermission, resolveUidByEmail, removeMember, upsertMember, OrganizationsQueryError, type OrganizationsEnv } from './organizations'
 import { isValidRole } from './rbac'
 import { recordAuditEvent, listAuditEvents, type AuditLogEnv } from './auditLog'
 import { createWebhook, listWebhooks, setWebhookStatus, type WebhooksEnv } from './webhooks'
 import { enqueueWebhookDeliveries, runDueDeliveries, listDeliveries, retryDelivery, type WebhooksDeliveryEnv } from './webhookDelivery'
 import { authenticateRequest, authorize, type AuthzEnv } from './authz'
-import { isRateLimited, clientIp } from './rateLimit'
+import { isRateLimited, clientIp, edgeRateLimited, type RateLimiterBinding } from './rateLimit'
 import { demoCacheKey, readDemoCache, writeDemoCache, DEMO_SCANS_PER_HOUR } from './demoCache'
 import { handleProfileRequest } from './profiles'
 import { signProfileAttestation, getProfileAttestationPublicKeyInfo, type ProfileAttestationSigningEnv, type SignFailureCategory } from './profileAttestationSigning'
@@ -165,6 +165,8 @@ type WorkerEnv = BillingEnv & AdminEnv & AskEnv & AttestationSigningEnv & Profil
   FIREBASE_API_KEY?: string
   FIREBASE_CLIENT_EMAIL?: string
   FIREBASE_PRIVATE_KEY?: string
+  /** Cloudflare Workers rate limiter for public, unauthenticated routes (wrangler.toml [[ratelimits]]). */
+  PUBLIC_LIMITER?: RateLimiterBinding
 }
 
 // HTTP status classification for an `attest: true` signing failure, by the signer's own `category` (never by
@@ -222,7 +224,7 @@ async function handleDemoScan(request: Request, env: WorkerEnv): Promise<Respons
 
   // Best-effort per-IP throttle — see rateLimit.ts for why this isn't a complete answer alone;
   // the real production requirement is a Cloudflare Rate Limiting rule bound to this route.
-  if (isRateLimited(`demo:${clientIp(request)}`, DEMO_SCANS_PER_HOUR, 60 * 60 * 1000)) {
+  if (await edgeRateLimited(env.PUBLIC_LIMITER, `demo:${clientIp(request)}`) || isRateLimited(`demo:${clientIp(request)}`, DEMO_SCANS_PER_HOUR, 60 * 60 * 1000)) {
     return json({ error: 'Too many public demo scans from this network. Try again later, or create a free account.' }, 429)
   }
 
@@ -352,6 +354,7 @@ export default {
       try { body = JSON.parse(decodeBody(raw.bytes)) as Record<string, unknown> } catch { return json({ error: 'Invalid JSON body' }, 400) }
       const principal = await authenticateRequest(request, env)
       const uid = principal && principal.type !== 'SYSTEM' ? principal.uid : undefined
+      if (await edgeRateLimited(env.PUBLIC_LIMITER, `ask:${uid ?? clientIp(request)}`)) return json({ error: 'Too many questions at once. Wait a minute and try again.', fallback: true }, 429)
       const pro = uid ? hasProFeatures((await checkScanQuota(env, uid)).plan) : false
       const res = await handleAsk(env, { uid, pro, ip: request.headers.get('CF-Connecting-IP') }, body)
       return json(res.body, res.status)
@@ -384,7 +387,7 @@ export default {
       }
       if (url.pathname === '/v1/admin/grants' && request.method === 'POST') {
         const body = await request.json().catch(() => ({})) as Record<string, unknown>
-        const res = await adminGrant(env, principal.email ?? 'admin', body, email => resolveUidByEmail(email, env))
+        const res = await adminGrant(env, principal.email ?? 'admin', body, query => lookupAccount(env, query))
         return json(res.body, res.status)
       }
       if (url.pathname === '/v1/admin/import' && request.method === 'POST') {
@@ -992,8 +995,9 @@ export default {
         policyResult,
       }, reportSource)
       await recordMonthlyUsage(env, auth.uid, quota.month, quota.plan)
-      // A referred user's first successful scan rewards both people (no-op for everyone else).
-      await qualifyReferral(env.BILLING_DB, auth.uid)
+      // A referred user's first successful scan rewards both people (no-op for everyone else). Only
+      // verified-email accounts count, so throwaway sign-ups can't farm free Pro for the referrer.
+      if (principal.type === 'USER' && principal.emailVerified === true) await qualifyReferral(env.BILLING_DB, auth.uid)
 
       if (orgIdForAudit) {
         const actorType = principal.type === 'USER' ? 'user' : 'api_key'

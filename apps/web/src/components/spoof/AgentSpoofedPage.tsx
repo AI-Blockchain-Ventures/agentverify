@@ -4,7 +4,9 @@ import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import type { ScanResult as ScanResultType } from '@/types'
 import { Footer } from '@/components/layout/Footer'
-import { ScanResult } from '@/components/scanner/ScanResult'
+import dynamic from 'next/dynamic'
+// The full report viewer is large and only needed after a scan, so it loads on demand.
+const ScanResult = dynamic(() => import('@/components/scanner/ScanResult').then(m => m.ScanResult), { ssr: false, loading: () => <p style={{ color: 'var(--text-muted)' }} className="text-sm">Loading the report…</p> })
 import { freeBillingStatus, getApiBaseUrl } from '@/lib/billing'
 
 const rogueOnboarding = {

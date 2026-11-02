@@ -24,3 +24,11 @@ test('saved result is returned until it expires', async () => {
 test('demo allowance for new code is 20 per hour', () => {
   assert.equal(DEMO_SCANS_PER_HOUR, 20)
 })
+
+test('edge rate limiter: blocks when Cloudflare says so, and fails open if it is missing or broken', async () => {
+  const { edgeRateLimited } = await import('../dist/rateLimit.mjs')
+  assert.equal(await edgeRateLimited(undefined, 'demo:1'), false)
+  assert.equal(await edgeRateLimited({ limit: async () => ({ success: true }) }, 'demo:1'), false)
+  assert.equal(await edgeRateLimited({ limit: async () => ({ success: false }) }, 'demo:1'), true)
+  assert.equal(await edgeRateLimited({ limit: async () => { throw new Error('down') } }, 'demo:1'), false)
+})

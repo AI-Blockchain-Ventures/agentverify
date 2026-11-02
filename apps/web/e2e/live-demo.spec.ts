@@ -86,3 +86,15 @@ test('homepage free scan: hitting the demo limit shows a clear message under the
   await run.click()
   await expect(page.getByTestId('public-scan-error')).toContainText('free demo limit')
 })
+
+test('live demo: the cookie banner never covers the Run button (phones included)', async ({ page }) => {
+  const button = await openDemo(page)
+  await expect(page.getByRole('region', { name: 'Cookie choice' })).toBeVisible()
+  await button.scrollIntoViewIfNeeded()
+  const covered = await button.evaluate(el => {
+    const r = el.getBoundingClientRect()
+    const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2)
+    return !(hit && (hit === el || el.contains(hit)))
+  })
+  expect(covered).toBe(false)
+})

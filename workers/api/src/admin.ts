@@ -157,7 +157,9 @@ export async function adminUsers(env: AdminEnv, params: { filter?: string | null
  * POST /v1/admin/grants { uid? | email?, plan: 'pro' | 'team' | 'none', seats?, until?: unix seconds | null, note? }
  * Gives (or removes, with plan 'none') a free plan. Takes effect on the user's next page load.
  */
-export async function adminGrant(env: AdminEnv, adminEmail: string, body: Record<string, unknown>, resolveUid: (email: string) => Promise<string | null>, now = nowSec()): Promise<Result> {
+export type AccountLookup = (query: { uid?: string; email?: string }) => Promise<{ uid: string; emailVerified: boolean } | null>
+
+export async function adminGrant(env: AdminEnv, adminEmail: string, body: Record<string, unknown>, lookupAccount: AccountLookup, now = nowSec()): Promise<Result> {
   const db = env.BILLING_DB
   if (!db) return { status: 503, body: { error: 'Database not available' } }
   const plan = body.plan
@@ -165,17 +167,25 @@ export async function adminGrant(env: AdminEnv, adminEmail: string, body: Record
 
   let uid = typeof body.uid === 'string' ? body.uid.trim() : ''
   const email = typeof body.email === 'string' ? body.email.trim().toLowerCase() : ''
-  if (!uid && email) {
-    const known = await db.prepare('SELECT uid FROM user_profiles WHERE lower(email) = ? LIMIT 1').bind(email).first<{ uid: string }>()
-    uid = known?.uid ?? (await resolveUid(email)) ?? ''
-    if (!uid) return { status: 404, body: { error: 'No Agent Verify account uses that email yet. Ask them to sign up first.' } }
-  }
-  if (!uid || uid.length > 128) return { status: 400, body: { error: 'Choose a user' } }
+  if (!uid && !email) return { status: 400, body: { error: 'Choose a user' } }
+  if (uid.length > 128) return { status: 400, body: { error: 'Choose a user' } }
 
   if (plan === 'none') {
+    if (!uid) {
+      const known = await db.prepare('SELECT uid FROM user_profiles WHERE lower(email) = ? LIMIT 1').bind(email).first<{ uid: string }>()
+      uid = known?.uid ?? (await lookupAccount({ email }))?.uid ?? ''
+      if (!uid) return { status: 404, body: { error: 'No Agent Verify account uses that email.' } }
+    }
     await db.prepare('DELETE FROM plan_grants WHERE uid = ?').bind(uid).run()
     return { status: 200, body: { ok: true, uid, plan: 'none' } }
   }
+
+  // Giving a plan away: confirm with Firebase (never our own profile table) that the account exists
+  // and its email is verified, so an impostor who signed up first with someone's address can't get it.
+  const account = await lookupAccount(uid ? { uid } : { email })
+  if (!account) return { status: email && !uid ? 404 : 503, body: { error: email && !uid ? 'No Agent Verify account uses that email yet. Ask them to sign up first.' : 'Could not confirm that account with Firebase. Try again.' } }
+  if (!account.emailVerified) return { status: 409, body: { error: 'That account has not verified its email yet. Ask them to click the verification email (or sign in with Google), then try again.' } }
+  uid = account.uid
 
   let until: number | null = null
   if (body.until !== null && body.until !== undefined) {

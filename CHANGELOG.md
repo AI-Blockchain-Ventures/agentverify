@@ -199,6 +199,16 @@ Agent Verify now runs where you build agents: in your editor, inside your AI cod
 
 ### Fixed
 
+- Security hardening before launch: referral rewards only count accounts with a verified email (stops
+  throwaway-account farming); admin plan grants confirm with Firebase that the account's email is verified (an
+  impostor who signed up first with a partner's address can't receive it); a Slack `/agentverify connect` link now
+  asks before linking a workspace to your account; PR comments escape file names.
+- The cookie banner covered the Live Demo's "Run live scan" button on phones, so taps did nothing. It is now a slim
+  bar on phones and never covers page content.
+- Faster first load: the report viewer and Ask load on demand (homepage JavaScript 337 KB → 119 KB, Live Demo 322 KB →
+  110 KB).
+- Public routes (free scan, Ask) use Cloudflare's built-in rate limiter (`[[ratelimits]]`, 10 a minute per network)
+  on top of the hourly limits.
 - Homepage "How it works" and the dashboard scan panel said scans run "in your browser"; they have
   run on Agent Verify's server since v1.4. The wording now says so.
 

@@ -278,6 +278,31 @@ export async function listMyOrganizations(uid: string, env: OrganizationsEnv): P
 }
 
 /** Resolves an email to a Firebase Auth uid via the Identity Toolkit REST API — used so "invite a member" can accept an email address rather than requiring the inviter to already know a raw uid. Returns null if no account exists with that email (never reveals WHY beyond that — same response for "no such account" as for a lookup error). Targets the local Auth emulator automatically when FIREBASE_AUTH_EMULATOR_HOST is set. */
+/**
+ * Looks up one Firebase account by uid or email and says whether its email is verified. Used where
+ * a decision must not trust an unverified address (e.g. an admin giving a free plan by email: an
+ * impostor could have signed up first with a partner's address and never verified it).
+ */
+export async function lookupAccount(env: OrganizationsEnv, query: { uid?: string; email?: string }): Promise<{ uid: string; email: string | null; emailVerified: boolean } | null> {
+  const headers = await firestoreAdminAuthHeader(env)
+  if (!headers) return null
+  const body = query.uid ? { localId: [query.uid] } : query.email ? { email: [query.email] } : null
+  if (!body) return null
+  try {
+    const res = await fetch(`${identityToolkitBaseUrl(env)}/accounts:lookup?key=${apiKeyQueryParam(env)}`, {
+      method: 'POST',
+      headers: { ...headers, 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+    if (!res.ok) return null
+    const data = await res.json() as { users?: Array<{ localId?: string; email?: string; emailVerified?: boolean }> }
+    const u = data.users?.[0]
+    return u?.localId ? { uid: u.localId, email: u.email ?? null, emailVerified: u.emailVerified === true } : null
+  } catch {
+    return null
+  }
+}
+
 export async function resolveUidByEmail(email: string, env: OrganizationsEnv): Promise<string | null> {
   // accounts:lookup-by-email is an ADMIN Identity Toolkit operation — it requires a real OAuth
   // admin token (or the emulator's "owner" bypass), the same as Firestore admin access. The Web

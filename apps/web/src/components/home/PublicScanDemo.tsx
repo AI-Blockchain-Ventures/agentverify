@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from 'react'
 import type { ScanResult as ScanResultType } from '@/types'
-import { ScanResult } from '@/components/scanner/ScanResult'
+import dynamic from 'next/dynamic'
+// The full report viewer is large and only needed after a scan, so it loads on demand.
+const ScanResult = dynamic(() => import('@/components/scanner/ScanResult').then(m => m.ScanResult), { ssr: false, loading: () => <p style={{ color: 'var(--text-muted)' }} className="text-sm">Loading the report…</p> })
 import { freeBillingStatus, getApiBaseUrl } from '@/lib/billing'
 import { SCAN_EXAMPLES } from '@/lib/scanExamples'
 import { SAFETY_CHECK_URL } from '@/lib/links'

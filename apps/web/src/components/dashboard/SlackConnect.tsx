@@ -8,6 +8,10 @@ import { apiCall } from '@/lib/v2Api'
 /** "Add to Slack", plus finishing `/agentverify connect` (the dashboard opens with ?slack_link=…). */
 export function SlackConnect({ user }: { user: User }) {
   const [notice, setNotice] = useState<{ ok: boolean; text: string } | null>(null)
+  // A link code from the URL is only used after the user confirms: anyone can send a /agentverify
+  // connect link, and linking lets that Slack workspace scan on this account's plan.
+  const [pendingCode, setPendingCode] = useState<string | null>(null)
+  const [linking, setLinking] = useState(false)
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
@@ -16,10 +20,17 @@ export function SlackConnect({ user }: { user: User }) {
     const clean = new URL(window.location.href)
     clean.searchParams.delete('slack_link')
     window.history.replaceState(null, '', clean.toString())
-    apiCall<{ team: string }>(user, '/v1/slack/link', { method: 'POST', body: { code } })
+    if (/^[0-9a-f]{32}$/.test(code)) setPendingCode(code)
+  }, [])
+
+  const confirmLink = () => {
+    if (!pendingCode) return
+    setLinking(true)
+    apiCall<{ team: string }>(user, '/v1/slack/link', { method: 'POST', body: { code: pendingCode } })
       .then(r => setNotice({ ok: true, text: `Slack workspace ${r.team} is now linked to your account. Scans from Slack use your plan.` }))
       .catch(e => setNotice({ ok: false, text: e instanceof Error ? e.message : 'Could not link Slack.' }))
-  }, [user])
+      .finally(() => { setLinking(false); setPendingCode(null) })
+  }
 
   return (
     <div style={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)' }} className="av-hover-lift rounded-3xl p-5">
@@ -30,6 +41,16 @@ export function SlackConnect({ user }: { user: User }) {
       <p style={{ color: 'var(--text-muted)' }} className="mt-2 text-sm leading-relaxed">Scan a public GitHub repo or pasted code from any channel with <code>/agentverify scan</code>, and share the result with your team.</p>
       <p style={{ color: 'var(--text-muted)' }} className="mt-3 text-xs leading-relaxed"><span className="font-semibold" style={{ color: 'var(--text-primary)' }}>Setup: </span>Add the app, then run <code>/agentverify connect</code> in Slack to use your plan.</p>
       <a href={`${getApiBaseUrl()}/v1/slack/install`} className="mt-4 inline-flex rounded-xl bg-[#4A154B] px-4 py-2 text-xs font-semibold text-white hover:opacity-90">Add to Slack</a>
+      {pendingCode && (
+        <div role="alert" className="mt-4 rounded-lg p-3 text-xs" style={{ backgroundColor: 'rgba(124,58,237,0.06)', border: '1px solid rgba(124,58,237,0.3)', color: 'var(--text-primary)' }}>
+          <p className="font-semibold">Link a Slack workspace to your account?</p>
+          <p style={{ color: 'var(--text-secondary)' }} className="mt-1">Only continue if you just ran <code>/agentverify connect</code> in your own Slack. Scans from that workspace will use your plan.</p>
+          <div className="mt-3 flex gap-2">
+            <button type="button" disabled={linking} onClick={confirmLink} className="rounded-md bg-[#7C3AED] px-3 py-1.5 font-semibold text-white hover:bg-[#6D28D9] disabled:opacity-60">{linking ? 'Linking…' : 'Yes, link it'}</button>
+            <button type="button" disabled={linking} onClick={() => setPendingCode(null)} style={{ border: '1px solid var(--border-light)' }} className="rounded-md px-3 py-1.5 font-semibold">Cancel</button>
+          </div>
+        </div>
+      )}
       {notice && <p className="mt-3 text-xs" style={{ color: notice.ok ? 'var(--accent-green-text)' : 'var(--accent-orange-text)' }}>{notice.text}</p>}
     </div>
   )

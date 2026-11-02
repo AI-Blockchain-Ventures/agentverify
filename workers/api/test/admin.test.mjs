@@ -16,6 +16,11 @@ function makeDb() {
 const now = Math.floor(Date.now() / 1000)
 const env = db => ({ BILLING_DB: db, ADMIN_EMAILS: 'Owner@Example.com, second@example.com' })
 
+// Fake Firebase account lookups: a verified account per uid/email, or nothing.
+const verified = (uid = 'partner') => async () => ({ uid, emailVerified: true })
+const unverified = (uid = 'impostor') => async () => ({ uid, emailVerified: false })
+const noAccount = async () => null
+
 test('only verified admin emails are admins', () => {
   const e = env(null)
   assert.equal(isAdmin({ type: 'USER', uid: 'a', email: 'owner@example.com', emailVerified: true }, e), true)
@@ -31,25 +36,25 @@ test('granting Pro turns Pro on without Stripe, and removing it turns it off', a
   const e = env(db)
   await touchUserProfile(db, 'partner', 'partner@acme.com', now)
   assert.equal((await checkScanQuota(e, 'partner')).plan, 'free')
-  const res = await adminGrant(e, 'owner@example.com', { email: 'Partner@Acme.com', plan: 'pro', until: now + 30 * 86400, note: 'Launch partner' }, async () => null, now)
+  const res = await adminGrant(e, 'owner@example.com', { email: 'Partner@Acme.com', plan: 'pro', until: now + 30 * 86400, note: 'Launch partner' }, verified('partner'), now)
   assert.equal(res.status, 200)
   assert.equal((await checkScanQuota(e, 'partner')).plan, 'pro')
   const list = (await adminUsers(e, { filter: 'granted' }, now)).body
   assert.equal(list.total, 1)
   assert.equal(list.users[0].paidVia, 'granted')
   assert.equal(list.users[0].grantNote, 'Launch partner')
-  assert.equal((await adminGrant(e, 'owner@example.com', { uid: 'partner', plan: 'none' }, async () => null, now)).status, 200)
+  assert.equal((await adminGrant(e, 'owner@example.com', { uid: 'partner', plan: 'none' }, noAccount, now)).status, 200)
   assert.equal((await checkScanQuota(e, 'partner')).plan, 'free')
 })
 
 test('grants: validation, expiry, unknown emails', async () => {
   const db = makeDb()
   const e = env(db)
-  assert.equal((await adminGrant(e, 'o', { uid: 'u', plan: 'enterprise' }, async () => null, now)).status, 400)
-  assert.equal((await adminGrant(e, 'o', { uid: 'u', plan: 'pro', until: now - 10 }, async () => null, now)).status, 400, 'end date in the past')
-  assert.equal((await adminGrant(e, 'o', { uid: 'u', plan: 'team', seats: 1 }, async () => null, now)).status, 400, 'team needs 2+ seats')
-  assert.equal((await adminGrant(e, 'o', { email: 'nobody@x.com', plan: 'pro' }, async () => null, now)).status, 404)
-  assert.equal((await adminGrant(e, 'o', { email: 'firebase-only@x.com', plan: 'pro' }, async () => 'fb-uid', now)).status, 200, 'falls back to a Firebase lookup')
+  assert.equal((await adminGrant(e, 'o', { uid: 'u', plan: 'enterprise' }, verified('u'), now)).status, 400)
+  assert.equal((await adminGrant(e, 'o', { uid: 'u', plan: 'pro', until: now - 10 }, verified('u'), now)).status, 400, 'end date in the past')
+  assert.equal((await adminGrant(e, 'o', { uid: 'u', plan: 'team', seats: 1 }, verified('u'), now)).status, 400, 'team needs 2+ seats')
+  assert.equal((await adminGrant(e, 'o', { email: 'nobody@x.com', plan: 'pro' }, noAccount, now)).status, 404)
+  assert.equal((await adminGrant(e, 'o', { email: 'firebase-only@x.com', plan: 'pro' }, verified('fb-uid'), now)).status, 200, 'uses the Firebase account')
   db.raw.prepare('UPDATE plan_grants SET until = ? WHERE uid = ?').run(now - 1, 'fb-uid')
   assert.equal((await checkScanQuota(e, 'fb-uid')).plan, 'free', 'expired grant ends')
 })
@@ -57,7 +62,7 @@ test('grants: validation, expiry, unknown emails', async () => {
 test('a granted Team plan covers its seats, like a paid one', async () => {
   const db = makeDb()
   const e = env(db)
-  assert.equal((await adminGrant(e, 'o', { uid: 'owner', plan: 'team', seats: 3 }, async () => null, now)).status, 200)
+  assert.equal((await adminGrant(e, 'o', { uid: 'owner', plan: 'team', seats: 3 }, verified('owner'), now)).status, 200)
   assert.equal(db.raw.prepare('SELECT seats FROM team_seats WHERE owner_uid = ?').get('owner').seats, 3)
   for (const m of ['m1', 'm2', 'm3']) db.raw.prepare('INSERT INTO team_members (owner_uid, member_uid, email, added_at) VALUES (?, ?, ?, ?)').run('owner', m, `${m}@x.com`, now)
   assert.equal((await checkScanQuota(e, 'owner')).plan, 'team')
@@ -113,4 +118,25 @@ test('Firebase import adds accounts without overwriting details', async () => {
   assert.equal(res.body.imported, 3)
   assert.equal((await getUserProfile(db, 'known')).name, 'Kept')
   assert.equal(db.raw.prepare('SELECT created_at FROM user_profiles WHERE uid = ?').get('known').created_at, now - 100 * 86400, 'real signup date kept')
+})
+
+test('a plan is never given to an account whose email is not verified', async () => {
+  const db = makeDb()
+  const e = env(db)
+  // An impostor signed up first with the partner's address and never verified it.
+  await touchUserProfile(db, 'impostor', 'partner@acme.com', now)
+  const res = await adminGrant(e, 'o', { email: 'partner@acme.com', plan: 'pro' }, unverified('impostor'), now)
+  assert.equal(res.status, 409)
+  assert.match(res.body.error, /not verified/)
+  assert.equal((await checkScanQuota(e, 'impostor')).plan, 'free')
+  // Same when picked by uid from the table.
+  assert.equal((await adminGrant(e, 'o', { uid: 'impostor', plan: 'team', seats: 3 }, unverified('impostor'), now)).status, 409)
+  // If Firebase can't be reached, nothing is granted.
+  assert.equal((await adminGrant(e, 'o', { uid: 'someone', plan: 'pro' }, noAccount, now)).status, 503)
+})
+
+test('referral rewards only count scans from accounts with a verified email', () => {
+  // qualifyReferral is called from the scan route; this guards that the verified-email gate stays there.
+  const src = readFileSync(new URL('../src/worker.ts', import.meta.url), 'utf8')
+  assert.match(src, /principal\.type === 'USER' && principal\.emailVerified === true\) await qualifyReferral/)
 })

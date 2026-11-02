@@ -131,7 +131,8 @@ export function buildComment(result: ScanResult, ctx: CommentContext): string {
     for (const f of findings.slice(0, 25)) {
       const loc = typeof f.line === 'number' && f.line > 0 ? locateLine(ctx.files, f.line) : null
       const url = loc ? (ctx.fileUrl ? ctx.fileUrl(loc.path, loc.line) : `https://github.com/${ctx.repo}/blob/${ctx.sha}/${loc.path.split('/').map(encodeURIComponent).join('/')}#L${loc.line}`) : ''
-      const where = loc ? `[\`${loc.path}:${loc.line}\`](${url})` : '—'
+      // File names come from the PR author: keep them from breaking out of the code span or the table.
+      const where = loc ? `[\`${loc.path.replace(/[`|\r\n]/g, '_')}:${loc.line}\`](${url})` : '—'
       lines.push(`| ${SEV_ICON[f.severity] ?? f.severity} | **${escapeMd(f.title)}** — ${escapeMd(f.whatIsWrong)} | ${where} |`)
     }
     if (findings.length > 25) lines.push('', `…and ${findings.length - 25} more in the full report.`)

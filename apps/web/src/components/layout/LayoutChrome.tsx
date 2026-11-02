@@ -5,7 +5,9 @@ import { useAuthNav } from '@/components/auth/useAuthNav'
 import { Footer } from '@/components/layout/Footer'
 import { Navbar } from '@/components/layout/Navbar'
 import { ReferralCapture } from '@/components/growth/ReferralCapture'
-import { AskPalette } from '@/components/ask/AskPalette'
+import dynamic from 'next/dynamic'
+// Ask (Ctrl+K) loads right after the page, not as part of it.
+const AskPalette = dynamic(() => import('@/components/ask/AskPalette').then(m => m.AskPalette), { ssr: false })
 
 export function LayoutChrome({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()

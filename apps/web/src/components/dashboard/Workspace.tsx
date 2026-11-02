@@ -58,7 +58,7 @@ export function Workspace({ user, onNavigate }: { user: User; onNavigate?: (tab:
   if (orgs === null) {
     return (
       <div style={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)' }} className="rounded-3xl p-8 text-center">
-        <div style={{ borderColor: 'var(--border)', borderTopColor: '#06B6D4' }} className="mx-auto mb-4 h-6 w-6 animate-spin rounded-full border-2" />
+        <div style={{ borderColor: 'var(--border)', borderTopColor: '#7C3AED' }} className="mx-auto mb-4 h-6 w-6 animate-spin rounded-full border-2" />
         <p style={{ color: 'var(--text-primary)' }} className="text-sm font-medium">Loading your workspaces</p>
       </div>
     )
@@ -67,12 +67,11 @@ export function Workspace({ user, onNavigate }: { user: User; onNavigate?: (tab:
   if (orgs.length === 0) {
     return (
       <div style={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)' }} className="av-animate-rise rounded-3xl p-8 text-center shadow-2xl shadow-black/5 md:p-12">
-        <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#7C3AED]/10 text-lg font-semibold text-[color:var(--accent-purple-text)]">▣</div>
         <h3 style={{ color: 'var(--text-primary)' }} className="text-lg font-semibold">No workspace yet</h3>
         <p style={{ color: 'var(--text-muted)' }} className="mx-auto mt-2 max-w-sm text-sm">Create a workspace to invite teammates, share policies, and see a shared audit log across everyone&apos;s scans.</p>
         <div className="mx-auto mt-6 flex max-w-sm flex-col gap-2 sm:flex-row">
           <input value={newOrgName} onChange={e => setNewOrgName(e.target.value)} placeholder="Workspace name" style={{ backgroundColor: 'var(--input-bg)', border: '1px solid var(--input-border)', color: 'var(--input-text)' }} className="flex-1 rounded-xl px-4 py-2.5 text-sm outline-none" />
-          <button onClick={handleCreate} disabled={creating || !newOrgName.trim()} className="av-press rounded-xl bg-[#06B6D4] px-5 py-2.5 text-sm font-semibold text-[#080B14] transition-opacity hover:opacity-90 disabled:opacity-50">
+          <button onClick={handleCreate} disabled={creating || !newOrgName.trim()} className="av-press rounded-xl bg-[#7C3AED] px-5 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50">
             {creating ? 'Creating...' : 'Create workspace'}
           </button>
         </div>
@@ -218,7 +217,7 @@ function MembersSection({ user, org, onError }: { user: User; org: MyOrganizatio
               <option value="MEMBER">Member</option>
               <option value="VIEWER">Viewer</option>
             </select>
-            <button onClick={invite} disabled={busy || !email.trim()} className="av-press rounded-xl bg-[#06B6D4] px-4 py-2 text-sm font-semibold text-[#080B14] disabled:opacity-50">Invite</button>
+            <button onClick={invite} disabled={busy || !email.trim()} className="av-press rounded-xl bg-[#7C3AED] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">Invite</button>
           </div>
           <p style={{ color: 'var(--text-muted)' }} className="mt-2 text-xs">They must already have an Agent Verify account with this email.</p>
         </div>
@@ -425,7 +424,7 @@ function WebhooksSection({ user, org, onError }: { user: User; org: MyOrganizati
               </button>
             ))}
           </div>
-          <button onClick={create} disabled={busy || !endpoint.trim() || events.length === 0} className="av-press mt-3 rounded-xl bg-[#06B6D4] px-4 py-2 text-sm font-semibold text-[#080B14] disabled:opacity-50">
+          <button onClick={create} disabled={busy || !endpoint.trim() || events.length === 0} className="av-press mt-3 rounded-xl bg-[#7C3AED] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">
             {busy ? 'Adding...' : 'Add webhook endpoint'}
           </button>
         </div>

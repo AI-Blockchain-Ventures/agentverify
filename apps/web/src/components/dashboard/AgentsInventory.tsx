@@ -79,7 +79,7 @@ export function AgentsInventory({ user, onOpenAgent }: { user: User; onOpenAgent
   if (reports === null) {
     return (
       <div style={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)' }} className="rounded-3xl p-8 text-center">
-        <div style={{ borderColor: 'var(--border)', borderTopColor: '#06B6D4' }} className="mx-auto mb-4 h-6 w-6 animate-spin rounded-full border-2" />
+        <div style={{ borderColor: 'var(--border)', borderTopColor: '#7C3AED' }} className="mx-auto mb-4 h-6 w-6 animate-spin rounded-full border-2" />
         <p style={{ color: 'var(--text-primary)' }} className="text-sm font-medium">Loading agent inventory</p>
       </div>
     )
@@ -88,7 +88,6 @@ export function AgentsInventory({ user, onOpenAgent }: { user: User; onOpenAgent
   if (namedGroups.length === 0) {
     return (
       <div style={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)' }} className="av-animate-rise rounded-3xl p-8 text-center shadow-2xl shadow-black/5 md:p-12">
-        <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#7C3AED]/10 text-lg font-semibold text-[color:var(--accent-purple-text)]">▤</div>
         <h3 style={{ color: 'var(--text-primary)' }} className="text-lg font-semibold">No named agents yet</h3>
         <p style={{ color: 'var(--text-muted)' }} className="mx-auto mt-2 max-w-md text-sm">
           Agents appear here once a scan detects a real agent name in the submitted code (e.g. <code>name: &apos;MyAgent&apos;</code>). Reports without a detected name stay in the Reports tab as standalone scans — we never guess an identity.

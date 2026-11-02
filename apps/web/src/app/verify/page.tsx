@@ -102,7 +102,7 @@ function VerifyPageInner() {
 
       {state.kind === 'loading' && (
         <div style={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)' }} className="w-full max-w-md rounded-3xl p-10 text-center shadow-2xl shadow-black/10">
-          <div style={{ borderColor: 'var(--border)', borderTopColor: '#06B6D4' }} className="mx-auto mb-4 h-6 w-6 animate-spin rounded-full border-2" />
+          <div style={{ borderColor: 'var(--border)', borderTopColor: '#7C3AED' }} className="mx-auto mb-4 h-6 w-6 animate-spin rounded-full border-2" />
           <p style={{ color: 'var(--text-primary)' }} className="text-sm font-semibold">Looking up verification record</p>
         </div>
       )}

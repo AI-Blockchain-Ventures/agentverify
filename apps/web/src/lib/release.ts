@@ -2,8 +2,8 @@
  * Release metadata for the web app. APP_VERSION is the single place the UI reads Agent Verify's
  * version from (sidebar badge, settings, footer) — bump it together with package.json.
  */
-export const APP_VERSION = '1.6.0'
-export const APP_VERSION_SHORT = 'v1.6'
+export const APP_VERSION = '2.0.0'
+export const APP_VERSION_SHORT = 'v2.0'
 
 /**
  * Finding codes first produced by the v1.6 scanner, used only to show a "New in v1.6" tag.

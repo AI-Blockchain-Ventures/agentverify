@@ -1,7 +1,5 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { Hero } from '@/components/home/Hero'
 import { TrustSignals } from '@/components/home/TrustSignals'
 import { ProofStrip } from '@/components/home/ProofStrip'
@@ -16,31 +14,18 @@ import { SecurityControls } from '@/components/home/SecurityControls'
 import { SharingSection } from '@/components/home/SharingSection'
 import { UseCases } from '@/components/home/UseCases'
 import { CTASection } from '@/components/home/CTASection'
-import { AuthModal } from '@/components/auth/AuthModal'
-import { useAuth } from '@/components/auth/AuthProvider'
+import { LogoMarquee } from '@/components/home/LogoMarquee'
+import { SecurityTeamsSection } from '@/components/home/SecurityTeamsSection'
+import { useAuthNav } from '@/components/auth/useAuthNav'
 
 export default function Home() {
-  const { user, loading } = useAuth()
-  const router = useRouter()
-  const [authModal, setAuthModal] = useState<{ open: boolean; mode: 'signIn' | 'signUp' }>({
-    open: false,
-    mode: 'signIn',
-  })
-
-  const openAuth = (mode: 'signIn' | 'signUp') => setAuthModal({ open: true, mode })
-
-  useEffect(() => {
-    if (!loading && user) {
-      router.push('/dashboard')
-    }
-  }, [user, loading, router])
-
-  if (loading) return null
-  if (user) return null
+  // Signed-in people can still read the homepage; the header shows a Dashboard button for them.
+  const openAuth = useAuthNav()
 
   return (
     <main>
       <Hero openAuth={openAuth} />
+      <LogoMarquee />
       <PublicScanDemo openAuth={openAuth} />
       <ProofStrip />
       <TrustSignals />
@@ -53,8 +38,8 @@ export default function Home() {
       <SecurityControls />
       <SharingSection />
       <UseCases />
+      <SecurityTeamsSection />
       <CTASection />
-      <AuthModal open={authModal.open} defaultMode={authModal.mode} onClose={() => setAuthModal(prev => ({ ...prev, open: false }))} />
     </main>
   )
 }

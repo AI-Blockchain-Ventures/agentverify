@@ -23,6 +23,13 @@ PROFILE_ATTESTATION_KEY_PURPOSE = "agentverify-profile-v1"
 # Changing this on a future key rotation is deliberate: a mismatch here refuses to sign (key-identity-mismatch,
 # 503) rather than silently signing under an unexpected key.
 PROFILE_ATTESTATION_EXPECTED_KEY_ID = "eIO7_uhceQOQ0FDx5bGCODcYEUPkbSgAcuXczunT1QA"
+# "Ask anything" AI answers (src/ask.ts): hard daily cap across everyone, sized to stay inside the
+# Workers AI free daily allowance. When it is reached the site falls back to search only.
+ASK_DAILY_CAP = "150"
+
+# Workers AI, for "Ask anything" answers. Free daily allowance; see ASK_DAILY_CAP above.
+[ai]
+binding = "AI"
 
 [[d1_databases]]
 binding = "BILLING_DB"

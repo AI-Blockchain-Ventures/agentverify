@@ -9,7 +9,7 @@ const cases = [
 
 export function UseCases() {
   return (
-    <section className="mx-auto max-w-6xl px-4 py-16 md:px-6 md:py-20">
+    <section className="mx-auto max-w-[1320px] min-[1800px]:max-w-[1520px] px-4 py-16 md:px-6 md:py-20">
       <p style={{ color: 'var(--text-secondary)' }} className="text-xs font-semibold uppercase tracking-[0.24em]">Use cases</p>
       <h2 style={{ color: 'var(--text-primary)' }} className="mb-10 mt-2 text-3xl font-semibold tracking-tight md:text-4xl">Useful wherever agents can take action.</h2>
       <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">

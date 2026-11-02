@@ -7,7 +7,10 @@ export const billingRoutes = {
   status: '/v1/billing/status',
 } as const
 
-export type BillingPlan = 'free' | 'pro'
+export type BillingPlan = 'free' | 'pro' | 'team'
+
+/** Team includes everything in Pro. */
+export const isPaidPlan = (plan: string): boolean => plan === 'pro' || plan === 'team'
 
 export interface BillingStatus {
   plan: BillingPlan
@@ -24,6 +27,8 @@ export interface BillingStatus {
   }
   currentPeriodEnd: string | null
   cancelAtPeriodEnd: boolean
+  /** Pro time earned from invites (no Stripe subscription to manage). */
+  referralBonus?: boolean
 }
 
 export const freeBillingStatus: BillingStatus = {
@@ -80,7 +85,7 @@ export function getPlanAction(plan: PlanId): { href: string; label: string; disa
 }
 
 export function canUseProFeature(status: BillingStatus, feature: keyof BillingStatus['features']): boolean {
-  return status.plan === 'pro' && status.features[feature] === true
+  return isPaidPlan(status.plan) && status.features[feature] === true
 }
 
 /** `en-US` long-form date for a billing period boundary, e.g. "October 1, 2026". Shared so every
@@ -98,6 +103,8 @@ export interface BillingStateSummary {
    * keeps a canceled-at-period-end subscription's access live until currentPeriodEnd, so this is
    * never derived from cancelAtPeriodEnd alone. */
   isActivePro: boolean
+  /** True when the paid plan is Team (as owner or member). */
+  isTeam: boolean
   isCanceling: boolean
   periodEndDate: string | null
 }
@@ -111,9 +118,10 @@ export interface BillingStateSummary {
  * from this — only the plan/status interpretation is shared, not presentation.
  */
 export function summarizeBillingState(status: BillingStatus): BillingStateSummary {
-  const isActivePro = status.plan === 'pro' && (status.status === 'active' || status.status === 'trialing')
+  const isActivePro = isPaidPlan(status.plan) && (status.status === 'active' || status.status === 'trialing')
   return {
     isActivePro,
+    isTeam: isActivePro && status.plan === 'team',
     isCanceling: isActivePro && status.cancelAtPeriodEnd === true,
     periodEndDate: isActivePro ? formatPeriodEndDate(status.currentPeriodEnd) : null,
   }

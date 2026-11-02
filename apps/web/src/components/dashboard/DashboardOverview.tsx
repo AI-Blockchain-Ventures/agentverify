@@ -85,7 +85,7 @@ export function DashboardOverview({ user, onGoToScan, onGoToAgent }: { user: Use
   if (reports === null) {
     return (
       <div style={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)' }} className="rounded-3xl p-8 text-center">
-        <div style={{ borderColor: 'var(--border)', borderTopColor: '#06B6D4' }} className="mx-auto mb-4 h-6 w-6 animate-spin rounded-full border-2" />
+        <div style={{ borderColor: 'var(--border)', borderTopColor: '#7C3AED' }} className="mx-auto mb-4 h-6 w-6 animate-spin rounded-full border-2" />
         <p style={{ color: 'var(--text-primary)' }} className="text-sm font-medium">Loading your security posture</p>
       </div>
     )
@@ -94,12 +94,11 @@ export function DashboardOverview({ user, onGoToScan, onGoToAgent }: { user: Use
   if (reports.length === 0) {
     return (
       <div style={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)' }} className="av-animate-rise rounded-3xl p-8 text-center shadow-2xl shadow-black/5 md:p-12">
-        <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#7C3AED]/10 text-lg font-semibold text-[color:var(--accent-purple-text)]">◧</div>
         <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[color:var(--accent-purple-text)]">Welcome to Agent Verify</p>
         <h3 style={{ color: 'var(--text-primary)' }} className="mt-1 text-lg font-semibold">Understand what your AI agents can actually do</h3>
         <GettingStarted reports={reports} onGoToScan={onGoToScan} variant="hero" />
         <div className="mt-7 flex flex-col items-center gap-2.5 sm:flex-row sm:justify-center">
-          <button onClick={onGoToScan} className="av-press w-full rounded-2xl bg-[#06B6D4] px-5 py-3 text-sm font-semibold text-[#080B14] transition-opacity hover:opacity-90 sm:w-auto">Scan your first agent</button>
+          <button onClick={onGoToScan} className="av-press w-full rounded-2xl bg-[#7C3AED] px-5 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90 sm:w-auto">Scan your first agent</button>
           <Link href="/report/demo" style={{ border: '1px solid var(--border)', color: 'var(--text-primary)' }} className="av-press w-full rounded-2xl bg-[var(--surface)] px-5 py-3 text-sm font-semibold transition-opacity hover:opacity-90 sm:w-auto">Try the demo report</Link>
         </div>
         <Link href="/docs" style={{ color: 'var(--text-muted)' }} className="mt-4 inline-block text-xs underline hover:opacity-80">Read the docs</Link>
@@ -180,7 +179,7 @@ export function DashboardOverview({ user, onGoToScan, onGoToAgent }: { user: Use
               {recentActivity.map((e, i) => (
                 <button key={i} onClick={() => onGoToAgent(e.agentSlug)} className="av-press flex w-full items-start gap-2 rounded-xl px-3 py-2 text-left text-xs transition-opacity hover:opacity-70" style={{ backgroundColor: 'var(--surface)' }}>
                   <span
-                    className="mt-0.5 shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold uppercase"
+                    className="mt-0.5 shrink-0 rounded px-1.5 py-0.5 text-[11px] font-bold uppercase"
                     style={{
                       color: e.kind === 'resolved' || e.kind === 'improved' ? 'var(--accent-green-text)' : e.kind === 'new' || e.kind === 'worsened' ? 'var(--accent-red-text)' : 'var(--text-muted)',
                       backgroundColor: 'var(--input-bg)',

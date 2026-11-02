@@ -124,12 +124,22 @@ test('SIGNING ISOLATION: no product file outside the intended signing module cal
   // service-account JWT signing (firebaseAuth.ts), webhook delivery HMAC signing (webhooks.ts), Stripe webhook
   // HMAC verification (billing.ts), and the legacy scan-attestation signer (attestationSigning.ts). None of
   // these can produce a profile-attestation signature; excluding them keeps this test about the NEW boundary.
+  // 2.0 adds githubApp.ts: GitHub webhook HMAC verification and the GitHub App's own RS256 JWT, signed only with
+  // env.GITHUB_APP_PRIVATE_KEY (it never reads any attestation key — asserted just below).
   const knownUnrelatedSigners = new Set([
     'workers/api/src/attestationSigning.ts',
     'workers/api/src/firebaseAuth.ts',
     'workers/api/src/webhooks.ts',
     'workers/api/src/billing.ts',
+    'workers/api/src/githubApp.ts',
+    'workers/api/src/vcs.ts',
+    'workers/api/src/slack.ts',
   ])
+  // 2.0: vcs.ts (Bitbucket webhook HMAC) and slack.ts (Slack request HMAC) only verify inbound webhooks with their own secrets.
+  for (const file of ['githubApp.ts', 'vcs.ts', 'slack.ts']) {
+    const src = readFileSync(path.join(repo, 'workers/api/src', file), 'utf8')
+    assert.doesNotMatch(src, /ATTESTATION|PROFILE_ATTESTATION|SIGNING_KEY/, `${file} must never reference an attestation key`)
+  }
   const offenders = []
   for (const f of productFiles()) {
     const r = rel(f)

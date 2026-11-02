@@ -8,7 +8,7 @@ const trustSignals = [
 export function TrustSignals() {
   return (
     <section style={{ backgroundColor: 'var(--bg)' }} className="px-6 pb-16">
-      <div className="mx-auto max-w-6xl">
+      <div className="mx-auto max-w-[1320px] min-[1800px]:max-w-[1520px]">
         <div style={{ border: '1px solid var(--border)', backgroundColor: 'var(--card)' }} className="rounded-[2rem] p-5 shadow-2xl shadow-black/5 md:p-6">
           <div className="mb-5 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
             <div>

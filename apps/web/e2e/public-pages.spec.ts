@@ -6,10 +6,10 @@ import { test, expect } from '@playwright/test'
 
 test('landing page loads with the real hero copy and CTAs', async ({ page }) => {
   await page.goto('./')
-  await expect(page).toHaveTitle(/Know What Your AI Agent Can Do Before You Deploy It/)
-  await expect(page.getByRole('heading', { name: /Know what your AI agent can do before you deploy it/i })).toBeVisible()
+  await expect(page).toHaveTitle(/Security for AI Agents, From First Commit to Production/)
+  await expect(page.getByRole('heading', { name: /Security for AI agents, from first commit to production/i })).toBeVisible()
   await expect(page.getByRole('link', { name: 'Scan an agent free' })).toHaveAttribute('href', '#public-scan')
-  await expect(page.getByRole('button', { name: 'Create free account' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Create free account' }).first()).toBeVisible()
   await expect(page.getByRole('link', { name: 'View Sample Report' })).toHaveAttribute('href', '/agentverify/report/demo/')
 })
 
@@ -96,7 +96,7 @@ test('protected dashboard routes redirect cleanly when signed out, not blank or 
   // redirect guard itself doesn't crash or hang, not the authenticated content behind it.
   for (const path of ['dashboard/', 'dashboard/agent/?name=test']) {
     await page.goto(path)
-    await expect(page).toHaveURL(/\/agentverify\/?$/)
+    await expect(page).toHaveURL(/\/agentverify\/login\/?\?next=/)
   }
 })
 

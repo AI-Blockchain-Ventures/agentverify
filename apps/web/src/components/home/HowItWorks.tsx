@@ -8,7 +8,7 @@ const steps = [
 export function HowItWorks() {
   return (
     <section style={{ borderTop: '1px solid var(--border)' }} className="px-4 py-16 md:px-6 md:py-20">
-      <div className="mx-auto max-w-6xl">
+      <div className="mx-auto max-w-[1320px] min-[1800px]:max-w-[1520px]">
         <div className="mb-16 text-center">
           <p style={{ color: 'var(--text-secondary)' }} className="text-xs font-semibold uppercase tracking-[0.24em]">How it works</p>
           <h2 style={{ color: 'var(--text-primary)' }} className="mt-2 text-3xl font-semibold tracking-tight md:text-4xl">From scan to safer deployment.</h2>

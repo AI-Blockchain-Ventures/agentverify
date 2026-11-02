@@ -174,7 +174,7 @@ export function ScannerPanel({ user, onScanComplete }: ScannerPanelProps) {
       })
       const data = await res.json().catch(() => ({})) as (ScanResultType & { error?: string; limit?: number; used?: number; saved?: boolean })
       if (res.status === 429) {
-        setScanError(`You've used all ${data.limit ?? billingStatus.scanQuota} scans included this month. ${billingStatus.plan === 'pro' ? 'Your quota resets next month.' : 'Upgrade to Pro for 100 scans/month.'}`)
+        setScanError(`You've used all ${data.limit ?? billingStatus.scanQuota} scans included this month. ${billingStatus.plan !== 'free' ? 'Your quota resets next month.' : 'Upgrade to Pro for 100 scans/month.'}`)
         return
       }
       if (res.status === 401) {
@@ -301,7 +301,7 @@ export function ScannerPanel({ user, onScanComplete }: ScannerPanelProps) {
             <button
               onClick={() => void runImport(() => importFromGitHub(repoUrl, setImportProgress))}
               disabled={!repoUrl.trim() || importing}
-              className="shrink-0 rounded-2xl bg-[#06B6D4] px-5 py-3 text-sm font-semibold text-[#060A0F] transition-opacity hover:opacity-85 disabled:opacity-40"
+              className="shrink-0 rounded-2xl bg-[#7C3AED] px-5 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-85 disabled:opacity-40"
             >
               {importing ? 'Importing…' : 'Import files'}
             </button>
@@ -324,7 +324,7 @@ export function ScannerPanel({ user, onScanComplete }: ScannerPanelProps) {
             <p style={{ color: 'var(--text-muted)' }} className="mt-3">Any detected token is redacted in the report — but if one is found, rotate it.</p>
           </div>
           <div className="mt-4 flex flex-col gap-2 sm:flex-row">
-            <button onClick={() => inputRef.current?.click()} className="rounded-2xl bg-[#06B6D4] px-4 py-2.5 text-sm font-semibold text-[#060A0F] transition-opacity hover:opacity-85">Choose config file</button>
+            <button onClick={() => inputRef.current?.click()} className="rounded-2xl bg-[#7C3AED] px-4 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-85">Choose config file</button>
             <button onClick={() => { setTab('paste'); setFileName('mcp.json'); setImportNotes([]) }} style={{ border: '1px solid var(--border)', color: 'var(--text-secondary)' }} className="rounded-2xl px-4 py-2.5 text-sm font-semibold transition-opacity hover:opacity-80">Paste config</button>
             <button onClick={() => { const ex = examples['MCP config']; setTab('paste'); setContent(ex.content); setFileName(ex.fileName); setImportNotes([]) }} style={{ border: '1px solid var(--border)', color: 'var(--text-secondary)' }} className="rounded-2xl px-4 py-2.5 text-sm font-semibold transition-opacity hover:opacity-80">Load a risky example</button>
           </div>
@@ -393,7 +393,7 @@ export function ScannerPanel({ user, onScanComplete }: ScannerPanelProps) {
         <div className="mt-5 rounded-xl border border-[#E07B39]/30 bg-[#E07B39]/10 p-4">
           <p className="text-sm font-semibold text-[color:var(--accent-orange-text)]">You&apos;ve used all {billingStatus.scanQuota} scans included this month</p>
           <p style={{ color: 'var(--text-secondary)' }} className="mt-1 text-xs">
-            {billingStatus.plan === 'pro' ? 'Your quota resets at the start of next month.' : 'Free includes 10 scans/month. Pro includes 100 scans/month plus full remediation and PDF export.'}
+            {billingStatus.plan !== 'free' ? 'Your quota resets at the start of next month.' : 'Free includes 10 scans/month. Pro includes 100 scans/month plus full remediation and PDF export.'}
           </p>
           {billingStatus.plan !== 'pro' && <Link href="/pricing" className="mt-3 inline-flex rounded-lg bg-[#7C3AED] px-3 py-2 text-xs font-semibold text-white">View Pro</Link>}
         </div>
@@ -406,7 +406,7 @@ export function ScannerPanel({ user, onScanComplete }: ScannerPanelProps) {
       <button
         onClick={run}
         disabled={!content.trim() || loading || importing || (!billing.loading && billingStatus.used >= billingStatus.scanQuota)}
-        className="mt-5 w-full rounded-2xl bg-[#7C3AED] py-4 font-semibold text-white hover:text-[#060A0F] shadow-[0_18px_50px_rgba(6,182,212,0.22)] transition-colors hover:bg-[#06B6D4] disabled:opacity-30"
+        className="mt-5 w-full rounded-2xl bg-[#7C3AED] py-4 font-semibold text-white transition-colors hover:bg-[#6D28D9] disabled:opacity-30"
       >
         {loading ? 'Scanning...' : 'Scan agent'}
       </button>

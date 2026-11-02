@@ -34,7 +34,7 @@ function AgentDetailInner() {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    if (!authLoading && !user) router.push('/')
+    if (!authLoading && !user) router.replace('/login?next=/dashboard')
   }, [authLoading, user, router])
 
   useEffect(() => {
@@ -65,7 +65,7 @@ function AgentDetailInner() {
     return (
       <div style={{ backgroundColor: 'var(--bg)' }} className="flex min-h-screen items-center justify-center px-6">
         <div style={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)' }} className="w-full max-w-sm rounded-3xl p-8 text-center shadow-2xl shadow-black/5">
-          <div style={{ borderColor: 'var(--border)', borderTopColor: '#06B6D4' }} className="mx-auto mb-4 h-6 w-6 animate-spin rounded-full border-2" />
+          <div style={{ borderColor: 'var(--border)', borderTopColor: '#7C3AED' }} className="mx-auto mb-4 h-6 w-6 animate-spin rounded-full border-2" />
           <p style={{ color: 'var(--text-primary)' }} className="text-sm font-semibold">Loading agent history</p>
         </div>
       </div>
@@ -79,7 +79,7 @@ function AgentDetailInner() {
       <div style={{ backgroundColor: 'var(--bg)' }} className="flex min-h-screen items-center justify-center px-6">
         <div style={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)' }} className="max-w-md rounded-3xl p-8 text-center shadow-2xl shadow-black/5">
           <p style={{ color: 'var(--text-primary)' }} className="text-sm font-semibold">{error}</p>
-          <Link href="/dashboard" className="mt-5 inline-flex rounded-2xl bg-[#06B6D4] px-5 py-3 text-sm font-semibold text-[#060A0F]">Back to dashboard</Link>
+          <Link href="/dashboard" className="mt-5 inline-flex rounded-2xl bg-[#7C3AED] px-5 py-3 text-sm font-semibold text-white">Back to dashboard</Link>
         </div>
       </div>
     )
@@ -96,7 +96,7 @@ function AgentDetailInner() {
             unidentified filename rather than a detected agent name — in that case it appears as a standalone report,
             not a grouped agent.
           </p>
-          <Link href="/dashboard" className="mt-6 inline-flex rounded-2xl bg-[#06B6D4] px-5 py-3 text-sm font-semibold text-[#060A0F]">Back to dashboard</Link>
+          <Link href="/dashboard" className="mt-6 inline-flex rounded-2xl bg-[#7C3AED] px-5 py-3 text-sm font-semibold text-white">Back to dashboard</Link>
         </div>
       </div>
     )
@@ -181,7 +181,7 @@ function AgentDetailInner() {
                         className={`w-6 rounded-t ${normalizeVerdict(r.verdict) === 'VERIFIED' ? 'bg-[#00B37E]' : 'bg-[#E03E3E]'}`}
                         style={{ height: `${Math.max(6, score)}px`, opacity: i === scoreTrend.length - 1 ? 1 : 0.55 }}
                       />
-                      <span style={{ color: 'var(--text-muted)' }} className="text-[10px]">{score}</span>
+                      <span style={{ color: 'var(--text-muted)' }} className="text-[11px]">{score}</span>
                     </div>
                   )
                 })}

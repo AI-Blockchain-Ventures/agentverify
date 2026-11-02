@@ -8,7 +8,7 @@ type Size = 'sm' | 'md' | 'lg'
 const variants: Record<Variant, string> = {
   // Text swaps white->dark in sync with the bg swap purple->cyan, so contrast stays AA-safe
   // in both the resting (white on purple, 5.7:1) and hover (dark on cyan, 8.2:1) states.
-  primary: 'bg-[#7C3AED] text-white font-semibold hover:bg-[#06B6D4] hover:text-[#060A0F]',
+  primary: 'bg-[#7C3AED] text-white font-semibold hover:bg-[#6D28D9]',
   ghost: 'border border-[var(--border)] text-[var(--text-primary)] hover:opacity-70',
   danger: 'bg-red/10 text-red border border-red/30',
   outline: 'border border-[var(--border)] text-[var(--text-secondary)] hover:opacity-70',

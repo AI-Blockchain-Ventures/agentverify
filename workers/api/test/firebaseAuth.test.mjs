@@ -95,7 +95,7 @@ test('verifyFirebaseIdToken (production mode): a validly signed token verifies a
   t.after(() => { globalThis.fetch = originalFetch })
 
   const user = await verifyFirebaseIdToken(token, { FIREBASE_PROJECT_ID: 'agentverify-firebaseauth-test' })
-  assert.deepEqual(user, { uid: 'alice_uid', email: 'alice@example.test' })
+  assert.deepEqual(user, { uid: 'alice_uid', email: 'alice@example.test', emailVerified: false })
 })
 
 test('verifyFirebaseIdToken (production mode): SECURITY — wrong audience is rejected', async (t) => {
@@ -163,7 +163,7 @@ test('verifyFirebaseIdToken (production mode): SECURITY — an unsigned (alg:non
 test('verifyFirebaseIdToken (emulator mode): an unsigned emulator token is accepted when FIREBASE_AUTH_EMULATOR_HOST is set', async () => {
   const unsigned = createUnsignedEmulatorToken()
   const user = await verifyFirebaseIdToken(unsigned, { FIREBASE_PROJECT_ID: 'agentverify-firebaseauth-test', FIREBASE_AUTH_EMULATOR_HOST: '127.0.0.1:9099' })
-  assert.deepEqual(user, { uid: 'alice_uid', email: 'alice@example.test' })
+  assert.deepEqual(user, { uid: 'alice_uid', email: 'alice@example.test', emailVerified: false })
 })
 
 test('verifyFirebaseIdToken (emulator mode): SECURITY — a token claiming a real algorithm but with a fake/empty signature is still rejected even in emulator mode', async () => {

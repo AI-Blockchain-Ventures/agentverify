@@ -18,7 +18,7 @@ const DESCRIPTION =
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: "Agent Verify — Know What Your AI Agent Can Do Before You Deploy It",
+    default: "Agent Verify — Security for AI Agents, From First Commit to Production",
     template: "%s — Agent Verify",
   },
   description: DESCRIPTION,
@@ -42,7 +42,7 @@ export const metadata: Metadata = {
 
   // Open Graph metadata for social sharing
   openGraph: {
-    title: "Agent Verify — Know What Your AI Agent Can Do Before You Deploy It",
+    title: "Agent Verify — Security for AI Agents, From First Commit to Production",
     description: DESCRIPTION,
     url: SITE_URL,
     siteName: "Agent Verify",
@@ -52,7 +52,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Agent Verify — Know What Your AI Agent Can Do Before You Deploy It",
+    title: "Agent Verify — Security for AI Agents, From First Commit to Production",
     description: DESCRIPTION,
     images: [OG_IMAGE.url],
   },

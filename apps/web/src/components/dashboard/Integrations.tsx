@@ -1,6 +1,8 @@
 'use client'
 
 import Link from 'next/link'
+import type { User } from 'firebase/auth'
+import { SlackConnect } from './SlackConnect'
 
 /**
  * Integrations — real destinations only. No logos or cards for anything Agent Verify does not
@@ -20,6 +22,33 @@ interface IntegrationCard {
 }
 
 const INTEGRATIONS: IntegrationCard[] = [
+  {
+    id: 'github-app',
+    name: 'GitHub App (PR bot)',
+    status: 'available',
+    purpose: 'Scans every pull request that changes agent code, adds a pass/fail check with notes on the risky lines, and keeps one comment up to date. Also monitors your main branch.',
+    setup: 'Open the GitHub & Monitoring tab and click Install on GitHub. No workflow file or API key needed.',
+    docsHref: '/developers#github-app',
+    docsLabel: 'How the PR bot works',
+  },
+  {
+    id: 'mcp',
+    name: 'Claude Code, Cursor & other AI tools (MCP)',
+    status: 'available',
+    purpose: 'Let your AI coding assistant scan the agent it is building: "scan my agent for security issues" runs Agent Verify and reads back the findings.',
+    setup: 'claude mcp add agentverify -e AGENTVERIFY_API_KEY=av_your_key -- npx -y agentverify mcp (or add the same command in Cursor, Windsurf or VS Code).',
+    docsHref: '/developers#mcp',
+    docsLabel: 'MCP setup',
+  },
+  {
+    id: 'vscode',
+    name: 'VS Code extension',
+    status: 'available',
+    purpose: 'Underlines risky lines as you write agent code, lists them in the Problems panel, and shows the security score in the status bar.',
+    setup: 'Install "Agent Verify" from the VS Code Marketplace, then run "Agent Verify: Set API Key".',
+    docsHref: '/developers#vscode',
+    docsLabel: 'VS Code setup',
+  },
   {
     id: 'github-actions',
     name: 'GitHub Actions',
@@ -50,15 +79,15 @@ const INTEGRATIONS: IntegrationCard[] = [
   {
     id: 'webhooks',
     name: 'Webhooks',
-    status: 'planned',
+    status: 'available',
     purpose: 'Notify an external system (Slack, SIEM, your own service) when a scan completes, a verification fails, or a policy check fails.',
-    setup: 'You can configure a webhook endpoint and its events today from Workspace → Webhooks. Delivery (signed POSTs, retry/backoff, dead-letter, history) is fully built and tested, but has not yet been deployed to production — no request reaches your endpoint until that deploy happens.',
+    setup: 'Add an endpoint and choose its events in Workspace → Webhooks. Deliveries are signed, retried with backoff, and listed with their history.',
     docsHref: '/docs#webhooks',
     docsLabel: 'View webhook docs',
   },
 ]
 
-export function Integrations() {
+export function Integrations({ user }: { user?: User }) {
   return (
     <div className="space-y-4">
       <p style={{ color: 'var(--text-muted)' }} className="text-xs leading-relaxed">
@@ -83,6 +112,7 @@ export function Integrations() {
             )}
           </div>
         ))}
+        {user && <SlackConnect user={user} />}
       </div>
     </div>
   )

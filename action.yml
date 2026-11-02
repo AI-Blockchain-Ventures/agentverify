@@ -81,17 +81,17 @@ runs:
         case "$format" in
           markdown)
             output_file="agentverify-summary.md"
-            npx --yes agentverify scan "$scan_path" --ci --markdown $extra_args | tee "$output_file"
+            npx --yes agentverify@2 scan "$scan_path" --ci --markdown $extra_args | tee "$output_file"
             status=${PIPESTATUS[0]}
             ;;
           json)
             output_file="agentverify-results.json"
-            npx --yes agentverify scan "$scan_path" --ci --json $extra_args | tee "$output_file"
+            npx --yes agentverify@2 scan "$scan_path" --ci --json $extra_args | tee "$output_file"
             status=${PIPESTATUS[0]}
             ;;
           text|*)
             output_file="agentverify-results.txt"
-            npx --yes agentverify scan "$scan_path" --ci $extra_args | tee "$output_file"
+            npx --yes agentverify@2 scan "$scan_path" --ci $extra_args | tee "$output_file"
             status=${PIPESTATUS[0]}
             ;;
         esac
@@ -129,6 +129,7 @@ runs:
           try { data = JSON.parse(fs.readFileSync(process.env.SUMMARY_FILE, "utf8")); }
           catch { console.log(marker + "\n\n**Agent Verify** — no summary was produced for this run."); process.exit(0); }
           const { summary, results } = data;
+          let locked = 0;
           const lines = [marker, "", "## Agent Verify", "", `${summary.verified} verified · ${summary.notVerified} not verified · ${summary.notAssessed} not assessed · ${summary.errors} error(s)`, ""];
           for (const item of results) {
             if (!item.result) { lines.push(`- ⚠️ \`${item.file}\`: ${item.error ?? "error"}`); continue; }
@@ -141,7 +142,17 @@ runs:
             if (r.policyProfile) line += ` — policy \`${r.policyProfile}\`: **${r.policyResult}**`;
             if (r.reportUrl) line += ` — [report](${r.reportUrl})`;
             lines.push(line);
+            const order = { critical: 0, high: 1, medium: 2, low: 3 };
+            const top = [...r.findings].sort((a, b) => (order[a.severity] ?? 9) - (order[b.severity] ?? 9)).slice(0, 10);
+            for (const f of top) {
+              const where = f.line ? ` (line ${f.line})` : "";
+              lines.push(`  - **${f.severity}** ${f.title}${where}: ${String(f.whatIsWrong ?? "").replace(/\s+/g, " ").slice(0, 200)}`);
+            }
+            if (r.findings.length > 10) lines.push(`  - …and ${r.findings.length - 10} more`);
+            locked += r.findings.filter(f => f.fixLocked).length;
           }
+          if (locked) lines.push("", `🔒 Step-by-step fixes and corrected code for ${locked} finding(s) are included with [Agent Verify Pro](https://aimodularity.com/agentverify/pricing/).`);
+          lines.push("", "<sub>Want this on every PR without a workflow file? Install the [Agent Verify GitHub App](https://aimodularity.com/agentverify/developers/).</sub>");
           console.log(lines.join("\n"));
         ')
 

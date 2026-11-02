@@ -29,7 +29,7 @@ export function useBillingStatusState(user: User | null) {
         // Trust the real response for BOTH plans now — it carries real per-user `used`, which
         // varies even on the free plan and previously got discarded here in favor of the static
         // freeBillingStatus default. Only a malformed/unexpected shape falls back to the default.
-        if (!cancelled) setStatus(data.plan === 'pro' || data.plan === 'free' ? data : freeBillingStatus)
+        if (!cancelled) setStatus(data.plan === 'pro' || data.plan === 'team' || data.plan === 'free' ? data : freeBillingStatus)
       } catch {
         if (!cancelled) {
           setStatus(freeBillingStatus)

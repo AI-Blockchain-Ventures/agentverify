@@ -3,11 +3,13 @@
 import Link from 'next/link'
 import { useCallback, useEffect, useState } from 'react'
 import { useAuth } from '@/components/auth/AuthProvider'
-import { AuthModal } from '@/components/auth/AuthModal'
+import { useAuthNav } from '@/components/auth/useAuthNav'
 import { plans } from '@/lib/pricing'
 import { billingRoutes, getApiBaseUrl, getPlanAction, openBillingPortal, summarizeBillingState } from '@/lib/billing'
 import { useBillingStatusState } from '@/lib/useBillingStatus'
 import { PlanComparison, PricingFaq, ProPreview } from '@/components/pricing/PlanComparison'
+import { TeamCheckout, formatSeatPrice } from '@/components/pricing/TeamCheckout'
+import { fetchPlanAvailability, type PlanAvailability } from '@/lib/v2Api'
 
 export default function PricingPage() {
   const { user } = useAuth()
@@ -16,8 +18,14 @@ export default function PricingPage() {
   const [message, setMessage] = useState<{ text: string; reviewMode?: boolean } | null>(null)
   const [checkoutLoading, setCheckoutLoading] = useState(false)
   const [portalLoading, setPortalLoading] = useState(false)
-  const [authOpen, setAuthOpen] = useState(false)
+  const goAuth = useAuthNav()
   const [pendingCheckout, setPendingCheckout] = useState(false)
+  const [availability, setAvailability] = useState<PlanAvailability | null>(null)
+  useEffect(() => { void fetchPlanAvailability().then(setAvailability) }, [])
+  // Back from /signup with ?checkout=pro: continue straight into Pro checkout.
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get('checkout') === 'pro') setPendingCheckout(true)
+  }, [])
 
   const manageBilling = useCallback(async () => {
     if (!user) return
@@ -30,9 +38,8 @@ export default function PricingPage() {
 
   const startProCheckout = useCallback(async () => {
     if (!user) {
-      setPendingCheckout(true)
-      setAuthOpen(true)
-      setMessage({ text: 'Sign in to start Pro checkout. We will continue checkout after sign-in.' })
+      // Create an account (or log in), then come back here and checkout continues on its own.
+      goAuth('signUp', '/pricing?checkout=pro')
       return
     }
     setCheckoutLoading(true)
@@ -72,11 +79,10 @@ export default function PricingPage() {
     } finally {
       setCheckoutLoading(false)
     }
-  }, [user])
+  }, [user, goAuth])
 
   useEffect(() => {
     if (!user || !pendingCheckout || checkoutLoading) return
-    setAuthOpen(false)
     setPendingCheckout(false)
     void startProCheckout()
   }, [checkoutLoading, pendingCheckout, startProCheckout, user])
@@ -87,7 +93,7 @@ export default function PricingPage() {
         <div className="mx-auto max-w-3xl text-center">
           <p className="mb-3 text-xs font-semibold uppercase tracking-[0.3em] text-[color:var(--accent-cyan-text)]">Pricing</p>
           <h1 style={{ color: 'var(--text-primary)' }} className="text-4xl font-semibold tracking-tight md:text-6xl">Ship AI agents you can prove are safe.</h1>
-          <p style={{ color: 'var(--text-secondary)' }} className="mt-5 text-base leading-7 md:text-lg">Every plan runs all 76 checks. Upgrade to Pro for the corrected code, step-by-step fixes, A2SPA guidance, and a PDF report you can hand to clients and auditors.</p>
+          <p style={{ color: 'var(--text-secondary)' }} className="mt-5 text-base leading-7 md:text-lg">Every plan runs all 124 checks. Upgrade to Pro for the corrected code, step-by-step fixes, A2SPA guidance, and a PDF report you can hand to clients and auditors.</p>
         </div>
 
         <div style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }} className="mx-auto mt-8 max-w-3xl rounded-3xl p-5 text-center shadow-xl shadow-black/5">
@@ -115,10 +121,21 @@ export default function PricingPage() {
                   <h2 style={{ color: 'var(--text-primary)' }} className="text-xl font-semibold">{plan.name}</h2>
                   <p style={{ color: 'var(--text-muted)' }} className="mt-2 min-h-12 text-sm leading-6">{plan.description}</p>
                   <div className="mt-6 flex items-end gap-1">
-                    <span style={{ color: 'var(--text-primary)' }} className="text-4xl font-bold">{plan.price}</span>
-                    {plan.period && <span style={{ color: 'var(--text-muted)' }} className="pb-1 text-sm">{plan.period}</span>}
+                    {plan.id === 'team' && availability?.teamCheckout && availability.teamSeatPrice ? (
+                      <>
+                        <span style={{ color: 'var(--text-primary)' }} className="text-4xl font-bold">{formatSeatPrice(availability.teamSeatPrice)}</span>
+                        <span style={{ color: 'var(--text-muted)' }} className="pb-1 text-sm">/seat/{availability.teamSeatPrice.interval}</span>
+                      </>
+                    ) : (
+                      <>
+                        <span style={{ color: 'var(--text-primary)' }} className="text-4xl font-bold">{plan.price}</span>
+                        {plan.period && <span style={{ color: 'var(--text-muted)' }} className="pb-1 text-sm">{plan.period}</span>}
+                      </>
+                    )}
                   </div>
-                  {plan.limits && <p className="mt-2 text-xs font-semibold uppercase tracking-[0.18em] text-[color:var(--accent-cyan-text)]">{plan.limits}</p>}
+                  {plan.id === 'team' && availability?.teamCheckout
+                    ? <p className="mt-2 text-xs font-semibold uppercase tracking-[0.18em] text-[color:var(--accent-cyan-text)]">{availability.teamMinSeats}+ seats · 300 scans per person</p>
+                    : plan.limits && <p className="mt-2 text-xs font-semibold uppercase tracking-[0.18em] text-[color:var(--accent-cyan-text)]">{plan.limits}</p>}
                   <ul className="mt-6 space-y-3">
                     {plan.features.map(feature => (
                       <li key={feature} style={{ color: 'var(--text-secondary)' }} className="flex gap-2 text-sm"><span className="text-[color:var(--accent-green-text)]">✓</span>{feature}</li>
@@ -139,7 +156,7 @@ export default function PricingPage() {
                   ) : plan.id === 'pro' && user && billingState.isActivePro ? (
                     <div className="mt-8">
                       <div style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }} className="rounded-2xl p-3.5 text-center">
-                        <p style={{ color: 'var(--text-muted)' }} className="text-[10px] font-semibold uppercase tracking-[0.18em]">Current Plan</p>
+                        <p style={{ color: 'var(--text-muted)' }} className="text-[11px] font-semibold uppercase tracking-[0.18em]">Current Plan</p>
                         <p style={{ color: 'var(--text-primary)' }} className="mt-0.5 text-sm font-bold uppercase tracking-wide">Pro</p>
                         {billingState.isCanceling && (
                           <p style={{ color: 'var(--accent-orange-text)' }} className="mt-2 text-xs font-medium">
@@ -153,15 +170,25 @@ export default function PricingPage() {
                         {portalLoading ? 'Opening…' : 'Manage Billing'}
                       </button>
                     </div>
+                  ) : plan.id === 'team' && user && billingState.isTeam ? (
+                    <div className="mt-8">
+                      <div style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }} className="rounded-2xl p-3.5 text-center">
+                        <p style={{ color: 'var(--text-muted)' }} className="text-[11px] font-semibold uppercase tracking-[0.18em]">Current Plan</p>
+                        <p style={{ color: 'var(--text-primary)' }} className="mt-0.5 text-sm font-bold uppercase tracking-wide">Team</p>
+                      </div>
+                      <Link href="/dashboard/?tab=billing" className="mt-3 block w-full rounded-2xl border px-4 py-3 text-center text-sm font-semibold" style={{ borderColor: 'var(--border)', color: 'var(--text-primary)' }}>Manage seats</Link>
+                    </div>
+                  ) : plan.id === 'team' && availability?.teamCheckout ? (
+                    <TeamCheckout user={user} availability={availability} onNeedSignIn={() => goAuth('signUp', '/pricing')} />
                   ) : plan.id === 'pro' ? (
-                    <button onClick={startProCheckout} disabled={checkoutLoading} className="mt-8 block w-full rounded-2xl bg-[#06B6D4] px-4 py-3 text-center text-sm font-semibold text-[#060A0F] transition-opacity hover:opacity-85 disabled:opacity-60">
+                    <button onClick={startProCheckout} disabled={checkoutLoading} className="mt-8 block w-full rounded-2xl bg-[#7C3AED] px-4 py-3 text-center text-sm font-semibold text-white transition-opacity hover:opacity-85 disabled:opacity-60">
                       {checkoutLoading ? 'Starting checkout...' : user ? 'Start Pro Checkout' : 'Sign in to start Pro'}
                     </button>
                   ) : (
                     <Link
                       href={action.href}
                       aria-disabled={action.disabled === true}
-                      className={`mt-8 block rounded-2xl px-4 py-3 text-center text-sm font-semibold transition-opacity hover:opacity-85 ${action.disabled ? 'cursor-not-allowed opacity-70' : ''} ${plan.highlighted ? 'bg-[#06B6D4] text-[#060A0F]' : 'border border-[var(--border)] text-[var(--text-primary)]'}`}
+                      className={`mt-8 block rounded-2xl px-4 py-3 text-center text-sm font-semibold transition-opacity hover:opacity-85 ${action.disabled ? 'cursor-not-allowed opacity-70' : ''} ${plan.highlighted ? 'bg-[#7C3AED] text-white' : 'border border-[var(--border)] text-[var(--text-primary)]'}`}
                     >
                       {action.label}
                     </Link>
@@ -182,7 +209,6 @@ export default function PricingPage() {
         <ProPreview />
         <PricingFaq />
       </section>
-      <AuthModal open={authOpen} defaultMode="signIn" onClose={() => setAuthOpen(false)} />
     </main>
   )
 }

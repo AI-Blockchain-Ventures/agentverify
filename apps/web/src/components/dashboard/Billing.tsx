@@ -5,6 +5,9 @@ import Link from 'next/link'
 import type { User } from 'firebase/auth'
 import { useBillingStatusState } from '@/lib/useBillingStatus'
 import { openBillingPortal, summarizeBillingState } from '@/lib/billing'
+import { useTeam } from '@/lib/v2Api'
+import { TeamSeats } from './TeamSeats'
+import { InviteCard } from '@/components/growth/InviteCard'
 
 /**
  * The in-app-shell Billing/Plan destination. Previously the sidebar's "Billing / Plan" item and
@@ -21,15 +24,19 @@ import { openBillingPortal, summarizeBillingState } from '@/lib/billing'
 export function Billing({ user }: { user: User }) {
   const billing = useBillingStatusState(user)
   const billingState = summarizeBillingState(billing.status)
+  const { team, reload: reloadTeam } = useTeam(user)
+  const isTeamMember = team?.role === 'member'
+  const isReferralPro = billing.status.referralBonus === true
   const [portalBusy, setPortalBusy] = useState(false)
   const [portalMessage, setPortalMessage] = useState<{ text: string; reviewMode?: boolean } | null>(null)
 
+  const paidName = billingState.isTeam ? 'Team' : 'Pro'
   const planLabel = billingState.isActivePro
     ? billingState.isCanceling
       ? billingState.periodEndDate
-        ? `Pro — cancels ${billingState.periodEndDate}`
-        : 'Pro — canceling'
-      : 'Pro — active'
+        ? `${paidName} — cancels ${billingState.periodEndDate}`
+        : `${paidName} — canceling`
+      : isTeamMember ? 'Team — member' : isReferralPro ? `Pro — free from invites${billingState.periodEndDate ? ` until ${billingState.periodEndDate}` : ''}` : `${paidName} — active`
     : billing.status.status === 'past_due'
       ? 'Past due'
       : billing.status.status === 'canceled'
@@ -60,23 +67,27 @@ export function Billing({ user }: { user: User }) {
             <p style={{ color: 'var(--text-muted)' }} className="text-xs font-semibold uppercase tracking-wider">Current plan</p>
             <p style={{ color: 'var(--text-primary)' }} className="mt-1 text-2xl font-semibold">{billing.loading ? 'Loading…' : planLabel}</p>
           </div>
-          {billingState.isActivePro ? (
+          {billingState.isActivePro && !isTeamMember && !isReferralPro ? (
             <button onClick={manageBilling} disabled={portalBusy} className="av-press shrink-0 rounded-xl bg-[#7C3AED] px-4 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50">
               {portalBusy ? 'Opening…' : 'Manage billing →'}
             </button>
+          ) : isTeamMember ? null : isReferralPro ? (
+            <Link href="/pricing" className="av-press shrink-0 rounded-xl bg-[#7C3AED] px-4 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90">
+              Keep Pro →
+            </Link>
           ) : (
             <Link href="/pricing" className="av-press shrink-0 rounded-xl bg-[#7C3AED] px-4 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90">
               Upgrade to Pro →
             </Link>
           )}
         </div>
-        {billingState.isActivePro && (
+        {billingState.isActivePro && !isTeamMember && !isReferralPro && (
           <p style={{ color: 'var(--text-muted)' }} className="mt-3 text-xs">
             {billingState.isCanceling
               ? billingState.periodEndDate
-                ? `Your Pro plan remains active until ${billingState.periodEndDate}. Update payment method or resume — through Stripe's secure billing portal.`
-                : "Your Pro plan is canceling at the end of the current billing period. Update payment method or resume — through Stripe's secure billing portal."
-              : "Update payment method, view invoices, or cancel — through Stripe's secure billing portal."}
+                ? `Your ${paidName} plan remains active until ${billingState.periodEndDate}. Update payment method or resume — through Stripe's secure billing portal.`
+                : `Your ${paidName} plan is canceling at the end of the current billing period. Update payment method or resume — through Stripe's secure billing portal.`
+              : `Update payment method${billingState.isTeam ? ', change the number of seats' : ''}, view invoices, or cancel — through Stripe's secure billing portal.`}
           </p>
         )}
         {portalMessage && (
@@ -90,6 +101,10 @@ export function Billing({ user }: { user: User }) {
           </p>
         )}
       </section>
+
+      {team && <TeamSeats user={user} team={team} onChange={() => void reloadTeam()} />}
+
+      <InviteCard user={user} />
 
       <section style={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)' }} className="rounded-3xl p-6 shadow-xl shadow-black/5">
         <h2 style={{ color: 'var(--text-primary)' }} className="text-sm font-semibold uppercase tracking-wider">Scan usage this period</h2>

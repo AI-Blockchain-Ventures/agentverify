@@ -207,7 +207,7 @@ function CheckRow({ check, family }: { check: VerificationCheck; family: RiskFam
       <button onClick={() => setOpen(o => !o)} className="flex w-full items-center gap-3 px-4 py-3.5 text-left" aria-expanded={open}>
         <span style={{ color: 'var(--text-muted)' }} className="w-24 shrink-0 font-mono text-[11px]">{check.id}</span>
         <span style={{ color: 'var(--text-primary)' }} className="min-w-0 flex-1 truncate text-sm font-semibold">{check.name}</span>
-        {check.addedIn === '1.6.0' && <span className="shrink-0 rounded-full bg-[#7C3AED]/12 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[color:var(--accent-purple-text)]">New</span>}
+        {check.addedIn === '1.6.0' && <span className="shrink-0 rounded-full bg-[#7C3AED]/12 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-[color:var(--accent-purple-text)]">New</span>}
         <span className={`hidden shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold sm:inline ${SEVERITY_STYLE[check.severity] ?? ''}`}>{check.severity}</span>
         <span style={{ color: 'var(--text-muted)' }} className="hidden shrink-0 text-xs md:inline">{family?.label ?? check.category}</span>
         <span style={{ color: 'var(--text-muted)', transform: open ? 'rotate(180deg)' : undefined }} className="av-transition shrink-0 text-xs">▾</span>

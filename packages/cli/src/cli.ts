@@ -4,9 +4,10 @@ import { readFileSync, readdirSync, statSync, appendFileSync, writeFileSync } fr
 import { join, relative, extname } from 'path'
 import { scan } from './sdk'
 import type { ScanResult } from './types'
+import { runMcpServer } from './mcp'
 import { PackageError, SUPPORTED_ASSESSMENT_SCHEMA, SUPPORTED_PROFILES, buildPackage, displayPath, formatAssessment, postProfile, safeText, serializeRequest } from './profile'
 
-const VERSION = '1.6.0'
+const VERSION = '2.0.0'
 const API_URL = process.env.AGENTVERIFY_API_URL ?? 'https://agentverify-api.agentverify.workers.dev/v1/scan'
 const A2SPA_DOCS_URL = 'https://aimodularity.com/A2SPA/docs'
 
@@ -134,9 +135,12 @@ ${c.gray}Execution trust analysis for AI agents${c.reset}
 ${c.bold}Usage:${c.reset}
   agentverify scan [dir] --key <api-key>
   agentverify scan --file <file> --key <api-key>
+  agentverify mcp
 
 ${c.bold}Commands:${c.reset}
   scan          Scan agent files in a directory or a single file
+  mcp           Run as an MCP server so Claude Code, Cursor, VS Code and other AI
+                tools can scan agents while you code (reads AGENTVERIFY_API_KEY)
 
 ${c.bold}Options:${c.reset}
   --key, -k     API key (or set AGENTVERIFY_API_KEY env var)
@@ -173,6 +177,9 @@ ${c.bold}Examples:${c.reset}
 
   ${c.gray}# Markdown summary for pull requests${c.reset}
   agentverify scan . --key av_your_key --markdown
+
+  ${c.gray}# Let Claude Code scan your agents (one-time setup)${c.reset}
+  claude mcp add agentverify -e AGENTVERIFY_API_KEY=av_your_key -- npx -y agentverify mcp
 
   ${c.gray}# Assess a skill directory against a profile (alpha); --json prints the service's response${c.reset}
   agentverify scan ./my-skill --profile ${SUPPORTED_PROFILES[0]} --key av_your_key
@@ -568,6 +575,11 @@ async function main() {
   if (args.help || !args.command) {
     printHelp()
     process.exit(EXIT_OK)
+  }
+
+  if (args.command === 'mcp') {
+    await runMcpServer({ version: VERSION, apiKey: args.key, apiUrl: API_URL })
+    return
   }
 
   if (args.command === 'scan') {

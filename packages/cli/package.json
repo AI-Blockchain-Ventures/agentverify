@@ -1,6 +1,6 @@
 {
   "name": "agentverify",
-  "version": "1.6.0",
+  "version": "2.0.0",
   "description": "CLI and SDK for Agent Verify — execution trust analysis for AI agents",
   "bin": {
     "agentverify": "dist/cli.js"
@@ -14,13 +14,18 @@
       "import": "./dist/sdk.mjs",
       "require": "./dist/sdk.js"
     },
+    "./guard": {
+      "types": "./dist/guard.d.ts",
+      "import": "./dist/guard.mjs",
+      "require": "./dist/guard.js"
+    },
     "./cli": "./dist/cli.js"
   },
   "files": ["dist", "README.md", "LICENSE", "CHANGELOG.md"],
   "scripts": {
-    "build": "tsup src/cli.ts src/sdk.ts --format cjs,esm --dts --clean",
-    "dev": "tsup src/cli.ts src/sdk.ts --format cjs,esm --dts --watch",
-    "test": "npm run build && node test/cli.test.mjs && node --test test/profile.test.mjs",
+    "build": "tsup src/cli.ts src/sdk.ts src/guard.ts --format cjs,esm --dts --clean",
+    "dev": "tsup src/cli.ts src/sdk.ts src/guard.ts --format cjs,esm --dts --watch",
+    "test": "npm run build && node test/cli.test.mjs && node --test test/profile.test.mjs test/mcp.test.mjs test/guard.test.mjs",
     "prepublishOnly": "npm run build"
   },
   "engines": { "node": ">=18.0.0" },

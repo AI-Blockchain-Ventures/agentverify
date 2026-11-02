@@ -1,7 +1,7 @@
 import type { ArtifactFingerprint, Finding, ScanInput, ScanResult, SignedAttestation } from '@agentverify/scanner'
 import { computeArtifactFingerprint, computeReportHash, buildAttestationPayload, findPolicyById, evaluatePolicy, VERIFICATION_CATALOG, catalogSummary, RISK_TAXONOMY } from '@agentverify/scanner'
 import { applyRemediationEntitlement, type LockableFinding } from './entitlementView'
-import { checkScanQuota, handleCheckout, handlePortal, handleStatus, handleWebhook, recordMonthlyUsage, type BillingEnv } from './billing'
+import { checkScanQuota, handleCheckout, handlePortal, handleStatus, handleWebhook, getTeamSeatPrice, hasProFeatures, isPlanCheckoutAvailable, recordMonthlyUsage, TEAM_MAX_SEATS, TEAM_MIN_SEATS, type BillingEnv } from './billing'
 import { createScanResult } from './scanResponse'
 import { signAttestation, getAttestationPublicKeyInfo, type AttestationSigningEnv } from './attestationSigning'
 import { lookupVerificationStatus } from './verificationStatus'
@@ -13,9 +13,21 @@ import { createWebhook, listWebhooks, setWebhookStatus, type WebhooksEnv } from 
 import { enqueueWebhookDeliveries, runDueDeliveries, listDeliveries, retryDelivery, type WebhooksDeliveryEnv } from './webhookDelivery'
 import { authenticateRequest, authorize, type AuthzEnv } from './authz'
 import { isRateLimited, clientIp } from './rateLimit'
+import { demoCacheKey, readDemoCache, writeDemoCache, DEMO_SCANS_PER_HOUR } from './demoCache'
 import { handleProfileRequest } from './profiles'
 import { signProfileAttestation, getProfileAttestationPublicKeyInfo, type ProfileAttestationSigningEnv, type SignFailureCategory } from './profileAttestationSigning'
 import { readBoundedBody, decodeBody, isValidUtf8 } from './requestBody'
+import { handleGithubWebhook, githubConfig, linkInstallation, listInstallations, type GithubEnv } from './githubWebhook'
+import { loadAlertSettings, saveAlertSettings } from './alerts'
+import { claimReferral, type GrowthEnv, getDigest, inDigestWindow, POPULAR_MCP_FOR_EMAIL, qualifyReferral, referralSummary, sendDigestBatch, setDigest, unsubscribe } from './growth'
+import { listGuardEvents, storeGuardEvents } from './guardEvents'
+import { createTarget, deleteTarget, listRedteam, processRedteamTick, startRun, verifyTarget } from './redteam'
+import { finishSlackOauth, handleSlackCommand, linkSlackTeam, slackInstallUrl, type SlackEnv } from './slack'
+import { createConnection, deleteConnection, handleVcsWebhook, listConnections, type VcsEnv } from './vcs'
+import { addMember as addTeamMember, getTeam, removeMember as removeTeamMember } from './team'
+import { adminGrant, adminImportFirebaseUsers, adminOverview, adminUsers, isAdmin, type AdminEnv } from './admin'
+import { handleAsk, type AskEnv } from './ask'
+import { getUserProfile, saveUserProfile } from './userProfiles'
 
 const json = (body: unknown, status = 200): Response =>
   new Response(JSON.stringify(body), {
@@ -23,7 +35,7 @@ const json = (body: unknown, status = 200): Response =>
     headers: {
       'content-type': 'application/json; charset=utf-8',
       'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
+      'Access-Control-Allow-Methods': 'GET,POST,DELETE,OPTIONS',
       'Access-Control-Allow-Headers': 'Authorization, Content-Type, User-Agent',
     },
   })
@@ -149,7 +161,7 @@ async function saveReportToFirebase(
   }
 }
 
-type WorkerEnv = BillingEnv & AttestationSigningEnv & ProfileAttestationSigningEnv & OrganizationsEnv & AuditLogEnv & WebhooksEnv & WebhooksDeliveryEnv & {
+type WorkerEnv = BillingEnv & AdminEnv & AskEnv & AttestationSigningEnv & ProfileAttestationSigningEnv & OrganizationsEnv & AuditLogEnv & WebhooksEnv & WebhooksDeliveryEnv & GithubEnv & GrowthEnv & VcsEnv & SlackEnv & {
   FIREBASE_API_KEY?: string
   FIREBASE_CLIENT_EMAIL?: string
   FIREBASE_PRIVATE_KEY?: string
@@ -189,12 +201,6 @@ const MAX_DEMO_CONTENT_LENGTH = 200 * 1024 // 200KB — generous for one pasted 
  * instead of importing @agentverify/scanner directly (see docs/private-scanner-boundary.md).
  */
 async function handleDemoScan(request: Request, env: WorkerEnv): Promise<Response> {
-  // Best-effort per-IP throttle — see rateLimit.ts for why this isn't a complete answer alone;
-  // the real production requirement is a Cloudflare Rate Limiting rule bound to this route.
-  if (isRateLimited(`demo:${clientIp(request)}`, 5, 60 * 60 * 1000)) {
-    return json({ error: 'Too many public demo scans from this network. Try again later, or create a free account.' }, 429)
-  }
-
   let body: { content?: unknown; fileName?: unknown; platform?: unknown }
   try {
     body = await request.json()
@@ -205,16 +211,32 @@ async function handleDemoScan(request: Request, env: WorkerEnv): Promise<Respons
   if (body.content.length > MAX_DEMO_CONTENT_LENGTH) {
     return json({ error: `Demo content must be under ${MAX_DEMO_CONTENT_LENGTH / 1024}KB. Create a free account for full-size scans.` }, 413)
   }
+  const fileName = typeof body.fileName === 'string' && body.fileName ? body.fileName.slice(0, 200) : 'demo-agent.txt'
+  const platform = typeof body.platform === 'string' ? body.platform.slice(0, 100) : ''
+
+  // Same code as before (the Live Demo, the homepage examples): reuse the saved result. It costs
+  // no scanner time, so it doesn't count toward the visitor's demo allowance.
+  const cacheKey = await demoCacheKey(body.content, fileName, platform)
+  const cached = await readDemoCache(cacheKey)
+  if (cached) return json(JSON.parse(cached))
+
+  // Best-effort per-IP throttle — see rateLimit.ts for why this isn't a complete answer alone;
+  // the real production requirement is a Cloudflare Rate Limiting rule bound to this route.
+  if (isRateLimited(`demo:${clientIp(request)}`, DEMO_SCANS_PER_HOUR, 60 * 60 * 1000)) {
+    return json({ error: 'Too many public demo scans from this network. Try again later, or create a free account.' }, 429)
+  }
 
   try {
     // The public demo is unauthenticated, so it is always the Free view: findings without fixes.
     const scanResult = applyRemediationEntitlement(createScanResult({
       content: body.content,
-      fileName: typeof body.fileName === 'string' && body.fileName ? body.fileName : 'demo-agent.txt',
+      fileName,
       fileSize: body.content.length,
-      platform: typeof body.platform === 'string' ? body.platform : undefined,
+      platform: platform || undefined,
     }), 'free')
-    return json(scanResult)
+    const response = json(scanResult)
+    await writeDemoCache(cacheKey, JSON.stringify(scanResult))
+    return response
   } catch (e) {
     console.error('Demo scan failed:', e instanceof Error ? e.stack ?? e.message : e)
     return json({ error: 'Scan failed. Please try different content.' }, 400)
@@ -283,7 +305,7 @@ async function handleVerifyFix(request: Request, env: WorkerEnv): Promise<Respon
       fileName: typeof body.fileName === 'string' && body.fileName ? body.fileName : 'fixed-agent.txt',
       fileSize: body.fixedContent.length,
       platform: typeof body.platform === 'string' ? body.platform : undefined,
-    }), plan === 'pro' ? 'pro' : 'free')
+    }), hasProFeatures(plan) ? 'pro' : 'free')
     return json({ reportId: body.reportId, findingCode: body.findingCode, rescan })
   } catch (e) {
     console.error('Fix verification failed:', e instanceof Error ? e.stack ?? e.message : e)
@@ -292,13 +314,17 @@ async function handleVerifyFix(request: Request, env: WorkerEnv): Promise<Respon
 }
 
 export default {
-  async fetch(request: Request, env: WorkerEnv): Promise<Response> {
+  async fetch(request: Request, env: WorkerEnv, ctx?: ExecutionContext): Promise<Response> {
     const url = new URL(request.url)
 
     if (request.method === 'OPTIONS') return json({ ok: true })
     if (request.method === 'GET' && url.pathname === '/health') return json({ ok: true, service: 'agentverify-api' })
 
     if (url.pathname === '/v1/billing/status' && request.method === 'GET') return handleStatus(request, env)
+    if (url.pathname === '/v1/billing/plans' && request.method === 'GET') {
+      const teamCheckout = isPlanCheckoutAvailable('team', env) && env.BILLING_ENABLED === 'true'
+      return json({ teamCheckout, teamSeatPrice: teamCheckout ? await getTeamSeatPrice(env) : null, teamMinSeats: TEAM_MIN_SEATS, teamMaxSeats: TEAM_MAX_SEATS })
+    }
     if (url.pathname === '/v1/billing/checkout' && request.method === 'POST') return handleCheckout(request, env)
     if (url.pathname === '/v1/billing/portal' && request.method === 'POST') return handlePortal(request, env)
     if (url.pathname === '/v1/billing/webhook' && request.method === 'POST') return handleWebhook(request, env)
@@ -317,6 +343,206 @@ export default {
 
     if (url.pathname === '/v1/demo/scan' && request.method === 'POST') return handleDemoScan(request, env)
     if (url.pathname === '/v1/verify-fix' && request.method === 'POST') return handleVerifyFix(request, env)
+
+    // ── 2.0: "Ask anything" (free Workers AI, capped), signup profile, admin panel ──
+    if (url.pathname === '/v1/ask' && request.method === 'POST') {
+      const raw = await readBoundedBody(request)
+      if (!raw.ok) return json({ error: 'Request body too large' }, 413)
+      let body: Record<string, unknown>
+      try { body = JSON.parse(decodeBody(raw.bytes)) as Record<string, unknown> } catch { return json({ error: 'Invalid JSON body' }, 400) }
+      const principal = await authenticateRequest(request, env)
+      const uid = principal && principal.type !== 'SYSTEM' ? principal.uid : undefined
+      const pro = uid ? hasProFeatures((await checkScanQuota(env, uid)).plan) : false
+      const res = await handleAsk(env, { uid, pro, ip: request.headers.get('CF-Connecting-IP') }, body)
+      return json(res.body, res.status)
+    }
+    if (url.pathname === '/v1/profile' && (request.method === 'GET' || request.method === 'POST')) {
+      const principal = await authenticateRequest(request, env)
+      if (!principal || principal.type !== 'USER') return unauthorized()
+      if (!env.BILLING_DB) return json({ error: 'Not available' }, 503)
+      try {
+        if (request.method === 'GET') return json(await getUserProfile(env.BILLING_DB, principal.uid))
+        const body = await request.json().catch(() => ({})) as Record<string, unknown>
+        const res = await saveUserProfile(env.BILLING_DB, principal.uid, principal.email, body)
+        return json(res.body, res.status)
+      } catch {
+        return json({ error: 'Profiles are not available yet' }, 503)
+      }
+    }
+    if (url.pathname.startsWith('/v1/admin/')) {
+      const principal = await authenticateRequest(request, env)
+      // Not found (not 403) for everyone else, so the admin API does not advertise itself.
+      if (!isAdmin(principal, env) || !principal || principal.type !== 'USER') return json({ error: 'Not found' }, 404)
+      if (url.pathname === '/v1/admin/me' && request.method === 'GET') return json({ admin: true, email: principal.email })
+      if (url.pathname === '/v1/admin/overview' && request.method === 'GET') {
+        const res = await adminOverview(env)
+        return json(res.body, res.status)
+      }
+      if (url.pathname === '/v1/admin/users' && request.method === 'GET') {
+        const res = await adminUsers(env, { filter: url.searchParams.get('filter'), q: url.searchParams.get('q'), limit: Number(url.searchParams.get('limit')) || undefined, offset: Number(url.searchParams.get('offset')) || undefined })
+        return json(res.body, res.status)
+      }
+      if (url.pathname === '/v1/admin/grants' && request.method === 'POST') {
+        const body = await request.json().catch(() => ({})) as Record<string, unknown>
+        const res = await adminGrant(env, principal.email ?? 'admin', body, email => resolveUidByEmail(email, env))
+        return json(res.body, res.status)
+      }
+      if (url.pathname === '/v1/admin/import' && request.method === 'POST') {
+        const res = await adminImportFirebaseUsers(env)
+        return json(res.body, res.status)
+      }
+      return json({ error: 'Not found' }, 404)
+    }
+
+    // ── 2.0: GitHub App (PR bot + repo monitoring) and alert settings ──
+    if (url.pathname === '/v1/github/webhook' && request.method === 'POST') {
+      return handleGithubWebhook(request, env, ctx ?? { waitUntil: (p: Promise<unknown>) => { void p } })
+    }
+    if (url.pathname === '/v1/github/config' && request.method === 'GET') return json(githubConfig(env))
+    if (url.pathname === '/v1/github/link' && request.method === 'POST') {
+      // Linking needs a signed-in dashboard user (not an API key): it attaches an installation to that account.
+      const principal = await authenticateRequest(request, env)
+      if (!principal || principal.type !== 'USER') return unauthorized()
+      const body = await request.json().catch(() => ({})) as Record<string, unknown>
+      const res = await linkInstallation(principal.uid, body, env)
+      return json(res.body, res.status)
+    }
+    if (url.pathname === '/v1/github/installations' && request.method === 'GET') {
+      const principal = await authenticateRequest(request, env)
+      if (!principal || principal.type === 'SYSTEM') return unauthorized()
+      return json(await listInstallations(principal.uid, env))
+    }
+    if (url.pathname === '/v1/digest/unsubscribe' && request.method === 'GET') {
+      const done = env.BILLING_DB ? await unsubscribe(env.BILLING_DB, url.searchParams.get('token') ?? '') : false
+      return new Response(`<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>Agent Verify</title><body style="font-family:system-ui,sans-serif;max-width:32rem;margin:4rem auto;padding:0 1rem"><h1 style="font-size:1.25rem">${done ? 'You are unsubscribed.' : 'That unsubscribe link is not valid.'}</h1><p>${done ? 'You will not get the Agent Verify weekly email any more. You can turn it back on in your dashboard settings.' : 'It may already have been used.'}</p><p><a href="https://aimodularity.com/agentverify/dashboard/">Open Agent Verify</a></p></body>`, { status: done ? 200 : 404, headers: { 'content-type': 'text/html; charset=utf-8' } })
+    }
+    if (url.pathname === '/v1/referrals' || url.pathname === '/v1/referrals/claim' || url.pathname === '/v1/digest') {
+      const principal = await authenticateRequest(request, env)
+      if (!principal || principal.type !== 'USER') return unauthorized()
+      if (!env.BILLING_DB) return json({ error: 'Not available' }, 503)
+      if (url.pathname === '/v1/referrals' && request.method === 'GET') return json(await referralSummary(env.BILLING_DB, principal.uid))
+      if (url.pathname === '/v1/referrals/claim' && request.method === 'POST') {
+        if (isRateLimited(`ref-claim:${principal.uid}`, 10, 60 * 60 * 1000)) return json({ error: 'Too many attempts' }, 429)
+        const body = await request.json().catch(() => ({})) as Record<string, unknown>
+        const res = await claimReferral(env.BILLING_DB, principal.uid, body.code)
+        return json(res.body, res.status)
+      }
+      if (url.pathname === '/v1/digest' && request.method === 'GET') return json({ ...(await getDigest(env.BILLING_DB, principal.uid)), available: Boolean(env.RESEND_API_KEY && env.ALERT_FROM_EMAIL) })
+      if (url.pathname === '/v1/digest' && request.method === 'POST') {
+        const body = await request.json().catch(() => ({})) as Record<string, unknown>
+        const res = await setDigest(env.BILLING_DB, principal.uid, principal.email, body)
+        return json(res.body, res.status)
+      }
+      return json({ error: 'Not found' }, 404)
+    }
+    if (url.pathname === '/v1/redteam' || url.pathname.startsWith('/v1/redteam/')) {
+      const principal = await authenticateRequest(request, env)
+      if (!principal || principal.type !== 'USER') return unauthorized()
+      if (!env.BILLING_DB) return json({ error: 'Not available' }, 503)
+      const body = request.method === 'POST' ? await request.json().catch(() => ({})) as Record<string, unknown> : {}
+      if (url.pathname === '/v1/redteam' && request.method === 'GET') return json(await listRedteam(env.BILLING_DB, principal.uid))
+      if (url.pathname === '/v1/redteam/targets' && request.method === 'POST') {
+        if (isRateLimited(`redteam-target:${principal.uid}`, 20, 60 * 60 * 1000)) return json({ error: 'Too many attempts' }, 429)
+        const res = await createTarget(env, principal.uid, body)
+        return json(res.body, res.status)
+      }
+      if (url.pathname === '/v1/redteam/targets' && request.method === 'DELETE') return json(await deleteTarget(env.BILLING_DB, principal.uid, url.searchParams.get('id') ?? ''))
+      if (url.pathname === '/v1/redteam/verify' && request.method === 'POST') {
+        if (isRateLimited(`redteam-verify:${principal.uid}`, 30, 60 * 60 * 1000)) return json({ error: 'Too many attempts' }, 429)
+        const res = await verifyTarget(env, principal.uid, String(body.id ?? ''))
+        return json(res.body, res.status)
+      }
+      if (url.pathname === '/v1/redteam/runs' && request.method === 'POST') {
+        const res = await startRun(env, principal.uid, String(body.targetId ?? ''))
+        return json(res.body, res.status)
+      }
+      return json({ error: 'Not found' }, 404)
+    }
+    if (url.pathname === '/v1/slack/command' && request.method === 'POST') {
+      return handleSlackCommand(request, env, ctx ?? { waitUntil: (p: Promise<unknown>) => { void p } })
+    }
+    if (url.pathname === '/v1/slack/install' && request.method === 'GET') {
+      const to = slackInstallUrl(env)
+      return to ? Response.redirect(to, 302) : json({ error: 'Slack is not configured' }, 503)
+    }
+    if (url.pathname === '/v1/slack/oauth' && request.method === 'GET') {
+      const done = await finishSlackOauth(env, url.searchParams.get('code'))
+      const msg = done.ok ? `Agent Verify is installed${done.team ? ` in ${done.team.replace(/[<>&"]/g, '')}` : ''}. In any channel, type <code>/agentverify help</code>.` : 'Installation did not finish. Please try again from Agent Verify.'
+      return new Response(`<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>Agent Verify for Slack</title><body style="font-family:system-ui,sans-serif;max-width:32rem;margin:4rem auto;padding:0 1rem"><h1 style="font-size:1.25rem">${msg}</h1><p><a href="https://aimodularity.com/agentverify/dashboard/">Open Agent Verify</a></p></body>`, { status: done.ok ? 200 : 400, headers: { 'content-type': 'text/html; charset=utf-8' } })
+    }
+    if (url.pathname === '/v1/slack/link' && request.method === 'POST') {
+      const principal = await authenticateRequest(request, env)
+      if (!principal || principal.type !== 'USER') return unauthorized()
+      const body = await request.json().catch(() => ({})) as Record<string, unknown>
+      const res = await linkSlackTeam(env, principal.uid, body.code)
+      return json(res.body, res.status)
+    }
+    if (url.pathname.startsWith('/v1/vcs/webhook/') && request.method === 'POST') {
+      return handleVcsWebhook(request, env, url.pathname.slice('/v1/vcs/webhook/'.length), ctx ?? { waitUntil: (p: Promise<unknown>) => { void p } })
+    }
+    if (url.pathname === '/v1/vcs/connections') {
+      const principal = await authenticateRequest(request, env)
+      if (!principal || principal.type !== 'USER') return unauthorized()
+      if (!env.BILLING_DB) return json({ error: 'Not available' }, 503)
+      if (request.method === 'GET') return json(await listConnections(env.BILLING_DB, principal.uid))
+      if (request.method === 'POST') {
+        if (isRateLimited(`vcs-connect:${principal.uid}`, 20, 60 * 60 * 1000)) return json({ error: 'Too many attempts' }, 429)
+        const body = await request.json().catch(() => ({})) as Record<string, unknown>
+        const res = await createConnection(env, principal.uid, body)
+        return json(res.body, res.status)
+      }
+      if (request.method === 'DELETE') return json(await deleteConnection(env.BILLING_DB, principal.uid, url.searchParams.get('id') ?? ''))
+      return json({ error: 'Not found' }, 404)
+    }
+    if (url.pathname === '/v1/guard/events') {
+      // POST: the agentverify/guard library reports decisions with an API key. GET: the dashboard lists them.
+      const principal = await authenticateRequest(request, env)
+      if (!principal || principal.type === 'SYSTEM') return unauthorized()
+      if (!env.BILLING_DB) return json({ error: 'Not available' }, 503)
+      if (request.method === 'POST') {
+        if (isRateLimited(`guard:${principal.uid}`, 120, 60 * 1000)) return json({ error: 'Too many requests' }, 429)
+        const raw = await readBoundedBody(request)
+        if (!raw.ok) return json({ error: 'Request body too large' }, 413)
+        let body: unknown
+        try { body = JSON.parse(decodeBody(raw.bytes)) } catch { return json({ error: 'Invalid JSON body' }, 400) }
+        const res = await storeGuardEvents(env.BILLING_DB, principal.uid, body)
+        return json(res.body, res.status)
+      }
+      if (request.method === 'GET') {
+        return json(await listGuardEvents(env.BILLING_DB, principal.uid, { agent: url.searchParams.get('agent'), decision: url.searchParams.get('decision'), limit: Number(url.searchParams.get('limit')) || undefined }))
+      }
+      return json({ error: 'Not found' }, 404)
+    }
+    if (url.pathname === '/v1/team' || url.pathname === '/v1/team/members') {
+      const principal = await authenticateRequest(request, env)
+      if (!principal || principal.type !== 'USER') return unauthorized()
+      if (url.pathname === '/v1/team' && request.method === 'GET') {
+        const res = await getTeam(principal.uid, env)
+        return json(res.body, res.status)
+      }
+      if (url.pathname === '/v1/team/members' && request.method === 'POST') {
+        const body = await request.json().catch(() => ({})) as Record<string, unknown>
+        const res = await addTeamMember(principal.uid, body, env, { resolveUid: email => resolveUidByEmail(email, env) })
+        return json(res.body, res.status)
+      }
+      if (url.pathname === '/v1/team/members' && request.method === 'DELETE') {
+        const res = await removeTeamMember(principal.uid, url.searchParams.get('uid') ?? '', env)
+        return json(res.body, res.status)
+      }
+      return json({ error: 'Not found' }, 404)
+    }
+    if (url.pathname === '/v1/alerts/settings' && (request.method === 'GET' || request.method === 'POST')) {
+      const principal = await authenticateRequest(request, env)
+      if (!principal || principal.type !== 'USER') return unauthorized()
+      if (!env.BILLING_DB) return json({ error: 'Alerts are not available' }, 503)
+      if (request.method === 'GET') {
+        const settings = await loadAlertSettings(env.BILLING_DB, principal.uid)
+        return json({ slackWebhookUrl: settings?.slack_webhook_url ?? '', email: settings?.email ?? '', minSeverity: settings?.min_severity ?? 'high', emailAvailable: Boolean(env.RESEND_API_KEY && env.ALERT_FROM_EMAIL) })
+      }
+      const body = await request.json().catch(() => ({})) as Record<string, unknown>
+      const saved = await saveAlertSettings(env.BILLING_DB, principal.uid, body)
+      return saved.ok ? json({ ok: true }) : json({ error: saved.error }, 400)
+    }
 
     if (request.method === 'GET' && url.pathname.startsWith('/v1/badge/')) {
       const reportId = url.pathname.split('/v1/badge/')[1]
@@ -720,7 +946,7 @@ export default {
         fileName: body.fileName,
         fileSize: body.fileSize,
         platform: body.platform,
-      }), quota.plan === 'pro' ? 'pro' : 'free')
+      }), hasProFeatures(quota.plan) ? 'pro' : 'free')
       // Fingerprints the exact submitted content — independent of the scan result itself, so the
       // same artifact always fingerprints identically even if the ruleset changes between scans.
       const artifactFingerprint = await computeArtifactFingerprint(body.content)
@@ -766,6 +992,8 @@ export default {
         policyResult,
       }, reportSource)
       await recordMonthlyUsage(env, auth.uid, quota.month, quota.plan)
+      // A referred user's first successful scan rewards both people (no-op for everyone else).
+      await qualifyReferral(env.BILLING_DB, auth.uid)
 
       if (orgIdForAudit) {
         const actorType = principal.type === 'USER' ? 'user' : 'api_key'
@@ -816,6 +1044,10 @@ export default {
    * after the trigger's own event returns, same pattern any Workers scheduled handler uses.
    */
   async scheduled(_event: ScheduledEvent, env: WorkerEnv, ctx: ExecutionContext): Promise<void> {
+    ctx.waitUntil(processRedteamTick(env).catch(e => console.error('Injection test tick failed:', e instanceof Error ? e.message : e)))
+    if (inDigestWindow()) {
+      ctx.waitUntil(sendDigestBatch(env, POPULAR_MCP_FOR_EMAIL).then(n => { if (n) console.log(`Weekly email: sent ${n}`) }).catch(e => console.error('Weekly email batch failed:', e instanceof Error ? e.message : e)))
+    }
     ctx.waitUntil(
       runDueDeliveries(env).then(result => {
         if (result.attempted > 0 || result.skippedDisabled > 0) {

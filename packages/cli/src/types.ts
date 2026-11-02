@@ -58,6 +58,8 @@ export interface Finding {
   recommendedFix: string
   fixCode?: string
   quickFix?: string
+  /** Line in the scanned content, when the finding can be located. */
+  line?: number
   /** Set by the API when this finding has a fix your plan does not include (Pro). */
   fixLocked?: boolean
   compliance?: {

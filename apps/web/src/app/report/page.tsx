@@ -88,7 +88,7 @@ function ReportPageInner() {
   }, [reportId, user, authLoading])
 
   useEffect(() => {
-    if (billingStatus.plan === 'pro' && billingStatus.status === 'active') setUpgradePrompt(null)
+    if ((billingStatus.plan === 'pro' || billingStatus.plan === 'team') && billingStatus.status === 'active') setUpgradePrompt(null)
   }, [billingStatus.plan, billingStatus.status])
 
   const isOwner = !!(user && report && (
@@ -270,7 +270,7 @@ function ReportPageInner() {
             <p style={{ color: 'var(--text-primary)' }} className="text-sm">{upgradePrompt}</p>
             <div className="flex flex-wrap gap-2">
               <button onClick={billing.refresh} disabled={billing.loading} className="rounded-lg border border-[var(--border)] px-3 py-2 text-xs font-semibold text-[var(--text-primary)] disabled:opacity-60">{billing.loading ? 'Refreshing...' : 'Refresh billing'}</button>
-              <Link href="/pricing" className="rounded-lg bg-[#06B6D4] px-3 py-2 text-center text-xs font-semibold text-[#060A0F]">Compare plans</Link>
+              <Link href="/pricing" className="rounded-lg bg-[#7C3AED] px-3 py-2 text-center text-xs font-semibold text-white">Compare plans</Link>
             </div>
           </div>
         </div>
@@ -302,7 +302,7 @@ function ReportPageInner() {
     return (
       <div style={{ backgroundColor: 'var(--bg)' }} className="flex min-h-screen items-center justify-center px-6">
         <div style={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)' }} className="w-full max-w-sm rounded-3xl p-8 text-center shadow-2xl shadow-black/5">
-          <div style={{ borderColor: 'var(--border)', borderTopColor: '#06B6D4' }} className="mx-auto mb-4 h-6 w-6 animate-spin rounded-full border-2" />
+          <div style={{ borderColor: 'var(--border)', borderTopColor: '#7C3AED' }} className="mx-auto mb-4 h-6 w-6 animate-spin rounded-full border-2" />
           <p style={{ color: 'var(--text-primary)' }} className="text-sm font-semibold">Loading security report</p>
           <p style={{ color: 'var(--text-muted)' }} className="mt-1 text-xs">Checking report visibility and details.</p>
         </div>
@@ -317,7 +317,7 @@ function ReportPageInner() {
           <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#E07B39]/10 text-lg font-semibold text-[color:var(--accent-orange-text)]">?</div>
           <p style={{ color: 'var(--text-primary)' }} className="text-xl font-semibold">Report not found</p>
           <p style={{ color: 'var(--text-muted)' }} className="mt-2 text-sm">This security report may have been deleted, kept private, or opened with an incorrect link.</p>
-          <Link href="/dashboard" className="mt-6 inline-flex rounded-2xl bg-[#06B6D4] px-5 py-3 text-sm font-semibold text-[#060A0F]">Back to dashboard</Link>
+          <Link href="/dashboard" className="mt-6 inline-flex rounded-2xl bg-[#7C3AED] px-5 py-3 text-sm font-semibold text-white">Back to dashboard</Link>
         </div>
       </div>
     )

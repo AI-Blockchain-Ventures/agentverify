@@ -140,7 +140,7 @@ export function APIAccess() {
         ) : (
           <button
             onClick={generateKey}
-            className="w-full rounded-2xl bg-[#06B6D4] py-3 font-semibold text-[#080B14] transition-colors hover:bg-[#06B6D4]"
+            className="w-full rounded-2xl bg-[#7C3AED] py-3 font-semibold text-white transition-colors hover:bg-[#6D28D9]"
           >
             Generate API key
           </button>

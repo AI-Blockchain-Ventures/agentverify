@@ -325,7 +325,7 @@ export function SecurityReportView({ data, report, reportId, user = null, isOwne
                   </div>
                 </div>
               )}
-              <button onClick={saveShareSettings} disabled={saving} className="rounded-lg bg-[#7C3AED] px-5 py-2 text-sm font-semibold text-white hover:bg-[#06B6D4] hover:text-[#060A0F] disabled:opacity-50">
+              <button onClick={saveShareSettings} disabled={saving} className="rounded-lg bg-[#7C3AED] px-5 py-2 text-sm font-semibold text-white hover:bg-[#6D28D9] disabled:opacity-50">
                 {saving ? 'Saving...' : saved ? '✓ Saved' : 'Save settings'}
               </button>
             </div>
@@ -608,7 +608,7 @@ export function SecurityReportView({ data, report, reportId, user = null, isOwne
 
       <RuntimeBOM bom={normalizedBom} />
 
-      {(onNewScan || reportUrl) && <div className="mt-8 flex flex-col gap-3 sm:flex-row">{onNewScan && <button onClick={onNewScan} className="rounded-lg bg-[#06B6D4] px-5 py-2.5 text-sm font-semibold text-[#080B14] transition-colors hover:bg-[#06B6D4]">Run New Scan</button>}{reportUrl && <button onClick={() => copyText(publicReportUrl, 'report-link')} style={{ backgroundColor: copied === 'report-link' ? '#7C3AED' : 'var(--card)', color: copied === 'report-link' ? '#060A0F' : 'var(--text-muted)', border: '1px solid var(--border)' }} className="rounded-lg px-5 py-2.5 text-sm font-semibold transition-all hover:opacity-70">{copied === 'report-link' ? '✓ Copied' : 'Copy Report Link'}</button>}</div>}
+      {(onNewScan || reportUrl) && <div className="mt-8 flex flex-col gap-3 sm:flex-row">{onNewScan && <button onClick={onNewScan} className="rounded-lg bg-[#7C3AED] px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#6D28D9]">Run New Scan</button>}{reportUrl && <button onClick={() => copyText(publicReportUrl, 'report-link')} style={{ backgroundColor: copied === 'report-link' ? '#7C3AED' : 'var(--card)', color: copied === 'report-link' ? '#060A0F' : 'var(--text-muted)', border: '1px solid var(--border)' }} className="rounded-lg px-5 py-2.5 text-sm font-semibold transition-all hover:opacity-70">{copied === 'report-link' ? '✓ Copied' : 'Copy Report Link'}</button>}</div>}
 
       <div id="av-share" style={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)' }} className="mt-8 scroll-mt-32 rounded-xl p-6">
         <div className="mb-4 flex items-center gap-3">

@@ -122,7 +122,7 @@ export function ReportView({
 
       {reportMode === 'executive' && <ExecutiveReportView data={normalized} onSwitchToDeveloper={() => setReportMode('developer')} report={report} user={user} />}
       {reportMode === 'developer' && <DeveloperReportView data={normalized} canViewFixes={canUseProFeature(billingStatus, 'correctedSnippets')} />}
-      {reportMode === 'compliance' && <ComplianceReportView data={normalized} />}
+      {reportMode === 'compliance' && <ComplianceReportView data={normalized} canExport={canUseProFeature(billingStatus, 'pdfExport')} raw={report} reportUrl={reportUrl} />}
       {reportMode === 'json' && <AiJsonReportView data={normalized} reportHash={reportHash} />}
       {reportMode === 'technical' && <FullTechnicalReportView data={normalized} reportHash={reportHash} scannerVersion={typeof report?.scannerVersion === 'string' ? report.scannerVersion : undefined} />}
 

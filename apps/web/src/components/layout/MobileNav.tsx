@@ -25,6 +25,9 @@ const SECTIONS: NavSection[] = [
     { id: 'workspace', label: 'Workspace', icon: '▣' },
     { id: 'billing', label: 'Billing / Plan', icon: '◆' },
     { id: 'integrations', label: 'Integrations', icon: '⇄' },
+    { id: 'github', label: 'Repos & PR checks', icon: '⑂' },
+    { id: 'guard', label: 'Agent Guard', icon: '⛨' },
+    { id: 'redteam', label: 'Injection tests', icon: '⚑' },
     { id: 'api', label: 'API / CLI', icon: '◈' },
     { id: 'settings', label: 'Settings', icon: '⚙' },
   ] },
@@ -78,7 +81,7 @@ export function MobileNavDrawer({
             <Image src={assetUrl('/agentverify-icon.png')} alt="Agent Verify" width={30} height={30} className="h-7 w-7 rounded-xl object-contain" />
             <div className="leading-tight">
               <p style={{ color: 'var(--text-primary)' }} className="text-sm font-bold">Agent Verify</p>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[color:var(--accent-purple-text)]">{planLabel}</p>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[color:var(--accent-purple-text)]">{planLabel}</p>
             </div>
           </div>
           <button onClick={onClose} aria-label="Close menu" style={{ color: 'var(--text-muted)', border: '1px solid var(--border)' }} className="flex h-8 w-8 items-center justify-center rounded-lg">✕</button>
@@ -87,7 +90,7 @@ export function MobileNavDrawer({
         <nav className="flex-1 space-y-4 overflow-y-auto px-2 py-4">
           {SECTIONS.map(section => (
             <div key={section.label}>
-              <p style={{ color: 'var(--text-muted)' }} className="mb-1.5 px-3 text-[10px] font-semibold uppercase tracking-[0.14em]">{section.label}</p>
+              <p style={{ color: 'var(--text-muted)' }} className="mb-1.5 px-3 text-[11px] font-semibold uppercase tracking-[0.14em]">{section.label}</p>
               <div className="space-y-0.5">
                 {section.items.map(item => (
                   <button

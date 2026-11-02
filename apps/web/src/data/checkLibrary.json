@@ -1,0 +1,3084 @@
+{
+ "generatedAt": "2026-11-02T14:32:01.364Z",
+ "scannerVersion": "2.0.0",
+ "total": 124,
+ "checks": [
+  {
+   "id": "AV-EXEC-001",
+   "slug": "av-exec-001",
+   "code": "MISSING_SIGNATURE",
+   "name": "Missing cryptographic signature",
+   "category": "execution-authorization",
+   "severity": "critical",
+   "pack": "core",
+   "addedIn": "1.5.0",
+   "family": false,
+   "detectionType": "absence-of-pattern",
+   "evidenceType": "heuristic",
+   "supportedContent": "Any text-based agent config or source (JS/TS/Python/JSON/YAML)",
+   "whatItDetects": "Absence of `.sign(`, `.verify(`, `crypto.sign/verify`, JWT verification, HMAC, or an `x-signature` header pattern.",
+   "whyItMatters": "Without a signature, there is no proof an execution payload is authentic before it triggers real-world actions.",
+   "remediation": "Add cryptographic signature verification to every execution request before allowing agent actions to run."
+  },
+  {
+   "id": "AV-EXEC-002",
+   "slug": "av-exec-002",
+   "code": "MISSING_NONCE",
+   "name": "Missing nonce validation",
+   "category": "execution-authorization",
+   "severity": "critical",
+   "pack": "core",
+   "addedIn": "1.5.0",
+   "family": false,
+   "detectionType": "absence-of-pattern",
+   "evidenceType": "heuristic",
+   "supportedContent": "Any text-based agent config or source",
+   "whatItDetects": "Absence of `nonce`, `idempotency key`, `x-nonce`, or `requireNonce` patterns.",
+   "whyItMatters": "Without a unique per-request token, a captured request can be replayed to repeat the same action.",
+   "remediation": "Add unique per-request nonce validation; reject any request that reuses a nonce."
+  },
+  {
+   "id": "AV-EXEC-003",
+   "slug": "av-exec-003",
+   "code": "MISSING_TIMESTAMP",
+   "name": "Missing timestamp enforcement",
+   "category": "execution-authorization",
+   "severity": "medium",
+   "pack": "core",
+   "addedIn": "1.5.0",
+   "family": false,
+   "detectionType": "absence-of-pattern",
+   "evidenceType": "heuristic",
+   "supportedContent": "Any text-based agent config or source",
+   "whatItDetects": "Absence of `expires_at`, `valid_until`, `\"exp\"`, or request-expiry patterns.",
+   "whyItMatters": "Expired payloads remain valid indefinitely without expiry enforcement.",
+   "remediation": "Enforce request expiry; reject requests older than a defined window (recommended: 5 minutes)."
+  },
+  {
+   "id": "AV-EXEC-004",
+   "slug": "av-exec-004",
+   "code": "MISSING_FAIL_CLOSED",
+   "name": "Missing fail-closed enforcement",
+   "category": "execution-authorization",
+   "severity": "high",
+   "pack": "core",
+   "addedIn": "1.5.0",
+   "family": false,
+   "detectionType": "absence-of-pattern",
+   "evidenceType": "heuristic",
+   "supportedContent": "Any text-based agent config or source",
+   "whatItDetects": "Absence of an explicit `failClosed`/deny-by-default pattern, or a throw tied to a verification/authorization failure.",
+   "whyItMatters": "Without a hard block on verification failure, a failed check is only a warning — execution proceeds anyway.",
+   "remediation": "Ensure every verification failure explicitly blocks execution (deny by default)."
+  },
+  {
+   "id": "AV-PERM-001",
+   "slug": "av-perm-001",
+   "code": "OVERPERMISSIONED_SCOPE",
+   "name": "No permission or tool scope declared",
+   "category": "permissions",
+   "severity": "high",
+   "pack": "core",
+   "addedIn": "1.5.0",
+   "family": false,
+   "detectionType": "absence-of-pattern",
+   "evidenceType": "heuristic",
+   "supportedContent": "Agent/tool config with permission or scope declarations",
+   "whatItDetects": "No `permissions`/`scope`/`tools` allowlist pattern and no wildcard pattern anywhere in the content.",
+   "whyItMatters": "Without a visible scope declaration, there is no way to confirm what this agent is actually allowed to do — it may be running with default or inherited access not shown here.",
+   "remediation": "Declare an explicit permission or tool allowlist so this agent's access boundary is visible and reviewable."
+  },
+  {
+   "id": "AV-SECRET-001",
+   "slug": "av-secret-001",
+   "code": "HARDCODED_CREDENTIALS",
+   "name": "Hardcoded credentials (generic pattern)",
+   "category": "secrets",
+   "severity": "critical",
+   "pack": "core",
+   "addedIn": "1.5.0",
+   "family": false,
+   "detectionType": "pattern-match",
+   "evidenceType": "definite",
+   "supportedContent": "Any text-based source, config, or environment file",
+   "whatItDetects": "A field named like a credential assigned a 16+ character inline string literal.",
+   "whyItMatters": "Hardcoded secrets are visible in version control history, logs, and error traces indefinitely.",
+   "remediation": "Move to environment variables or a secret manager; never commit `.env` files."
+  },
+  {
+   "id": "AV-HUMAN-001",
+   "slug": "av-human-001",
+   "code": "MISSING_HUMAN_GATES",
+   "name": "Missing human-in-the-loop gates",
+   "category": "human-oversight",
+   "severity": "high",
+   "pack": "core",
+   "addedIn": "1.5.0",
+   "family": false,
+   "detectionType": "contextual-heuristic",
+   "evidenceType": "heuristic",
+   "supportedContent": "Agent source with detectable high-risk actions (transfers, deletions, deployments)",
+   "whatItDetects": "A high-risk action pattern (transfer/deploy/delete/payment call) co-occurring with the absence of confirm/approve/human-review keywords.",
+   "whyItMatters": "Irreversible actions without an approval gate turn one bad instruction into unrecoverable damage.",
+   "remediation": "Add explicit approval gates before irreversible or high-value actions."
+  },
+  {
+   "id": "AV-RUNTIME-001",
+   "slug": "av-runtime-001",
+   "code": "UNBOUNDED_MEMORY",
+   "name": "Unbounded memory persistence",
+   "category": "runtime",
+   "severity": "low",
+   "pack": "core",
+   "addedIn": "1.5.0",
+   "family": false,
+   "detectionType": "pattern-match",
+   "evidenceType": "definite",
+   "supportedContent": "Agent memory/session configuration",
+   "whatItDetects": "A `persist: true`/`ttl: null`/`retention: forever` pattern.",
+   "whyItMatters": "Agents that retain data beyond session boundaries can act on stale or poisoned context.",
+   "remediation": "Set an explicit TTL on all memory; clear session context after task completion."
+  },
+  {
+   "id": "AV-AUDIT-001",
+   "slug": "av-audit-001",
+   "code": "MISSING_AUDIT_LOGGING",
+   "name": "Missing audit logging",
+   "category": "auditability",
+   "severity": "medium",
+   "pack": "core",
+   "addedIn": "1.5.0",
+   "family": false,
+   "detectionType": "contextual-heuristic",
+   "evidenceType": "heuristic",
+   "supportedContent": "Agent source with detectable execution behavior",
+   "whatItDetects": "Absence of `audit`, `logger.*`, `winston`, `pino`, or structured-log patterns alongside real execution behavior.",
+   "whyItMatters": "Without an audit trail, forensic investigation after a failure or breach is impossible.",
+   "remediation": "Add structured audit logging (timestamp, action, user, result) to every execution."
+  },
+  {
+   "id": "AV-RUNTIME-002",
+   "slug": "av-runtime-002",
+   "code": "PROMPT_INJECTION_SURFACE",
+   "name": "Prompt injection surface detected",
+   "category": "runtime",
+   "severity": "high",
+   "pack": "core",
+   "addedIn": "1.5.0",
+   "family": false,
+   "detectionType": "contextual-heuristic",
+   "evidenceType": "heuristic",
+   "supportedContent": "Agent source with a system prompt",
+   "whatItDetects": "A `systemPrompt`/`system_prompt` pattern without a `sanitize`/`validate`/`escape`/boundary pattern nearby.",
+   "whyItMatters": "Unsanitized system prompts are vulnerable to adversarial redirection from untrusted input the agent reads.",
+   "remediation": "Sanitize all user/external input before inclusion in prompts; define strict system/user content boundaries."
+  },
+  {
+   "id": "AV-RUNTIME-003",
+   "slug": "av-runtime-003",
+   "code": "NO_RATE_LIMITING",
+   "name": "No execution rate limiting",
+   "category": "runtime",
+   "severity": "low",
+   "pack": "core",
+   "addedIn": "1.5.0",
+   "family": false,
+   "detectionType": "absence-of-pattern",
+   "evidenceType": "heuristic",
+   "supportedContent": "Agent source with detectable execution behavior",
+   "whatItDetects": "Absence of `rate limit`, `throttle`, `budget`, `max calls`, or `quota` patterns.",
+   "whyItMatters": "Agents without execution budgets can exhaust API quotas and create denial-of-service conditions.",
+   "remediation": "Add rate limits, token budgets, and maximum call counts to all execution paths."
+  },
+  {
+   "id": "AV-PERM-002",
+   "slug": "av-perm-002",
+   "code": "UNSCOPED_DELEGATION",
+   "name": "Unscoped delegation detected",
+   "category": "permissions",
+   "severity": "high",
+   "pack": "core",
+   "addedIn": "1.5.0",
+   "family": false,
+   "detectionType": "contextual-heuristic",
+   "evidenceType": "heuristic",
+   "supportedContent": "Agent source with subagent/delegation patterns",
+   "whatItDetects": "A `delegate`/`subagent`/`handoff` pattern without a `scope`/`constrain`/`limit`/`bound` pattern nearby.",
+   "whyItMatters": "Authority propagation without scope constraints lets subagents inherit full parent permissions.",
+   "remediation": "Define explicit scope constraints on all delegation; subagents get minimum required permissions only."
+  },
+  {
+   "id": "AV-TOOL-001",
+   "slug": "av-tool-001",
+   "code": "BROAD_TOOL_ACCESS",
+   "name": "Unrestricted tool access",
+   "category": "tools",
+   "severity": "high",
+   "pack": "core",
+   "addedIn": "1.5.0",
+   "family": false,
+   "detectionType": "pattern-match",
+   "evidenceType": "definite",
+   "supportedContent": "Agent framework config (LangChain/AutoGen/OpenAI Assistants and similar)",
+   "whatItDetects": "A `tools: ['*']` or `permissions: 'all'`-shaped wildcard tool declaration.",
+   "whyItMatters": "An agent that can invoke any tool it finds has an unreviewed, unbounded action surface.",
+   "remediation": "Replace wildcard tool access with an explicit allowlist of specific tools."
+  },
+  {
+   "id": "AV-RUNTIME-004",
+   "slug": "av-runtime-004",
+   "code": "COMMAND_INJECTION_RISK",
+   "name": "Command injection risk",
+   "category": "runtime",
+   "severity": "critical",
+   "pack": "core",
+   "addedIn": "1.5.0",
+   "family": false,
+   "detectionType": "pattern-match",
+   "evidenceType": "definite",
+   "supportedContent": "Agent source in languages with shell/process execution (JS/TS/Python)",
+   "whatItDetects": "`exec(`/`spawn(` called with a variable derived from request input, `shell: true`, `child_process`, `os.system`, or `subprocess`.",
+   "whyItMatters": "If user- or model-controlled input reaches a shell, an attacker may execute arbitrary commands.",
+   "remediation": "Avoid shell execution; use allowlisted commands, pass args as arrays, validate every argument."
+  },
+  {
+   "id": "AV-DEP-001",
+   "slug": "av-dep-001",
+   "code": "SUPPLY_CHAIN_RISK",
+   "name": "Supply chain control missing",
+   "category": "dependencies",
+   "severity": "medium",
+   "pack": "core",
+   "addedIn": "1.5.0",
+   "family": false,
+   "detectionType": "pattern-match",
+   "evidenceType": "heuristic",
+   "supportedContent": "package.json, requirements.txt, install scripts, or source referencing them",
+   "whatItDetects": "`curl | bash/sh`, unpinned `npm install`/`pip install`, `unpkg`, `cdn.jsdelivr`, or a `\"latest\"` version tag.",
+   "whyItMatters": "A compromised upstream dependency or remote script can silently alter agent behavior or steal secrets.",
+   "remediation": "Pin dependency versions, use lockfiles, verify integrity hashes, avoid curl-to-shell installs."
+  },
+  {
+   "id": "AV-IDENT-001",
+   "slug": "av-ident-001",
+   "code": "ROGUE_AGENT_RISK",
+   "name": "Rogue agent onboarding risk",
+   "category": "identity",
+   "severity": "high",
+   "pack": "core",
+   "addedIn": "1.5.0",
+   "family": false,
+   "detectionType": "pattern-match",
+   "evidenceType": "heuristic",
+   "supportedContent": "Multi-agent orchestration source (agent registries, plugin marketplaces)",
+   "whatItDetects": "`registerAgent`/`onboardAgent`/`dynamic agent`/`marketplace` patterns.",
+   "whyItMatters": "An unverified agent or plugin can be onboarded and inherit trusted tool access.",
+   "remediation": "Verify agent identity before onboarding; require explicit approval for new agents/plugins."
+  },
+  {
+   "id": "AV-RUNTIME-005",
+   "slug": "av-runtime-005",
+   "code": "UNSAFE_EVAL_EXEC",
+   "name": "Unsafe dynamic code execution",
+   "category": "runtime",
+   "severity": "critical",
+   "pack": "core",
+   "addedIn": "1.5.0",
+   "family": false,
+   "detectionType": "pattern-match",
+   "evidenceType": "definite",
+   "supportedContent": "JavaScript/TypeScript/Python source",
+   "whatItDetects": "`eval(`, `new Function(`, `Function('...')`, or `__import__('...')`.",
+   "whyItMatters": "Dynamic code evaluation collapses the boundary between data and code — if any evaluated content is influenced by model output, it becomes arbitrary code execution.",
+   "remediation": "Remove dynamic evaluation; if scripting is required, use a sandboxed, resource-limited interpreter."
+  },
+  {
+   "id": "AV-RUNTIME-006",
+   "slug": "av-runtime-006",
+   "code": "DEBUG_MODE_IN_PRODUCTION",
+   "name": "Debug settings alongside production config",
+   "category": "runtime",
+   "severity": "medium",
+   "pack": "core",
+   "addedIn": "1.5.0",
+   "family": false,
+   "detectionType": "contextual-heuristic",
+   "evidenceType": "heuristic",
+   "supportedContent": "Deployment/environment configuration",
+   "whatItDetects": "`debug: true`, `NODE_ENV=development`, `DEBUG=*`, or `FLASK_DEBUG=1` alongside `production`/`deploy`/`release` keywords.",
+   "whyItMatters": "Debug modes commonly disable security checks or leak internal state, stack traces, and secrets.",
+   "remediation": "Ensure debug/verbose settings are explicitly disabled in production, gated by environment."
+  },
+  {
+   "id": "AV-RUNTIME-007",
+   "slug": "av-runtime-007",
+   "code": "PRIVILEGED_CONTAINER_CONFIG",
+   "name": "Privileged or host-mounted container configuration",
+   "category": "runtime",
+   "severity": "critical",
+   "pack": "core",
+   "addedIn": "1.5.0",
+   "family": false,
+   "detectionType": "pattern-match",
+   "evidenceType": "definite",
+   "supportedContent": "Docker/Kubernetes deployment configuration",
+   "whatItDetects": "`privileged: true`, `--privileged`, `hostPath`, `docker.sock` mount, or `hostNetwork: true`.",
+   "whyItMatters": "A privileged or host-mounted container removes isolation between the agent process and the host — a compromised agent becomes a compromised host.",
+   "remediation": "Run unprivileged with no host mounts; grant only the specific capabilities the workload requires."
+  },
+  {
+   "id": "AV-PERM-003",
+   "slug": "av-perm-003",
+   "code": "BROAD_CLOUD_CREDENTIALS",
+   "name": "Overly broad cloud IAM permissions",
+   "category": "permissions",
+   "severity": "critical",
+   "pack": "core",
+   "addedIn": "1.5.0",
+   "family": false,
+   "detectionType": "pattern-match",
+   "evidenceType": "definite",
+   "supportedContent": "Cloud IAM policy documents (AWS/GCP/Azure) referenced or embedded in source",
+   "whatItDetects": "`\"Effect\":\"Allow\"` with `\"Action\":\"*\"`, `AdministratorAccess`, `iam:*`, or `\"Resource\":\"*\"`.",
+   "whyItMatters": "An agent with administrator-level cloud credentials can modify or delete any resource in the account.",
+   "remediation": "Scope IAM policies to the exact actions and resources the agent needs."
+  },
+  {
+   "id": "AV-RUNTIME-008",
+   "slug": "av-runtime-008",
+   "code": "UNSAFE_BROWSER_AUTOMATION",
+   "name": "Unsandboxed browser automation",
+   "category": "runtime",
+   "severity": "high",
+   "pack": "core",
+   "addedIn": "1.5.0",
+   "family": false,
+   "detectionType": "contextual-heuristic",
+   "evidenceType": "heuristic",
+   "supportedContent": "Puppeteer/Playwright/Selenium automation source",
+   "whatItDetects": "Puppeteer/Playwright/Selenium usage combined with `page.evaluate(`, `--no-sandbox`, or `dangerouslySetInnerHTML`.",
+   "whyItMatters": "An agent driving an unsandboxed browser can be steered by content on visited pages — a live path from prompt injection to real clicks and downloads.",
+   "remediation": "Run browser automation sandboxed with no persisted credentials; treat all page content as untrusted."
+  },
+  {
+   "id": "AV-NET-001",
+   "slug": "av-net-001",
+   "code": "INSECURE_HTTP_ENDPOINT",
+   "name": "Plaintext HTTP endpoint",
+   "category": "network",
+   "severity": "medium",
+   "pack": "core",
+   "addedIn": "1.5.0",
+   "family": false,
+   "detectionType": "pattern-match",
+   "evidenceType": "definite",
+   "supportedContent": "Any source referencing network endpoints",
+   "whatItDetects": "A `http://` URL where the host is not `localhost`/`127.0.0.1`/`0.0.0.0`.",
+   "whyItMatters": "Traffic over plain HTTP can be observed or modified in transit, including credentials and execution payloads.",
+   "remediation": "Use HTTPS for all non-local network calls."
+  },
+  {
+   "id": "AV-NET-002",
+   "slug": "av-net-002",
+   "code": "PERMISSIVE_CORS",
+   "name": "Permissive CORS (wildcard origin)",
+   "category": "network",
+   "severity": "medium",
+   "pack": "core",
+   "addedIn": "1.5.0",
+   "family": false,
+   "detectionType": "pattern-match",
+   "evidenceType": "definite",
+   "supportedContent": "Server/API source with CORS configuration",
+   "whatItDetects": "`Access-Control-Allow-Origin: *`, `cors({ origin: true })`, or `origin: '*'`.",
+   "whyItMatters": "Any website a user visits can silently call this agent on that user's behalf.",
+   "remediation": "Restrict CORS to an explicit allowlist of trusted origins."
+  },
+  {
+   "id": "AV-NET-003",
+   "slug": "av-net-003",
+   "code": "WEBHOOK_WITHOUT_VERIFICATION",
+   "name": "Webhook without visible signature verification",
+   "category": "network",
+   "severity": "high",
+   "pack": "core",
+   "addedIn": "1.5.0",
+   "family": false,
+   "detectionType": "contextual-heuristic",
+   "evidenceType": "heuristic",
+   "supportedContent": "Server source exposing webhook/callback endpoints",
+   "whatItDetects": "A `/webhook`/`/callback`/`webhookUrl` pattern without `verifySignature`/`x-hub-signature`/`stripe-signature`/`hmac` nearby.",
+   "whyItMatters": "An unverified webhook accepts instructions from anyone who can reach the URL, not just the intended sender.",
+   "remediation": "Verify an HMAC/signature header on every inbound webhook before processing it."
+  },
+  {
+   "id": "AV-MCP-001",
+   "slug": "av-mcp-001",
+   "code": "MCP_UNKNOWN_SERVER_CAPABILITY",
+   "name": "MCP integration with unidentified tool capabilities",
+   "category": "mcp",
+   "severity": "medium",
+   "pack": "core",
+   "addedIn": "1.5.0",
+   "family": false,
+   "detectionType": "pattern-match",
+   "evidenceType": "informational",
+   "supportedContent": "Any source referencing MCP (Model Context Protocol) integration",
+   "whatItDetects": "An MCP integration pattern (`@modelcontextprotocol/`, `mcpServers`, `StdioServerTransport`) not matching any known server/tool signature.",
+   "whyItMatters": "What an MCP-connected tool server actually lets the agent do is only fully knowable at runtime.",
+   "remediation": "Document exactly which MCP servers and tools this agent connects to, and what each can do."
+  },
+  {
+   "id": "AV-SECRET-002",
+   "slug": "av-secret-002",
+   "code": "SECRET_DETECTED_OPENAI_STYLE_API_KEY",
+   "name": "OpenAI-style API key detected",
+   "category": "secrets",
+   "severity": "critical",
+   "pack": "core",
+   "addedIn": "1.5.0",
+   "family": false,
+   "detectionType": "pattern-match",
+   "evidenceType": "definite",
+   "supportedContent": "Any text-based source, config, or environment file",
+   "whatItDetects": "A openai-style api key pattern (id: openai_key).",
+   "whyItMatters": "A hardcoded credential of this type grants whoever has it that key's full authority until it is rotated.",
+   "remediation": "Remove the value from source, rotate the credential immediately, and load it from an environment variable or secret manager."
+  },
+  {
+   "id": "AV-SECRET-003",
+   "slug": "av-secret-003",
+   "code": "SECRET_DETECTED_ANTHROPIC_STYLE_API_KEY",
+   "name": "Anthropic-style API key detected",
+   "category": "secrets",
+   "severity": "critical",
+   "pack": "core",
+   "addedIn": "1.5.0",
+   "family": false,
+   "detectionType": "pattern-match",
+   "evidenceType": "definite",
+   "supportedContent": "Any text-based source, config, or environment file",
+   "whatItDetects": "A anthropic-style api key pattern (id: anthropic_key).",
+   "whyItMatters": "A hardcoded credential of this type grants whoever has it that key's full authority until it is rotated.",
+   "remediation": "Remove the value from source, rotate the credential immediately, and load it from an environment variable or secret manager."
+  },
+  {
+   "id": "AV-SECRET-004",
+   "slug": "av-secret-004",
+   "code": "SECRET_DETECTED_AWS_ACCESS_KEY_ID",
+   "name": "AWS access key ID detected",
+   "category": "secrets",
+   "severity": "critical",
+   "pack": "core",
+   "addedIn": "1.5.0",
+   "family": false,
+   "detectionType": "pattern-match",
+   "evidenceType": "definite",
+   "supportedContent": "Any text-based source, config, or environment file",
+   "whatItDetects": "A aws access key id pattern (id: aws_access_key).",
+   "whyItMatters": "A hardcoded credential of this type grants whoever has it that key's full authority until it is rotated.",
+   "remediation": "Remove the value from source, rotate the credential immediately, and load it from an environment variable or secret manager."
+  },
+  {
+   "id": "AV-SECRET-005",
+   "slug": "av-secret-005",
+   "code": "SECRET_DETECTED_GCP_SERVICE_ACCOUNT_KEY_MATERIAL",
+   "name": "GCP service account key material detected",
+   "category": "secrets",
+   "severity": "critical",
+   "pack": "core",
+   "addedIn": "1.5.0",
+   "family": false,
+   "detectionType": "pattern-match",
+   "evidenceType": "definite",
+   "supportedContent": "Any text-based source, config, or environment file",
+   "whatItDetects": "A gcp service account key material pattern (id: gcp_service_account).",
+   "whyItMatters": "A hardcoded credential of this type grants whoever has it that key's full authority until it is rotated.",
+   "remediation": "Remove the value from source, rotate the credential immediately, and load it from an environment variable or secret manager."
+  },
+  {
+   "id": "AV-SECRET-006",
+   "slug": "av-secret-006",
+   "code": "SECRET_DETECTED_GITHUB_ACCESS_TOKEN",
+   "name": "GitHub access token detected",
+   "category": "secrets",
+   "severity": "critical",
+   "pack": "core",
+   "addedIn": "1.5.0",
+   "family": false,
+   "detectionType": "pattern-match",
+   "evidenceType": "definite",
+   "supportedContent": "Any text-based source, config, or environment file",
+   "whatItDetects": "A github access token pattern (id: github_token).",
+   "whyItMatters": "A hardcoded credential of this type grants whoever has it that key's full authority until it is rotated.",
+   "remediation": "Remove the value from source, rotate the credential immediately, and load it from an environment variable or secret manager."
+  },
+  {
+   "id": "AV-SECRET-007",
+   "slug": "av-secret-007",
+   "code": "SECRET_DETECTED_STRIPE_SECRET_RESTRICTED_KEY",
+   "name": "Stripe secret/restricted key detected",
+   "category": "secrets",
+   "severity": "critical",
+   "pack": "core",
+   "addedIn": "1.5.0",
+   "family": false,
+   "detectionType": "pattern-match",
+   "evidenceType": "definite",
+   "supportedContent": "Any text-based source, config, or environment file",
+   "whatItDetects": "A stripe secret/restricted key pattern (id: stripe_key).",
+   "whyItMatters": "A hardcoded credential of this type grants whoever has it that key's full authority until it is rotated.",
+   "remediation": "Remove the value from source, rotate the credential immediately, and load it from an environment variable or secret manager."
+  },
+  {
+   "id": "AV-SECRET-008",
+   "slug": "av-secret-008",
+   "code": "SECRET_DETECTED_SLACK_TOKEN",
+   "name": "Slack token detected",
+   "category": "secrets",
+   "severity": "critical",
+   "pack": "core",
+   "addedIn": "1.5.0",
+   "family": false,
+   "detectionType": "pattern-match",
+   "evidenceType": "definite",
+   "supportedContent": "Any text-based source, config, or environment file",
+   "whatItDetects": "A slack token pattern (id: slack_token).",
+   "whyItMatters": "A hardcoded credential of this type grants whoever has it that key's full authority until it is rotated.",
+   "remediation": "Remove the value from source, rotate the credential immediately, and load it from an environment variable or secret manager."
+  },
+  {
+   "id": "AV-SECRET-009",
+   "slug": "av-secret-009",
+   "code": "SECRET_DETECTED_PRIVATE_KEY_MATERIAL",
+   "name": "Private key material detected",
+   "category": "secrets",
+   "severity": "critical",
+   "pack": "core",
+   "addedIn": "1.5.0",
+   "family": false,
+   "detectionType": "pattern-match",
+   "evidenceType": "definite",
+   "supportedContent": "Any text-based source, config, or environment file",
+   "whatItDetects": "A private key material pattern (id: private_key_block).",
+   "whyItMatters": "A hardcoded credential of this type grants whoever has it that key's full authority until it is rotated.",
+   "remediation": "Remove the value from source, rotate the credential immediately, and load it from an environment variable or secret manager."
+  },
+  {
+   "id": "AV-SECRET-010",
+   "slug": "av-secret-010",
+   "code": "SECRET_DETECTED_DATABASE_CONNECTION_STRING_WITH_EMBEDDED_CREDENTIALS",
+   "name": "Database connection string with embedded credentials detected",
+   "category": "secrets",
+   "severity": "critical",
+   "pack": "core",
+   "addedIn": "1.5.0",
+   "family": false,
+   "detectionType": "pattern-match",
+   "evidenceType": "definite",
+   "supportedContent": "Any text-based source, config, or environment file",
+   "whatItDetects": "A database connection string with embedded credentials pattern (id: database_url_with_creds).",
+   "whyItMatters": "A hardcoded credential of this type grants whoever has it that key's full authority until it is rotated.",
+   "remediation": "Remove the value from source, rotate the credential immediately, and load it from an environment variable or secret manager."
+  },
+  {
+   "id": "AV-SECRET-011",
+   "slug": "av-secret-011",
+   "code": "SECRET_DETECTED_JWT_LIKE_TOKEN",
+   "name": "JWT-like token detected",
+   "category": "secrets",
+   "severity": "critical",
+   "pack": "core",
+   "addedIn": "1.5.0",
+   "family": false,
+   "detectionType": "pattern-match",
+   "evidenceType": "heuristic",
+   "supportedContent": "Any text-based source, config, or environment file",
+   "whatItDetects": "A jwt-like token pattern (id: jwt_like).",
+   "whyItMatters": "A hardcoded credential of this type grants whoever has it that key's full authority until it is rotated.",
+   "remediation": "Remove the value from source, rotate the credential immediately, and load it from an environment variable or secret manager."
+  },
+  {
+   "id": "AV-SECRET-012",
+   "slug": "av-secret-012",
+   "code": "SECRET_DETECTED_POSSIBLE_WALLET_PRIVATE_KEY_HEX_",
+   "name": "Possible wallet private key (hex) detected",
+   "category": "secrets",
+   "severity": "critical",
+   "pack": "core",
+   "addedIn": "1.5.0",
+   "family": false,
+   "detectionType": "pattern-match",
+   "evidenceType": "heuristic",
+   "supportedContent": "Any text-based source, config, or environment file",
+   "whatItDetects": "A possible wallet private key (hex) pattern (id: possible_wallet_key).",
+   "whyItMatters": "A hardcoded credential of this type grants whoever has it that key's full authority until it is rotated.",
+   "remediation": "Remove the value from source, rotate the credential immediately, and load it from an environment variable or secret manager."
+  },
+  {
+   "id": "AV-SECRET-013",
+   "slug": "av-secret-013",
+   "code": "SECRET_DETECTED_GOOGLE_API_KEY",
+   "name": "Google API key detected",
+   "category": "secrets",
+   "severity": "critical",
+   "pack": "core",
+   "addedIn": "1.6.0",
+   "family": false,
+   "detectionType": "pattern-match",
+   "evidenceType": "definite",
+   "supportedContent": "Any text-based source, config, or environment file",
+   "whatItDetects": "A google api key pattern (id: google_api_key).",
+   "whyItMatters": "A hardcoded credential of this type grants whoever has it that key's full authority until it is rotated.",
+   "remediation": "Remove the value from source, rotate the credential immediately, and load it from an environment variable or secret manager."
+  },
+  {
+   "id": "AV-SECRET-014",
+   "slug": "av-secret-014",
+   "code": "SECRET_DETECTED_HUGGING_FACE_ACCESS_TOKEN",
+   "name": "Hugging Face access token detected",
+   "category": "secrets",
+   "severity": "critical",
+   "pack": "core",
+   "addedIn": "1.6.0",
+   "family": false,
+   "detectionType": "pattern-match",
+   "evidenceType": "definite",
+   "supportedContent": "Any text-based source, config, or environment file",
+   "whatItDetects": "A hugging face access token pattern (id: huggingface_token).",
+   "whyItMatters": "A hardcoded credential of this type grants whoever has it that key's full authority until it is rotated.",
+   "remediation": "Remove the value from source, rotate the credential immediately, and load it from an environment variable or secret manager."
+  },
+  {
+   "id": "AV-SECRET-015",
+   "slug": "av-secret-015",
+   "code": "SECRET_DETECTED_SENDGRID_API_KEY",
+   "name": "SendGrid API key detected",
+   "category": "secrets",
+   "severity": "critical",
+   "pack": "core",
+   "addedIn": "1.6.0",
+   "family": false,
+   "detectionType": "pattern-match",
+   "evidenceType": "definite",
+   "supportedContent": "Any text-based source, config, or environment file",
+   "whatItDetects": "A sendgrid api key pattern (id: sendgrid_key).",
+   "whyItMatters": "A hardcoded credential of this type grants whoever has it that key's full authority until it is rotated.",
+   "remediation": "Remove the value from source, rotate the credential immediately, and load it from an environment variable or secret manager."
+  },
+  {
+   "id": "AV-SECRET-016",
+   "slug": "av-secret-016",
+   "code": "SECRET_DETECTED_TWILIO_API_KEY",
+   "name": "Twilio API key detected",
+   "category": "secrets",
+   "severity": "critical",
+   "pack": "core",
+   "addedIn": "1.6.0",
+   "family": false,
+   "detectionType": "pattern-match",
+   "evidenceType": "heuristic",
+   "supportedContent": "Any text-based source, config, or environment file",
+   "whatItDetects": "A twilio api key pattern (id: twilio_key).",
+   "whyItMatters": "A hardcoded credential of this type grants whoever has it that key's full authority until it is rotated.",
+   "remediation": "Remove the value from source, rotate the credential immediately, and load it from an environment variable or secret manager."
+  },
+  {
+   "id": "AV-SECRET-017",
+   "slug": "av-secret-017",
+   "code": "SECRET_DETECTED_NPM_ACCESS_TOKEN",
+   "name": "npm access token detected",
+   "category": "secrets",
+   "severity": "critical",
+   "pack": "core",
+   "addedIn": "1.6.0",
+   "family": false,
+   "detectionType": "pattern-match",
+   "evidenceType": "definite",
+   "supportedContent": "Any text-based source, config, or environment file",
+   "whatItDetects": "A npm access token pattern (id: npm_token).",
+   "whyItMatters": "A hardcoded credential of this type grants whoever has it that key's full authority until it is rotated.",
+   "remediation": "Remove the value from source, rotate the credential immediately, and load it from an environment variable or secret manager."
+  },
+  {
+   "id": "AV-SECRET-018",
+   "slug": "av-secret-018",
+   "code": "SECRET_DETECTED_AZURE_STORAGE_ACCOUNT_KEY",
+   "name": "Azure Storage account key detected",
+   "category": "secrets",
+   "severity": "critical",
+   "pack": "core",
+   "addedIn": "1.6.0",
+   "family": false,
+   "detectionType": "pattern-match",
+   "evidenceType": "definite",
+   "supportedContent": "Any text-based source, config, or environment file",
+   "whatItDetects": "A azure storage account key pattern (id: azure_storage_key).",
+   "whyItMatters": "A hardcoded credential of this type grants whoever has it that key's full authority until it is rotated.",
+   "remediation": "Remove the value from source, rotate the credential immediately, and load it from an environment variable or secret manager."
+  },
+  {
+   "id": "AV-SECRET-019",
+   "slug": "av-secret-019",
+   "code": "SECRET_DETECTED_DISCORD_BOT_TOKEN",
+   "name": "Discord bot token detected",
+   "category": "secrets",
+   "severity": "critical",
+   "pack": "core",
+   "addedIn": "1.6.0",
+   "family": false,
+   "detectionType": "pattern-match",
+   "evidenceType": "heuristic",
+   "supportedContent": "Any text-based source, config, or environment file",
+   "whatItDetects": "A discord bot token pattern (id: discord_bot_token).",
+   "whyItMatters": "A hardcoded credential of this type grants whoever has it that key's full authority until it is rotated.",
+   "remediation": "Remove the value from source, rotate the credential immediately, and load it from an environment variable or secret manager."
+  },
+  {
+   "id": "AV-MCP-002",
+   "slug": "av-mcp-002",
+   "code": "MCP_DANGEROUS_TOOL_EXPOSURE_FILESYSTEM",
+   "name": "Dangerous MCP tool exposed: filesystem",
+   "category": "mcp",
+   "severity": "high",
+   "pack": "core",
+   "addedIn": "1.5.0",
+   "family": false,
+   "detectionType": "pattern-match",
+   "evidenceType": "heuristic",
+   "supportedContent": "Any source referencing MCP server/tool packages or an mcpServers config block",
+   "whatItDetects": "An MCP server/package name matching the known \"filesystem\" signature.",
+   "whyItMatters": "MCP tools inherit whatever access their underlying server has. This server can: Read files; Write files; Delete files.",
+   "remediation": "Scope MCP server permissions to the minimum required; require approval for MCP tool calls that map to consequential actions."
+  },
+  {
+   "id": "AV-MCP-003",
+   "slug": "av-mcp-003",
+   "code": "MCP_DANGEROUS_TOOL_EXPOSURE_SHELL_EXEC",
+   "name": "Dangerous MCP tool exposed: shell/exec",
+   "category": "mcp",
+   "severity": "critical",
+   "pack": "core",
+   "addedIn": "1.5.0",
+   "family": false,
+   "detectionType": "pattern-match",
+   "evidenceType": "heuristic",
+   "supportedContent": "Any source referencing MCP server/tool packages or an mcpServers config block",
+   "whatItDetects": "An MCP server/package name matching the known \"shell/exec\" signature.",
+   "whyItMatters": "MCP tools inherit whatever access their underlying server has. This server can: Execute arbitrary commands on the host.",
+   "remediation": "Scope MCP server permissions to the minimum required; require approval for MCP tool calls that map to consequential actions."
+  },
+  {
+   "id": "AV-MCP-004",
+   "slug": "av-mcp-004",
+   "code": "MCP_DANGEROUS_TOOL_EXPOSURE_DATABASE",
+   "name": "Dangerous MCP tool exposed: database",
+   "category": "mcp",
+   "severity": "high",
+   "pack": "core",
+   "addedIn": "1.5.0",
+   "family": false,
+   "detectionType": "pattern-match",
+   "evidenceType": "heuristic",
+   "supportedContent": "Any source referencing MCP server/tool packages or an mcpServers config block",
+   "whatItDetects": "An MCP server/package name matching the known \"database\" signature.",
+   "whyItMatters": "MCP tools inherit whatever access their underlying server has. This server can: Query and modify a production database.",
+   "remediation": "Scope MCP server permissions to the minimum required; require approval for MCP tool calls that map to consequential actions."
+  },
+  {
+   "id": "AV-MCP-005",
+   "slug": "av-mcp-005",
+   "code": "MCP_DANGEROUS_TOOL_EXPOSURE_GITHUB",
+   "name": "Dangerous MCP tool exposed: github",
+   "category": "mcp",
+   "severity": "high",
+   "pack": "core",
+   "addedIn": "1.5.0",
+   "family": false,
+   "detectionType": "pattern-match",
+   "evidenceType": "heuristic",
+   "supportedContent": "Any source referencing MCP server/tool packages or an mcpServers config block",
+   "whatItDetects": "An MCP server/package name matching the known \"github\" signature.",
+   "whyItMatters": "MCP tools inherit whatever access their underlying server has. This server can: Read and modify repository content; Create/merge pull requests.",
+   "remediation": "Scope MCP server permissions to the minimum required; require approval for MCP tool calls that map to consequential actions."
+  },
+  {
+   "id": "AV-MCP-006",
+   "slug": "av-mcp-006",
+   "code": "MCP_DANGEROUS_TOOL_EXPOSURE_GMAIL_DRIVE",
+   "name": "Dangerous MCP tool exposed: gmail/drive",
+   "category": "mcp",
+   "severity": "high",
+   "pack": "core",
+   "addedIn": "1.5.0",
+   "family": false,
+   "detectionType": "pattern-match",
+   "evidenceType": "heuristic",
+   "supportedContent": "Any source referencing MCP server/tool packages or an mcpServers config block",
+   "whatItDetects": "An MCP server/package name matching the known \"gmail/drive\" signature.",
+   "whyItMatters": "MCP tools inherit whatever access their underlying server has. This server can: Read and send email; Read and modify documents.",
+   "remediation": "Scope MCP server permissions to the minimum required; require approval for MCP tool calls that map to consequential actions."
+  },
+  {
+   "id": "AV-MCP-007",
+   "slug": "av-mcp-007",
+   "code": "MCP_DANGEROUS_TOOL_EXPOSURE_BROWSER_AUTOMATION",
+   "name": "Dangerous MCP tool exposed: browser automation",
+   "category": "mcp",
+   "severity": "high",
+   "pack": "core",
+   "addedIn": "1.5.0",
+   "family": false,
+   "detectionType": "pattern-match",
+   "evidenceType": "heuristic",
+   "supportedContent": "Any source referencing MCP server/tool packages or an mcpServers config block",
+   "whatItDetects": "An MCP server/package name matching the known \"browser automation\" signature.",
+   "whyItMatters": "MCP tools inherit whatever access their underlying server has. This server can: Control a real browser session; Submit forms, click, navigate on the agent’s behalf.",
+   "remediation": "Scope MCP server permissions to the minimum required; require approval for MCP tool calls that map to consequential actions."
+  },
+  {
+   "id": "AV-MCP-008",
+   "slug": "av-mcp-008",
+   "code": "MCP_DANGEROUS_TOOL_EXPOSURE_PAYMENTS",
+   "name": "Dangerous MCP tool exposed: payments",
+   "category": "mcp",
+   "severity": "critical",
+   "pack": "core",
+   "addedIn": "1.5.0",
+   "family": false,
+   "detectionType": "pattern-match",
+   "evidenceType": "heuristic",
+   "supportedContent": "Any source referencing MCP server/tool packages or an mcpServers config block",
+   "whatItDetects": "An MCP server/package name matching the known \"payments\" signature.",
+   "whyItMatters": "MCP tools inherit whatever access their underlying server has. This server can: Create charges, refunds, or transfers.",
+   "remediation": "Scope MCP server permissions to the minimum required; require approval for MCP tool calls that map to consequential actions."
+  },
+  {
+   "id": "AV-MCP-009",
+   "slug": "av-mcp-009",
+   "code": "MCP_DANGEROUS_TOOL_EXPOSURE_DOCKER",
+   "name": "Dangerous MCP tool exposed: docker",
+   "category": "mcp",
+   "severity": "high",
+   "pack": "core",
+   "addedIn": "1.5.0",
+   "family": false,
+   "detectionType": "pattern-match",
+   "evidenceType": "heuristic",
+   "supportedContent": "Any source referencing MCP server/tool packages or an mcpServers config block",
+   "whatItDetects": "An MCP server/package name matching the known \"docker\" signature.",
+   "whyItMatters": "MCP tools inherit whatever access their underlying server has. This server can: Start/stop containers; Mount host paths into containers.",
+   "remediation": "Scope MCP server permissions to the minimum required; require approval for MCP tool calls that map to consequential actions."
+  },
+  {
+   "id": "AV-RUNTIME-009",
+   "slug": "av-runtime-009",
+   "code": "SQL_INJECTION_RISK",
+   "name": "SQL query built from unescaped input",
+   "category": "runtime",
+   "severity": "critical",
+   "pack": "core",
+   "addedIn": "1.6.0",
+   "family": false,
+   "detectionType": "pattern-match",
+   "evidenceType": "heuristic",
+   "supportedContent": "Any text-based agent source or configuration (JS/TS/Python/JSON/YAML)",
+   "whatItDetects": "A SQL statement is assembled by string concatenation, formatting, or interpolation instead of bound parameters.",
+   "whyItMatters": "If any part of that string comes from a user, a document, or the model itself, it can rewrite the query — reading, changing, or deleting data the agent was never meant to touch.",
+   "remediation": "Use parameterized queries / prepared statements for every value, and give the agent a database role limited to the exact tables and operations it needs.",
+   "impact": "Anyone who can influence the input (including through prompt injection) could read or modify any table this database connection can reach.",
+   "compliance": {
+    "owasp": [
+     "LLM02 - Insecure Output Handling",
+     "LLM08 - Excessive Agency"
+    ],
+    "nist": [
+     "MS-2.3",
+     "MG-2.2"
+    ],
+    "soc2": [
+     "CC6.1",
+     "CC7.1"
+    ]
+   }
+  },
+  {
+   "id": "AV-NET-004",
+   "slug": "av-net-004",
+   "code": "SSRF_RISK",
+   "name": "Server-side request to a caller-controlled URL",
+   "category": "network",
+   "severity": "high",
+   "pack": "core",
+   "addedIn": "1.6.0",
+   "family": false,
+   "detectionType": "contextual-heuristic",
+   "evidenceType": "heuristic",
+   "supportedContent": "Any text-based agent source or configuration (JS/TS/Python/JSON/YAML)",
+   "whatItDetects": "The agent makes an outbound HTTP request to a URL taken directly from request, tool, or model input, with no visible host allowlist.",
+   "whyItMatters": "An attacker (or an injected instruction) can point the agent at internal services, cloud metadata endpoints, or admin panels that are only reachable from inside your network.",
+   "remediation": "Validate every outbound URL against an explicit allowlist of hosts, block private/link-local IP ranges, and disable redirects to non-allowlisted hosts.",
+   "impact": "Could be used to reach internal-only systems or steal cloud instance credentials from a metadata endpoint.",
+   "compliance": {
+    "owasp": [
+     "LLM07 - Insecure Plugin Design",
+     "LLM08 - Excessive Agency"
+    ],
+    "nist": [
+     "MS-2.3",
+     "MG-2.2"
+    ],
+    "soc2": [
+     "CC6.6",
+     "CC6.1"
+    ]
+   }
+  },
+  {
+   "id": "AV-RUNTIME-010",
+   "slug": "av-runtime-010",
+   "code": "UNSAFE_DESERIALIZATION",
+   "name": "Unsafe deserialization of untrusted data",
+   "category": "runtime",
+   "severity": "critical",
+   "pack": "core",
+   "addedIn": "1.6.0",
+   "family": false,
+   "detectionType": "pattern-match",
+   "evidenceType": "definite",
+   "supportedContent": "Any text-based agent source or configuration (JS/TS/Python/JSON/YAML)",
+   "whatItDetects": "Data is loaded with a deserializer that can execute code (pickle, marshal, unsafe YAML, torch.load without weights_only, node-serialize).",
+   "whyItMatters": "Loading a crafted file or message with these functions runs the attacker's code inside the agent process — with all its credentials and tool access.",
+   "remediation": "Use data-only formats (JSON, yaml.safe_load, safetensors, torch.load(..., weights_only=True)) and never deserialize content from users, models, or the network with pickle-style loaders.",
+   "impact": "A malicious model file, cache entry, or message could give an attacker full code execution on the agent host.",
+   "compliance": {
+    "owasp": [
+     "LLM05 - Supply Chain Vulnerabilities",
+     "LLM03 - Training Data Poisoning"
+    ],
+    "nist": [
+     "MG-2.2",
+     "MS-2.3"
+    ],
+    "soc2": [
+     "CC7.1",
+     "CC8.1"
+    ]
+   }
+  },
+  {
+   "id": "AV-RUNTIME-011",
+   "slug": "av-runtime-011",
+   "code": "PATH_TRAVERSAL_RISK",
+   "name": "File access with a caller-controlled path",
+   "category": "runtime",
+   "severity": "high",
+   "pack": "core",
+   "addedIn": "1.6.0",
+   "family": false,
+   "detectionType": "contextual-heuristic",
+   "evidenceType": "heuristic",
+   "supportedContent": "Any text-based agent source or configuration (JS/TS/Python/JSON/YAML)",
+   "whatItDetects": "A file is read, written, or deleted using a path taken directly from request, tool, or model input, with no visible check that it stays inside an allowed folder.",
+   "whyItMatters": "A path like ../../.env or /etc/passwd lets an attacker read secrets or overwrite files outside the folder the agent is supposed to use.",
+   "remediation": "Resolve every path against a fixed base directory and reject it unless the resolved path still starts with that directory. Prefer opaque file IDs over raw paths.",
+   "impact": "Could expose configuration files and credentials, or let an attacker overwrite or delete files on the host.",
+   "compliance": {
+    "owasp": [
+     "LLM07 - Insecure Plugin Design",
+     "LLM06 - Sensitive Information Disclosure"
+    ],
+    "nist": [
+     "MS-2.3"
+    ],
+    "soc2": [
+     "CC6.1",
+     "CC6.3"
+    ]
+   }
+  },
+  {
+   "id": "AV-RUNTIME-012",
+   "slug": "av-runtime-012",
+   "code": "INSECURE_OUTPUT_HANDLING",
+   "name": "Model output used in an action without validation",
+   "category": "runtime",
+   "severity": "high",
+   "pack": "core",
+   "addedIn": "1.6.0",
+   "family": false,
+   "detectionType": "contextual-heuristic",
+   "evidenceType": "heuristic",
+   "supportedContent": "Any text-based agent source or configuration (JS/TS/Python/JSON/YAML)",
+   "whatItDetects": "Text produced by the model flows straight into code execution, a database query, or HTML rendering, with no schema validation or sanitization step visible.",
+   "whyItMatters": "Model output is untrusted input. If a prompt injection or hallucination shapes that text, it executes with the agent's full permissions.",
+   "remediation": "Validate model output against a strict schema (zod, pydantic, JSON Schema) before acting on it, allowlist the actions it may request, and escape anything rendered as HTML.",
+   "impact": "Whatever the model can be tricked into writing — code, SQL, or script — would run as this agent.",
+   "compliance": {
+    "owasp": [
+     "LLM02 - Insecure Output Handling",
+     "LLM09 - Overreliance"
+    ],
+    "nist": [
+     "MS-2.3",
+     "MS-2.5"
+    ],
+    "soc2": [
+     "CC7.1",
+     "CC6.1"
+    ]
+   }
+  },
+  {
+   "id": "AV-RUNTIME-013",
+   "slug": "av-runtime-013",
+   "code": "INDIRECT_PROMPT_INJECTION",
+   "name": "External content fed into the prompt without isolation",
+   "category": "runtime",
+   "severity": "high",
+   "pack": "core",
+   "addedIn": "1.6.0",
+   "family": false,
+   "detectionType": "contextual-heuristic",
+   "evidenceType": "heuristic",
+   "supportedContent": "Any text-based agent source or configuration (JS/TS/Python/JSON/YAML)",
+   "whatItDetects": "The agent pulls in outside content (web pages, emails, retrieved documents) and adds it to its prompt, with no visible marking of that content as untrusted data.",
+   "whyItMatters": "Hidden instructions inside a web page, email, or document can take over the agent — this is the most common real-world attack on tool-using agents.",
+   "remediation": "Wrap external content in clear delimiters, tell the model to treat it as data only, strip or flag instruction-like text, and require approval for sensitive actions taken after reading external content.",
+   "impact": "Anyone who can get text in front of the agent (a web page, an email, a shared file) could steer its tools.",
+   "compliance": {
+    "owasp": [
+     "LLM01 - Prompt Injection",
+     "LLM08 - Excessive Agency"
+    ],
+    "nist": [
+     "MS-2.3",
+     "MS-2.7"
+    ],
+    "soc2": [
+     "CC6.1",
+     "CC7.2"
+    ]
+   }
+  },
+  {
+   "id": "AV-HUMAN-002",
+   "slug": "av-human-002",
+   "code": "SAFETY_CONTROLS_DISABLED",
+   "name": "Built-in safety controls turned off",
+   "category": "human-oversight",
+   "severity": "high",
+   "pack": "core",
+   "addedIn": "1.6.0",
+   "family": false,
+   "detectionType": "pattern-match",
+   "evidenceType": "definite",
+   "supportedContent": "Any text-based agent source or configuration (JS/TS/Python/JSON/YAML)",
+   "whatItDetects": "A framework safety switch is explicitly disabled — for example auto-approving every tool call, skipping permission prompts, allowing dangerous code, or running generated code outside a sandbox.",
+   "whyItMatters": "These switches exist because the framework authors consider the action dangerous. Turning them off removes the last checkpoint between a bad instruction and a real action.",
+   "remediation": "Re-enable the framework's approval and sandbox defaults. If automation is required, allowlist the specific low-risk tools that may auto-run and keep approval for everything else.",
+   "impact": "Every tool call or generated script would run immediately, with no prompt, sandbox, or human in the way.",
+   "compliance": {
+    "owasp": [
+     "LLM08 - Excessive Agency",
+     "LLM09 - Overreliance"
+    ],
+    "nist": [
+     "GV-1.1",
+     "MG-2.2"
+    ],
+    "soc2": [
+     "CC6.1",
+     "CC8.1"
+    ]
+   }
+  },
+  {
+   "id": "AV-RUNTIME-014",
+   "slug": "av-runtime-014",
+   "code": "UNBOUNDED_AGENT_LOOP",
+   "name": "Agent loop with no step limit",
+   "category": "runtime",
+   "severity": "medium",
+   "pack": "core",
+   "addedIn": "1.6.0",
+   "family": false,
+   "detectionType": "pattern-match",
+   "evidenceType": "definite",
+   "supportedContent": "Any text-based agent source or configuration (JS/TS/Python/JSON/YAML)",
+   "whatItDetects": "The agent's reasoning/tool loop is configured with no maximum number of steps.",
+   "whyItMatters": "A confused or manipulated agent can loop forever — burning tokens and API budget, hammering downstream systems, or repeating an action many times.",
+   "remediation": "Set an explicit step/iteration limit (typically 10–30), a wall-clock timeout, and a per-task token budget.",
+   "impact": "A single bad task could run up unbounded model cost or repeat a side-effecting tool call indefinitely.",
+   "compliance": {
+    "owasp": [
+     "LLM04 - Model Denial of Service",
+     "LLM08 - Excessive Agency"
+    ],
+    "nist": [
+     "MG-2.2"
+    ],
+    "soc2": [
+     "A1.1",
+     "CC7.2"
+    ]
+   }
+  },
+  {
+   "id": "AV-NET-005",
+   "slug": "av-net-005",
+   "code": "TLS_VERIFICATION_DISABLED",
+   "name": "TLS certificate verification disabled",
+   "category": "network",
+   "severity": "high",
+   "pack": "core",
+   "addedIn": "1.6.0",
+   "family": false,
+   "detectionType": "pattern-match",
+   "evidenceType": "definite",
+   "supportedContent": "Any text-based agent source or configuration (JS/TS/Python/JSON/YAML)",
+   "whatItDetects": "HTTPS certificate checking is turned off, so the agent will accept any certificate — including an attacker's.",
+   "whyItMatters": "Encryption without certificate checks does not prove who you are talking to. Anyone on the network path can impersonate the API and read or alter the traffic, including credentials.",
+   "remediation": "Remove the override and keep certificate verification on. For internal certificates, add your CA to the trust store instead of disabling checks.",
+   "impact": "API keys and tool results passing over these connections could be intercepted or forged.",
+   "compliance": {
+    "owasp": [
+     "LLM06 - Sensitive Information Disclosure",
+     "LLM05 - Supply Chain Vulnerabilities"
+    ],
+    "nist": [
+     "MG-2.2"
+    ],
+    "soc2": [
+     "CC6.7",
+     "CC6.1"
+    ]
+   }
+  },
+  {
+   "id": "AV-DATA-001",
+   "slug": "av-data-001",
+   "code": "SENSITIVE_DATA_IN_LOGS",
+   "name": "Sensitive values written to logs",
+   "category": "secrets",
+   "severity": "medium",
+   "pack": "core",
+   "addedIn": "1.6.0",
+   "family": false,
+   "detectionType": "pattern-match",
+   "evidenceType": "heuristic",
+   "supportedContent": "Any text-based agent source or configuration (JS/TS/Python/JSON/YAML)",
+   "whatItDetects": "A log or print statement includes a field named like a password, key, token, or personal identifier.",
+   "whyItMatters": "Logs are copied to many places (log services, support tickets, dashboards) and are rarely protected like a secret store. Credentials or personal data in logs leak quietly.",
+   "remediation": "Never log secrets or personal identifiers. Log a request ID instead, and add redaction to your logger for known sensitive field names.",
+   "impact": "Anyone with log access could obtain credentials or customer personal data.",
+   "compliance": {
+    "owasp": [
+     "LLM06 - Sensitive Information Disclosure"
+    ],
+    "nist": [
+     "MS-2.10",
+     "GV-1.1"
+    ],
+    "soc2": [
+     "CC6.1",
+     "P4.1"
+    ]
+   }
+  },
+  {
+   "id": "AV-DATA-002",
+   "slug": "av-data-002",
+   "code": "SECRET_IN_SYSTEM_PROMPT",
+   "name": "Credential or secret placed in the system prompt",
+   "category": "secrets",
+   "severity": "high",
+   "pack": "core",
+   "addedIn": "1.6.0",
+   "family": false,
+   "detectionType": "pattern-match",
+   "evidenceType": "heuristic",
+   "supportedContent": "Any text-based agent source or configuration (JS/TS/Python/JSON/YAML)",
+   "whatItDetects": "A password, key, or token appears to be written directly into the system prompt.",
+   "whyItMatters": "System prompts are not secret — users routinely get models to repeat them. Anything placed in the prompt should be assumed public.",
+   "remediation": "Remove credentials from prompts entirely. Tools should read secrets from the server environment; the model should never see them.",
+   "impact": "A user could ask the agent to reveal its instructions and walk away with the credential.",
+   "compliance": {
+    "owasp": [
+     "LLM06 - Sensitive Information Disclosure",
+     "LLM01 - Prompt Injection"
+    ],
+    "nist": [
+     "MS-2.10"
+    ],
+    "soc2": [
+     "CC6.1"
+    ]
+   }
+  },
+  {
+   "id": "AV-DEP-002",
+   "slug": "av-dep-002",
+   "code": "MCP_UNPINNED_SERVER",
+   "name": "MCP server installed without a pinned version",
+   "category": "dependencies",
+   "severity": "medium",
+   "pack": "core",
+   "addedIn": "1.6.0",
+   "family": false,
+   "detectionType": "pattern-match",
+   "evidenceType": "definite",
+   "supportedContent": "Any text-based agent source or configuration (JS/TS/Python/JSON/YAML)",
+   "whatItDetects": "An MCP server is launched with `npx -y` / `uvx` using a bare package name, so whatever version is newest gets downloaded and run on every start.",
+   "whyItMatters": "If that package is ever compromised or hijacked, the next agent restart silently runs the attacker's code — with the server's tool access.",
+   "remediation": "Pin an exact version (for example @modelcontextprotocol/server-github@2025.4.8), review upgrades deliberately, and prefer vendored or lockfile-installed servers.",
+   "impact": "A malicious package update would run automatically with every capability this MCP server grants.",
+   "compliance": {
+    "owasp": [
+     "LLM05 - Supply Chain Vulnerabilities",
+     "LLM07 - Insecure Plugin Design"
+    ],
+    "nist": [
+     "GV-4.1",
+     "MG-2.2"
+    ],
+    "soc2": [
+     "CC8.1"
+    ]
+   }
+  },
+  {
+   "id": "AV-DATA-003",
+   "slug": "av-data-003",
+   "code": "DATA_EXFILTRATION_PATH",
+   "name": "Data exfiltration path: private data + untrusted input + outbound channel",
+   "category": "secrets",
+   "severity": "high",
+   "pack": "core",
+   "addedIn": "1.6.0",
+   "family": false,
+   "detectionType": "contextual-heuristic",
+   "evidenceType": "heuristic",
+   "supportedContent": "Any text-based agent source or configuration (JS/TS/Python/JSON/YAML)",
+   "whatItDetects": "This agent can read private data, takes in untrusted content (user messages, emails, web pages, documents), and can send data out (email, chat, HTTP POST, webhooks) — with no visible destination allowlist or approval step.",
+   "whyItMatters": "This is the combination attackers look for. A single injected instruction in untrusted content can tell the agent to collect private data and send it to the attacker — no code bug required.",
+   "remediation": "Break the chain: allowlist where the agent may send data (recipients, domains), require human approval for any outbound message that includes private data, and keep untrusted content away from agents that hold sensitive data.",
+   "impact": "A crafted email, ticket, or web page could make the agent send customer data, secrets, or files to an outside address.",
+   "compliance": {
+    "owasp": [
+     "LLM01 - Prompt Injection",
+     "LLM06 - Sensitive Information Disclosure",
+     "LLM08 - Excessive Agency"
+    ],
+    "nist": [
+     "MS-2.10",
+     "MG-2.2"
+    ],
+    "soc2": [
+     "CC6.1",
+     "CC6.7",
+     "P4.1"
+    ]
+   }
+  },
+  {
+   "id": "AV-FW-001",
+   "slug": "av-fw-001",
+   "code": "LANGCHAIN_UNSAFE_TOOL",
+   "name": "LangChain code or shell tool enabled",
+   "category": "tools",
+   "severity": "high",
+   "pack": "framework",
+   "addedIn": "1.6.0",
+   "family": false,
+   "detectionType": "pattern-match",
+   "evidenceType": "definite",
+   "supportedContent": "Agent source using the named framework (LangChain, CrewAI, AutoGen, OpenAI Agents SDK, Claude Agent SDK, computer-use tools)",
+   "whatItDetects": "The agent is given a LangChain tool that runs shell commands, executes Python, or sends arbitrary write requests.",
+   "whyItMatters": "These tools turn any instruction the model follows — including injected ones — into code running on your server or changes to outside systems.",
+   "remediation": "Replace general-purpose shell/Python/requests tools with narrow, purpose-built tools. If code execution is essential, run it in a disposable sandbox (container with no network or secrets) and require approval.",
+   "impact": "The model can run arbitrary commands or code with this process's permissions.",
+   "compliance": {
+    "owasp": [
+     "LLM08 - Excessive Agency",
+     "LLM07 - Insecure Plugin Design"
+    ],
+    "nist": [
+     "MS-2.3",
+     "MG-2.2"
+    ],
+    "soc2": [
+     "CC6.1",
+     "CC6.8"
+    ]
+   }
+  },
+  {
+   "id": "AV-FW-002",
+   "slug": "av-fw-002",
+   "code": "LANGCHAIN_SQL_AGENT_UNRESTRICTED",
+   "name": "LangChain SQL agent with unrestricted database access",
+   "category": "permissions",
+   "severity": "high",
+   "pack": "framework",
+   "addedIn": "1.6.0",
+   "family": false,
+   "detectionType": "contextual-heuristic",
+   "evidenceType": "heuristic",
+   "supportedContent": "Agent source using the named framework (LangChain, CrewAI, AutoGen, OpenAI Agents SDK, Claude Agent SDK, computer-use tools)",
+   "whatItDetects": "A LangChain SQL agent is connected to a database with no visible table restriction or read-only connection.",
+   "whyItMatters": "SQL agents write their own queries. Without a read-only role and a table allowlist, one bad instruction can read every table or run UPDATE/DELETE statements.",
+   "remediation": "Connect with a read-only database user, pass include_tables to limit what the agent can see, and never give the agent a connection that can modify data.",
+   "impact": "The model could read or change any table the database user can access.",
+   "compliance": {
+    "owasp": [
+     "LLM08 - Excessive Agency",
+     "LLM06 - Sensitive Information Disclosure"
+    ],
+    "nist": [
+     "MS-2.3"
+    ],
+    "soc2": [
+     "CC6.1",
+     "CC6.3"
+    ]
+   }
+  },
+  {
+   "id": "AV-FW-003",
+   "slug": "av-fw-003",
+   "code": "CREWAI_UNSAFE_CODE_EXECUTION",
+   "name": "CrewAI agent runs code outside a sandbox",
+   "category": "runtime",
+   "severity": "high",
+   "pack": "framework",
+   "addedIn": "1.6.0",
+   "family": false,
+   "detectionType": "contextual-heuristic",
+   "evidenceType": "definite",
+   "supportedContent": "Agent source using the named framework (LangChain, CrewAI, AutoGen, OpenAI Agents SDK, Claude Agent SDK, computer-use tools)",
+   "whatItDetects": "A CrewAI agent can execute code, and it is not set to the Docker-sandboxed \"safe\" mode.",
+   "whyItMatters": "Code the model writes would run directly on the host, with access to its files, network, and secrets.",
+   "remediation": "Set code_execution_mode=\"safe\" (Docker sandbox), or turn code execution off for agents that do not need it.",
+   "impact": "A manipulated agent could run arbitrary code on the machine hosting the crew.",
+   "compliance": {
+    "owasp": [
+     "LLM08 - Excessive Agency",
+     "LLM02 - Insecure Output Handling"
+    ],
+    "nist": [
+     "MG-2.2"
+    ],
+    "soc2": [
+     "CC6.8",
+     "CC7.1"
+    ]
+   }
+  },
+  {
+   "id": "AV-FW-004",
+   "slug": "av-fw-004",
+   "code": "CREWAI_OPEN_DELEGATION",
+   "name": "CrewAI agent can delegate to any crew member",
+   "category": "permissions",
+   "severity": "low",
+   "pack": "framework",
+   "addedIn": "1.6.0",
+   "family": false,
+   "detectionType": "pattern-match",
+   "evidenceType": "definite",
+   "supportedContent": "Agent source using the named framework (LangChain, CrewAI, AutoGen, OpenAI Agents SDK, Claude Agent SDK, computer-use tools)",
+   "whatItDetects": "A CrewAI agent has delegation turned on, so it can hand tasks to any other agent in the crew.",
+   "whyItMatters": "Delegation lets an agent borrow other agents' tools. If one agent is manipulated, it can route work to a more powerful teammate.",
+   "remediation": "Turn delegation off (allow_delegation=False) for agents that do not need it, and keep high-privilege tools on agents that cannot be delegated to by others.",
+   "impact": "A compromised agent could reach tools assigned only to other crew members.",
+   "compliance": {
+    "owasp": [
+     "LLM08 - Excessive Agency"
+    ],
+    "nist": [
+     "GV-4.1"
+    ],
+    "soc2": [
+     "CC6.3"
+    ]
+   }
+  },
+  {
+   "id": "AV-FW-005",
+   "slug": "av-fw-005",
+   "code": "AUTOGEN_LOCAL_CODE_EXECUTION",
+   "name": "AutoGen executes generated code on the host",
+   "category": "runtime",
+   "severity": "high",
+   "pack": "framework",
+   "addedIn": "1.6.0",
+   "family": false,
+   "detectionType": "contextual-heuristic",
+   "evidenceType": "definite",
+   "supportedContent": "Agent source using the named framework (LangChain, CrewAI, AutoGen, OpenAI Agents SDK, Claude Agent SDK, computer-use tools)",
+   "whatItDetects": "AutoGen is configured to run model-generated code directly on the local machine.",
+   "whyItMatters": "Generated code is untrusted. Running it on the host gives it the same access as your application — files, network, and credentials.",
+   "remediation": "Use DockerCommandLineCodeExecutor (or another isolated executor) with no secrets mounted and network access restricted.",
+   "impact": "Any code the model produces, including attacker-steered code, would run on the host.",
+   "compliance": {
+    "owasp": [
+     "LLM08 - Excessive Agency",
+     "LLM02 - Insecure Output Handling"
+    ],
+    "nist": [
+     "MG-2.2"
+    ],
+    "soc2": [
+     "CC6.8",
+     "CC7.1"
+    ]
+   }
+  },
+  {
+   "id": "AV-FW-006",
+   "slug": "av-fw-006",
+   "code": "OPENAI_AGENTS_NO_GUARDRAILS",
+   "name": "OpenAI Agents SDK agent with tools but no guardrails",
+   "category": "human-oversight",
+   "severity": "medium",
+   "pack": "framework",
+   "addedIn": "1.6.0",
+   "family": false,
+   "detectionType": "contextual-heuristic",
+   "evidenceType": "heuristic",
+   "supportedContent": "Agent source using the named framework (LangChain, CrewAI, AutoGen, OpenAI Agents SDK, Claude Agent SDK, computer-use tools)",
+   "whatItDetects": "An agent built with the OpenAI Agents SDK has tools, but no input or output guardrails are defined.",
+   "whyItMatters": "Guardrails are the SDK's built-in way to stop off-topic, malicious, or unsafe requests before tools run. Without them, every request goes straight to the model and its tools.",
+   "remediation": "Add input_guardrails (block injection and off-topic requests) and output_guardrails (block sensitive data leaving), and require approval for consequential tools.",
+   "impact": "Malicious or off-policy requests reach the agent's tools unchecked.",
+   "compliance": {
+    "owasp": [
+     "LLM01 - Prompt Injection",
+     "LLM08 - Excessive Agency"
+    ],
+    "nist": [
+     "MG-2.2",
+     "MS-2.3"
+    ],
+    "soc2": [
+     "CC7.2"
+    ]
+   }
+  },
+  {
+   "id": "AV-FW-007",
+   "slug": "av-fw-007",
+   "code": "CLAUDE_AGENT_NO_TOOL_ALLOWLIST",
+   "name": "Claude Agent SDK agent without a tool allowlist",
+   "category": "tools",
+   "severity": "medium",
+   "pack": "framework",
+   "addedIn": "1.6.0",
+   "family": false,
+   "detectionType": "contextual-heuristic",
+   "evidenceType": "heuristic",
+   "supportedContent": "Agent source using the named framework (LangChain, CrewAI, AutoGen, OpenAI Agents SDK, Claude Agent SDK, computer-use tools)",
+   "whatItDetects": "A Claude Agent SDK agent is created without allowed_tools, disallowed_tools, or a can_use_tool permission callback.",
+   "whyItMatters": "Without an allowlist the agent can use every built-in tool its permission mode allows, which can include running commands and editing files.",
+   "remediation": "Pass allowed_tools with only the tools this task needs, and add a can_use_tool callback to approve or deny sensitive tool calls.",
+   "impact": "The agent may be able to run shell commands or modify files beyond what its task needs.",
+   "compliance": {
+    "owasp": [
+     "LLM08 - Excessive Agency"
+    ],
+    "nist": [
+     "GV-4.1",
+     "MS-2.3"
+    ],
+    "soc2": [
+     "CC6.1",
+     "CC6.3"
+    ]
+   }
+  },
+  {
+   "id": "AV-FW-008",
+   "slug": "av-fw-008",
+   "code": "COMPUTER_USE_UNSANDBOXED",
+   "name": "Computer-use tool without a visible sandbox",
+   "category": "runtime",
+   "severity": "high",
+   "pack": "framework",
+   "addedIn": "1.6.0",
+   "family": false,
+   "detectionType": "contextual-heuristic",
+   "evidenceType": "heuristic",
+   "supportedContent": "Agent source using the named framework (LangChain, CrewAI, AutoGen, OpenAI Agents SDK, Claude Agent SDK, computer-use tools)",
+   "whatItDetects": "The agent is given a computer-use tool (control of a mouse, keyboard, and screen) with no sign it runs in an isolated VM or container.",
+   "whyItMatters": "A computer-use agent acts with whatever the session can reach. On a real desktop that includes logged-in accounts, files, and saved passwords — and on-screen text can steer it.",
+   "remediation": "Run computer-use agents only inside a dedicated VM or container with no personal accounts or credentials, an allowlist of sites, and human confirmation for purchases, logins, and sends.",
+   "impact": "Instructions on a web page or document could make the agent click, type, or download things on a real machine.",
+   "compliance": {
+    "owasp": [
+     "LLM01 - Prompt Injection",
+     "LLM08 - Excessive Agency"
+    ],
+    "nist": [
+     "MG-2.2",
+     "MS-2.3"
+    ],
+    "soc2": [
+     "CC6.1",
+     "CC6.8"
+    ]
+   }
+  },
+  {
+   "id": "AV-MCP-101",
+   "slug": "av-mcp-101",
+   "code": "MCP_FILESYSTEM_BROAD_ROOT",
+   "name": "MCP filesystem server has access to an entire drive or home folder",
+   "category": "mcp",
+   "severity": "high",
+   "pack": "mcp",
+   "addedIn": "1.6.0",
+   "family": false,
+   "detectionType": "pattern-match",
+   "evidenceType": "definite",
+   "supportedContent": "MCP client configuration files: claude_desktop_config.json, .cursor/mcp.json, .vscode/mcp.json, .mcp.json",
+   "whatItDetects": "The filesystem MCP server is given a whole drive or your entire home folder instead of one project folder.",
+   "whyItMatters": "Everything in that folder becomes readable (and often writable) by the AI — SSH keys, browser data, .env files, documents. One injected instruction is enough to read or change them.",
+   "remediation": "Point the filesystem server at the specific project folder it needs (for example ~/projects/my-app), never / or your home directory.",
+   "impact": "The AI could read or modify any file in your home folder or drive, including credentials.",
+   "compliance": {
+    "owasp": [
+     "LLM08 - Excessive Agency",
+     "LLM06 - Sensitive Information Disclosure"
+    ],
+    "nist": [
+     "GV-4.1",
+     "MS-2.3"
+    ],
+    "soc2": [
+     "CC6.1",
+     "CC6.3"
+    ]
+   }
+  },
+  {
+   "id": "AV-MCP-102",
+   "slug": "av-mcp-102",
+   "code": "MCP_SECRET_IN_CONFIG",
+   "name": "Credential stored in plain text in the MCP config",
+   "category": "secrets",
+   "severity": "high",
+   "pack": "mcp",
+   "addedIn": "1.6.0",
+   "family": false,
+   "detectionType": "pattern-match",
+   "evidenceType": "heuristic",
+   "supportedContent": "MCP client configuration files: claude_desktop_config.json, .cursor/mcp.json, .vscode/mcp.json, .mcp.json",
+   "whatItDetects": "An MCP server's env block contains what looks like a real token, key, or password written directly in the config file.",
+   "whyItMatters": "MCP config files get copied, synced to the cloud, pasted into chats, and committed to repos. A token in plain text there is easy to leak.",
+   "remediation": "Rotate the token now. Then reference it from your environment (for example \"${GITHUB_TOKEN}\") or your OS keychain instead of pasting it into the config, and give it the narrowest scopes possible.",
+   "impact": "Anyone who sees this file gets the full access of that token (for example your GitHub or Slack account).",
+   "compliance": {
+    "owasp": [
+     "LLM06 - Sensitive Information Disclosure"
+    ],
+    "nist": [
+     "MS-2.10"
+    ],
+    "soc2": [
+     "CC6.1"
+    ]
+   }
+  },
+  {
+   "id": "AV-MCP-103",
+   "slug": "av-mcp-103",
+   "code": "MCP_REMOTE_SERVER_NO_AUTH",
+   "name": "Remote MCP server connected without authentication",
+   "category": "mcp",
+   "severity": "medium",
+   "pack": "mcp",
+   "addedIn": "1.6.0",
+   "family": false,
+   "detectionType": "contextual-heuristic",
+   "evidenceType": "heuristic",
+   "supportedContent": "MCP client configuration files: claude_desktop_config.json, .cursor/mcp.json, .vscode/mcp.json, .mcp.json",
+   "whatItDetects": "A remote (HTTP/SSE) MCP server is configured with no authorization header or OAuth.",
+   "whyItMatters": "Without authentication you cannot be sure you are talking to the real server, and the server cannot tell you apart from anyone else using the URL.",
+   "remediation": "Only connect to remote MCP servers you trust, over HTTPS, using OAuth or an Authorization header with a scoped token.",
+   "impact": "A spoofed or shared server could feed the AI malicious tool results or instructions.",
+   "compliance": {
+    "owasp": [
+     "LLM07 - Insecure Plugin Design",
+     "LLM05 - Supply Chain Vulnerabilities"
+    ],
+    "nist": [
+     "GV-4.1"
+    ],
+    "soc2": [
+     "CC6.6"
+    ]
+   }
+  },
+  {
+   "id": "AV-MCP-104",
+   "slug": "av-mcp-104",
+   "code": "MCP_TOOLS_AUTO_APPROVED",
+   "name": "MCP tools set to run without asking",
+   "category": "human-oversight",
+   "severity": "medium",
+   "pack": "mcp",
+   "addedIn": "1.6.0",
+   "family": false,
+   "detectionType": "pattern-match",
+   "evidenceType": "definite",
+   "supportedContent": "MCP client configuration files: claude_desktop_config.json, .cursor/mcp.json, .vscode/mcp.json, .mcp.json",
+   "whatItDetects": "Some MCP tools are on an auto-approve / always-allow list, so the AI can call them without asking you each time.",
+   "whyItMatters": "Auto-approval is convenient for read-only tools, but if a tool on the list can write, send, or delete, a manipulated AI can use it silently.",
+   "remediation": "Keep auto-approve lists to read-only tools only. Anything that writes files, sends messages, or changes data should require confirmation.",
+   "impact": "The listed tools can run without any human confirmation.",
+   "compliance": {
+    "owasp": [
+     "LLM08 - Excessive Agency"
+    ],
+    "nist": [
+     "MG-2.2"
+    ],
+    "soc2": [
+     "CC6.1"
+    ]
+   }
+  },
+  {
+   "id": "AV-MCP-105",
+   "slug": "av-mcp-105",
+   "code": "MCP_TOOL_POISONING",
+   "name": "Hidden instructions inside an MCP tool description",
+   "category": "mcp",
+   "severity": "critical",
+   "pack": "mcp",
+   "addedIn": "2.0.0",
+   "family": false,
+   "detectionType": "pattern-match",
+   "evidenceType": "heuristic",
+   "supportedContent": "MCP client configuration files: claude_desktop_config.json, .cursor/mcp.json, .vscode/mcp.json, .mcp.json",
+   "whatItDetects": "An MCP tool description contains instructions aimed at the AI — like \"ignore previous instructions\", \"do not tell the user\", or a request to read SSH keys or config files.",
+   "whyItMatters": "Tool descriptions are read by the model but rarely by people. This is \"tool poisoning\": a malicious server can quietly tell the AI to leak files or misuse other tools the moment it is connected.",
+   "remediation": "Do not connect this server. If it is yours, rewrite the description so it only says what the tool does, in plain words, and review every description before publishing.",
+   "impact": "Connecting this server could make the AI read private files or send data to the attacker without the user noticing.",
+   "compliance": {
+    "owasp": [
+     "LLM01 - Prompt Injection",
+     "LLM05 - Supply Chain Vulnerabilities"
+    ],
+    "nist": [
+     "MS-2.3",
+     "GV-6.1"
+    ],
+    "soc2": [
+     "CC7.1",
+     "CC9.2"
+    ]
+   }
+  },
+  {
+   "id": "AV-MCP-106",
+   "slug": "av-mcp-106",
+   "code": "MCP_HIDDEN_UNICODE",
+   "name": "Invisible characters in tool definitions or prompts",
+   "category": "mcp",
+   "severity": "high",
+   "pack": "mcp",
+   "addedIn": "2.0.0",
+   "family": false,
+   "detectionType": "pattern-match",
+   "evidenceType": "definite",
+   "supportedContent": "MCP client configuration files: claude_desktop_config.json, .cursor/mcp.json, .vscode/mcp.json, .mcp.json",
+   "whatItDetects": "Tool definitions or prompt text contain invisible Unicode characters (zero-width, bidirectional-override, or \"tag\" characters).",
+   "whyItMatters": "Invisible characters can hide instructions that the model reads but a human reviewer cannot see. This is a known way to smuggle prompt injection past code review.",
+   "remediation": "Remove all zero-width, bidi-override and tag characters from tool descriptions and prompts, and add a CI check that rejects them.",
+   "impact": "Hidden text could steer the AI in ways nobody reviewing the file can see.",
+   "compliance": {
+    "owasp": [
+     "LLM01 - Prompt Injection"
+    ],
+    "nist": [
+     "MS-2.3"
+    ],
+    "soc2": [
+     "CC7.1"
+    ]
+   }
+  },
+  {
+   "id": "AV-MCP-107",
+   "slug": "av-mcp-107",
+   "code": "MCP_TOOL_SHADOWING",
+   "name": "Tool description tries to change how other tools behave",
+   "category": "mcp",
+   "severity": "high",
+   "pack": "mcp",
+   "addedIn": "2.0.0",
+   "family": false,
+   "detectionType": "pattern-match",
+   "evidenceType": "heuristic",
+   "supportedContent": "MCP client configuration files: claude_desktop_config.json, .cursor/mcp.json, .vscode/mcp.json, .mcp.json",
+   "whatItDetects": "A tool's description gives the AI rules about how to use a different tool (for example \"whenever you use send_email, also BCC this address\").",
+   "whyItMatters": "This is \"tool shadowing\": one server hijacks how the AI uses tools from another, trusted server — without ever being called itself.",
+   "remediation": "Remove the server. A tool's description should only describe that tool. Prefer clients that show tool descriptions and isolate servers from each other.",
+   "impact": "Could silently redirect emails, payments or file writes made through other, trusted tools.",
+   "compliance": {
+    "owasp": [
+     "LLM01 - Prompt Injection",
+     "LLM07 - Insecure Plugin Design"
+    ],
+    "nist": [
+     "MS-2.3"
+    ],
+    "soc2": [
+     "CC7.1"
+    ]
+   }
+  },
+  {
+   "id": "AV-MCP-108",
+   "slug": "av-mcp-108",
+   "code": "MCP_SERVER_FROM_GIT_URL",
+   "name": "MCP server installed straight from a git repo or download link",
+   "category": "dependencies",
+   "severity": "high",
+   "pack": "mcp",
+   "addedIn": "2.0.0",
+   "family": false,
+   "detectionType": "contextual-heuristic",
+   "evidenceType": "definite",
+   "supportedContent": "MCP client configuration files: claude_desktop_config.json, .cursor/mcp.json, .vscode/mcp.json, .mcp.json",
+   "whatItDetects": "An MCP server is installed from a git URL or a download link instead of a published, pinned package version.",
+   "whyItMatters": "Whatever is on that branch or URL at launch time is what runs — with your AI's permissions. A pushed commit or swapped file changes the code with no review.",
+   "remediation": "Install a published package with an exact version, or pin the git URL to a full commit hash and review that commit.",
+   "impact": "Anyone who can push to that repo or change that file controls code running on this machine.",
+   "compliance": {
+    "owasp": [
+     "LLM05 - Supply Chain Vulnerabilities"
+    ],
+    "nist": [
+     "GV-6.1",
+     "MG-3.1"
+    ],
+    "soc2": [
+     "CC8.1",
+     "CC9.2"
+    ]
+   }
+  },
+  {
+   "id": "AV-MCP-109",
+   "slug": "av-mcp-109",
+   "code": "MCP_DOCKER_PRIVILEGED",
+   "name": "MCP server container runs privileged or with the Docker socket",
+   "category": "mcp",
+   "severity": "high",
+   "pack": "mcp",
+   "addedIn": "2.0.0",
+   "family": false,
+   "detectionType": "pattern-match",
+   "evidenceType": "definite",
+   "supportedContent": "MCP client configuration files: claude_desktop_config.json, .cursor/mcp.json, .vscode/mcp.json, .mcp.json",
+   "whatItDetects": "A containerized MCP server is started with --privileged, host networking, host PID, extra capabilities, or the Docker socket mounted.",
+   "whyItMatters": "These flags remove the isolation that is the whole point of running the server in a container. With the Docker socket it can start new containers as root on the host.",
+   "remediation": "Run the container without --privileged, host networking, or the Docker socket. Mount only the folders it needs, read-only where possible.",
+   "impact": "The MCP server effectively has root-level access to the host machine.",
+   "compliance": {
+    "owasp": [
+     "LLM08 - Excessive Agency"
+    ],
+    "nist": [
+     "MG-2.2"
+    ],
+    "soc2": [
+     "CC6.1",
+     "CC6.8"
+    ]
+   }
+  },
+  {
+   "id": "AV-MCP-110",
+   "slug": "av-mcp-110",
+   "code": "MCP_PLAINTEXT_REMOTE",
+   "name": "Remote MCP server over unencrypted HTTP",
+   "category": "network",
+   "severity": "medium",
+   "pack": "mcp",
+   "addedIn": "2.0.0",
+   "family": false,
+   "detectionType": "pattern-match",
+   "evidenceType": "definite",
+   "supportedContent": "MCP client configuration files: claude_desktop_config.json, .cursor/mcp.json, .vscode/mcp.json, .mcp.json",
+   "whatItDetects": "A remote MCP server is reached over plain http:// rather than https://.",
+   "whyItMatters": "Anyone on the network path can read the traffic — including tokens — and change tool results or inject instructions on the way.",
+   "remediation": "Use the https:// endpoint. Only use plain http for servers on localhost.",
+   "impact": "Tool results and credentials can be read or altered in transit.",
+   "compliance": {
+    "owasp": [
+     "LLM07 - Insecure Plugin Design"
+    ],
+    "nist": [
+     "MS-2.10"
+    ],
+    "soc2": [
+     "CC6.7"
+    ]
+   }
+  },
+  {
+   "id": "AV-MCP-111",
+   "slug": "av-mcp-111",
+   "code": "MCP_SERVER_ENV_PASSTHROUGH",
+   "name": "All environment variables handed to an MCP server",
+   "category": "secrets",
+   "severity": "high",
+   "pack": "mcp",
+   "addedIn": "2.0.0",
+   "family": false,
+   "detectionType": "pattern-match",
+   "evidenceType": "definite",
+   "supportedContent": "MCP client configuration files: claude_desktop_config.json, .cursor/mcp.json, .vscode/mcp.json, .mcp.json",
+   "whatItDetects": "The MCP client starts a server and passes it the entire environment (process.env / os.environ).",
+   "whyItMatters": "Your environment usually holds every API key and token the app uses. Passing all of it gives a third-party server credentials it never needed.",
+   "remediation": "Pass only the specific variables that server needs.",
+   "impact": "The MCP server can read every secret in the parent process's environment.",
+   "compliance": {
+    "owasp": [
+     "LLM06 - Sensitive Information Disclosure"
+    ],
+    "nist": [
+     "MS-2.10"
+    ],
+    "soc2": [
+     "CC6.1"
+    ]
+   }
+  },
+  {
+   "id": "AV-MCP-112",
+   "slug": "av-mcp-112",
+   "code": "MCP_SERVER_PUBLIC_BIND",
+   "name": "MCP server listens on all network interfaces without auth",
+   "category": "mcp",
+   "severity": "high",
+   "pack": "mcp",
+   "addedIn": "2.0.0",
+   "family": false,
+   "detectionType": "contextual-heuristic",
+   "evidenceType": "heuristic",
+   "supportedContent": "MCP client configuration files: claude_desktop_config.json, .cursor/mcp.json, .vscode/mcp.json, .mcp.json",
+   "whatItDetects": "An MCP server binds to 0.0.0.0 (every network interface) and has no visible authentication.",
+   "whyItMatters": "Anyone who can reach this machine on the network — other people on the Wi-Fi, other containers, sometimes the internet — can call its tools directly.",
+   "remediation": "Bind to 127.0.0.1 for local use. If it must be remote, put it behind OAuth or a bearer token and TLS.",
+   "impact": "Strangers on the network could run this server's tools.",
+   "compliance": {
+    "owasp": [
+     "LLM07 - Insecure Plugin Design"
+    ],
+    "nist": [
+     "GV-4.1"
+    ],
+    "soc2": [
+     "CC6.1",
+     "CC6.6"
+    ]
+   }
+  },
+  {
+   "id": "AV-MCP-113",
+   "slug": "av-mcp-113",
+   "code": "MCP_TOOL_LIST_CAN_CHANGE",
+   "name": "MCP server can change its tools after you approve it",
+   "category": "mcp",
+   "severity": "low",
+   "pack": "mcp",
+   "addedIn": "2.0.0",
+   "family": false,
+   "detectionType": "contextual-heuristic",
+   "evidenceType": "informational",
+   "supportedContent": "MCP client configuration files: claude_desktop_config.json, .cursor/mcp.json, .vscode/mcp.json, .mcp.json",
+   "whatItDetects": "The server announces that its tool list can change while connected.",
+   "whyItMatters": "A server can look harmless when you approve it, then swap in different tools or descriptions later (a \"rug pull\"). Most clients do not ask again.",
+   "remediation": "Only enable list changes if you need them. On the client side, pin and re-review tool definitions when they change.",
+   "impact": "Tools you never reviewed could appear mid-session.",
+   "compliance": {
+    "owasp": [
+     "LLM05 - Supply Chain Vulnerabilities"
+    ],
+    "nist": [
+     "GV-6.1"
+    ],
+    "soc2": [
+     "CC8.1"
+    ]
+   }
+  },
+  {
+   "id": "AV-MCP-114",
+   "slug": "av-mcp-114",
+   "code": "MCP_SERVER_RUNS_AS_SUDO",
+   "name": "MCP server started with sudo",
+   "category": "mcp",
+   "severity": "high",
+   "pack": "mcp",
+   "addedIn": "2.0.0",
+   "family": false,
+   "detectionType": "pattern-match",
+   "evidenceType": "definite",
+   "supportedContent": "MCP client configuration files: claude_desktop_config.json, .cursor/mcp.json, .vscode/mcp.json, .mcp.json",
+   "whatItDetects": "An MCP server is launched through sudo (or doas/runas), so it runs as an administrator.",
+   "whyItMatters": "Every tool on that server then runs with full admin rights. One bad tool call can change anything on the machine.",
+   "remediation": "Run the server as your normal user. If it needs one privileged action, grant only that.",
+   "impact": "The AI can make system-wide changes through this server.",
+   "compliance": {
+    "owasp": [
+     "LLM08 - Excessive Agency"
+    ],
+    "nist": [
+     "GV-4.1"
+    ],
+    "soc2": [
+     "CC6.1",
+     "CC6.3"
+    ]
+   }
+  },
+  {
+   "id": "AV-RUNTIME-015",
+   "slug": "av-runtime-015",
+   "code": "HTTP_CALL_NO_TIMEOUT",
+   "name": "Tool makes HTTP calls with no timeout",
+   "category": "runtime",
+   "severity": "low",
+   "pack": "core",
+   "addedIn": "2.0.0",
+   "family": false,
+   "detectionType": "contextual-heuristic",
+   "evidenceType": "heuristic",
+   "supportedContent": "Any text-based agent source or configuration (JS/TS/Python/JSON/YAML)",
+   "whatItDetects": "A tool calls requests.* without a timeout.",
+   "whyItMatters": "Python requests waits forever by default. One slow or malicious server can hang the agent, tie up workers, and run up model costs while it waits.",
+   "remediation": "Set a timeout on every outbound call.",
+   "impact": "The agent can be stalled indefinitely by any slow endpoint.",
+   "compliance": {
+    "owasp": [
+     "LLM04 - Model Denial of Service"
+    ],
+    "nist": [
+     "MG-2.2"
+    ],
+    "soc2": [
+     "A1.1"
+    ]
+   }
+  },
+  {
+   "id": "AV-RUNTIME-016",
+   "slug": "av-runtime-016",
+   "code": "NO_OUTPUT_TOKEN_LIMIT",
+   "name": "Model calls have no output token limit",
+   "category": "runtime",
+   "severity": "low",
+   "pack": "core",
+   "addedIn": "2.0.0",
+   "family": false,
+   "detectionType": "contextual-heuristic",
+   "evidenceType": "heuristic",
+   "supportedContent": "Any text-based agent source or configuration (JS/TS/Python/JSON/YAML)",
+   "whatItDetects": "The agent calls the model with tools but never sets a maximum output size.",
+   "whyItMatters": "Without a cap, a looping or manipulated agent can generate very long outputs on every step — slow responses and a surprise bill.",
+   "remediation": "Set max_tokens / maxOutputTokens on every call, and a budget per run.",
+   "impact": "Cost and latency per run are unbounded.",
+   "compliance": {
+    "owasp": [
+     "LLM04 - Model Denial of Service"
+    ],
+    "nist": [
+     "MG-2.2"
+    ],
+    "soc2": [
+     "A1.1"
+    ]
+   }
+  },
+  {
+   "id": "AV-RUNTIME-017",
+   "slug": "av-runtime-017",
+   "code": "TEMPLATE_INJECTION",
+   "name": "Server-side template built from user or model text",
+   "category": "runtime",
+   "severity": "high",
+   "pack": "core",
+   "addedIn": "2.0.0",
+   "family": false,
+   "detectionType": "pattern-match",
+   "evidenceType": "heuristic",
+   "supportedContent": "Any text-based agent source or configuration (JS/TS/Python/JSON/YAML)",
+   "whatItDetects": "A template engine compiles text that came from a user or the model.",
+   "whyItMatters": "Template languages can run code. If an attacker controls the template text (directly or through prompt injection) they can execute code on the server.",
+   "remediation": "Never compile untrusted text as a template. Use a fixed template and pass the text in as data.",
+   "impact": "Remote code execution on the server.",
+   "compliance": {
+    "owasp": [
+     "LLM02 - Insecure Output Handling"
+    ],
+    "nist": [
+     "MS-2.3"
+    ],
+    "soc2": [
+     "CC7.1"
+    ]
+   }
+  },
+  {
+   "id": "AV-RUNTIME-018",
+   "slug": "av-runtime-018",
+   "code": "REGEX_FROM_INPUT",
+   "name": "Regular expression built from user or model input",
+   "category": "runtime",
+   "severity": "medium",
+   "pack": "core",
+   "addedIn": "2.0.0",
+   "family": false,
+   "detectionType": "contextual-heuristic",
+   "evidenceType": "heuristic",
+   "supportedContent": "Any text-based agent source or configuration (JS/TS/Python/JSON/YAML)",
+   "whatItDetects": "A regular expression pattern comes straight from user, tool, or model input.",
+   "whyItMatters": "A crafted pattern can take minutes of CPU to evaluate (ReDoS), freezing the agent or the whole server.",
+   "remediation": "Escape input before putting it in a pattern (re.escape / escapeRegExp), or use a linear-time engine like RE2.",
+   "impact": "Anyone who controls the input can make the service hang.",
+   "compliance": {
+    "owasp": [
+     "LLM04 - Model Denial of Service"
+    ],
+    "nist": [
+     "MG-2.2"
+    ],
+    "soc2": [
+     "A1.1"
+    ]
+   }
+  },
+  {
+   "id": "AV-RUNTIME-019",
+   "slug": "av-runtime-019",
+   "code": "TOOL_RESULT_AS_SYSTEM_PROMPT",
+   "name": "Tool or web results placed in the system prompt",
+   "category": "runtime",
+   "severity": "high",
+   "pack": "core",
+   "addedIn": "2.0.0",
+   "family": false,
+   "detectionType": "pattern-match",
+   "evidenceType": "heuristic",
+   "supportedContent": "Any text-based agent source or configuration (JS/TS/Python/JSON/YAML)",
+   "whatItDetects": "Content from tools, web pages, search results or emails is inserted into the system message.",
+   "whyItMatters": "Models give the system message the most authority. Untrusted text placed there is the easiest possible prompt injection.",
+   "remediation": "Keep the system prompt fixed. Put tool and retrieved content in user or tool messages, clearly marked as data.",
+   "impact": "A web page or email could take over the agent's instructions.",
+   "compliance": {
+    "owasp": [
+     "LLM01 - Prompt Injection"
+    ],
+    "nist": [
+     "MS-2.3"
+    ],
+    "soc2": [
+     "CC7.1"
+    ]
+   }
+  },
+  {
+   "id": "AV-DATA-004",
+   "slug": "av-data-004",
+   "code": "PII_SENT_TO_MODEL",
+   "name": "Personal data sent to the model without redaction",
+   "category": "secrets",
+   "severity": "high",
+   "pack": "core",
+   "addedIn": "2.0.0",
+   "family": false,
+   "detectionType": "contextual-heuristic",
+   "evidenceType": "heuristic",
+   "supportedContent": "Any text-based agent source or configuration (JS/TS/Python/JSON/YAML)",
+   "whatItDetects": "Fields like SSN, card number, date of birth, passport or medical data are put into a model prompt with no redaction step.",
+   "whyItMatters": "Prompts are often logged, cached, and kept by providers. Sending raw personal data widens who can see it and can break privacy rules (GDPR, HIPAA, PCI).",
+   "remediation": "Redact or tokenize personal fields before they reach the prompt, and only send what the task needs.",
+   "impact": "Sensitive personal data leaves your system in every request.",
+   "compliance": {
+    "owasp": [
+     "LLM06 - Sensitive Information Disclosure"
+    ],
+    "nist": [
+     "MS-2.10"
+    ],
+    "soc2": [
+     "C1.1",
+     "P4.1"
+    ]
+   }
+  },
+  {
+   "id": "AV-DATA-005",
+   "slug": "av-data-005",
+   "code": "FULL_PROMPT_LOGGING",
+   "name": "Full prompts or conversations written to logs",
+   "category": "auditability",
+   "severity": "medium",
+   "pack": "core",
+   "addedIn": "2.0.0",
+   "family": false,
+   "detectionType": "contextual-heuristic",
+   "evidenceType": "heuristic",
+   "supportedContent": "Any text-based agent source or configuration (JS/TS/Python/JSON/YAML)",
+   "whatItDetects": "Whole prompts or conversation histories are logged.",
+   "whyItMatters": "Conversations contain whatever users typed — passwords, personal details, private documents. Logs are kept longer and seen by more people than the data itself.",
+   "remediation": "Log IDs, sizes and outcomes instead of full text. If you must log content, redact it and keep it for a short, fixed time.",
+   "impact": "Anyone with log access can read users' conversations.",
+   "compliance": {
+    "owasp": [
+     "LLM06 - Sensitive Information Disclosure"
+    ],
+    "nist": [
+     "MS-2.10"
+    ],
+    "soc2": [
+     "C1.1",
+     "CC7.2"
+    ]
+   }
+  },
+  {
+   "id": "AV-DATA-006",
+   "slug": "av-data-006",
+   "code": "SYSTEM_PROMPT_EXPOSED",
+   "name": "System prompt returned to the client",
+   "category": "secrets",
+   "severity": "medium",
+   "pack": "core",
+   "addedIn": "2.0.0",
+   "family": false,
+   "detectionType": "pattern-match",
+   "evidenceType": "heuristic",
+   "supportedContent": "Any text-based agent source or configuration (JS/TS/Python/JSON/YAML)",
+   "whatItDetects": "An API response includes the agent's system prompt or instructions.",
+   "whyItMatters": "System prompts often describe internal tools, rules and sometimes secrets. Returning them hands attackers a map for crafting injections.",
+   "remediation": "Never return the system prompt. Return only the answer and the fields the client needs.",
+   "impact": "Anyone calling the API can read the agent's internal instructions.",
+   "compliance": {
+    "owasp": [
+     "LLM06 - Sensitive Information Disclosure",
+     "LLM01 - Prompt Injection"
+    ],
+    "nist": [
+     "MS-2.10"
+    ],
+    "soc2": [
+     "C1.1"
+    ]
+   }
+  },
+  {
+   "id": "AV-DATA-007",
+   "slug": "av-data-007",
+   "code": "RAG_NO_TENANT_FILTER",
+   "name": "Retrieval with no per-customer filter",
+   "category": "permissions",
+   "severity": "high",
+   "pack": "core",
+   "addedIn": "2.0.0",
+   "family": false,
+   "detectionType": "contextual-heuristic",
+   "evidenceType": "heuristic",
+   "supportedContent": "Any text-based agent source or configuration (JS/TS/Python/JSON/YAML)",
+   "whatItDetects": "The app has multiple customers (tenant/org IDs) but searches the vector store without filtering by customer.",
+   "whyItMatters": "Retrieval returns the most similar documents from the whole index — including other customers' private files — and the model will happily quote them.",
+   "remediation": "Filter every retrieval by the signed-in tenant (metadata filter or a separate namespace per tenant), enforced server-side.",
+   "impact": "One customer could see another customer's documents in an answer.",
+   "compliance": {
+    "owasp": [
+     "LLM06 - Sensitive Information Disclosure"
+    ],
+    "nist": [
+     "MS-2.10",
+     "GV-4.1"
+    ],
+    "soc2": [
+     "CC6.1",
+     "C1.1"
+    ]
+   }
+  },
+  {
+   "id": "AV-DATA-008",
+   "slug": "av-data-008",
+   "code": "RAG_UNTRUSTED_WEB_INGEST",
+   "name": "Web pages loaded into the knowledge base without checks",
+   "category": "runtime",
+   "severity": "medium",
+   "pack": "core",
+   "addedIn": "2.0.0",
+   "family": false,
+   "detectionType": "contextual-heuristic",
+   "evidenceType": "heuristic",
+   "supportedContent": "Any text-based agent source or configuration (JS/TS/Python/JSON/YAML)",
+   "whatItDetects": "Web pages are fetched and stored in the vector database with no source allowlist or cleaning step.",
+   "whyItMatters": "Anything on those pages — including hidden instructions — becomes \"trusted\" knowledge the agent retrieves later. This is RAG poisoning.",
+   "remediation": "Only ingest from an allowlist of trusted domains, strip hidden text and markup, and treat retrieved text as data in the prompt.",
+   "impact": "A web page author can plant instructions that fire whenever the agent retrieves that page.",
+   "compliance": {
+    "owasp": [
+     "LLM01 - Prompt Injection",
+     "LLM03 - Training Data Poisoning"
+    ],
+    "nist": [
+     "MS-2.3",
+     "MP-4.1"
+    ],
+    "soc2": [
+     "CC7.1"
+    ]
+   }
+  },
+  {
+   "id": "AV-NET-006",
+   "slug": "av-net-006",
+   "code": "CLOUD_METADATA_ACCESS",
+   "name": "Code reaches the cloud metadata endpoint",
+   "category": "network",
+   "severity": "high",
+   "pack": "core",
+   "addedIn": "2.0.0",
+   "family": false,
+   "detectionType": "pattern-match",
+   "evidenceType": "definite",
+   "supportedContent": "Any text-based agent source or configuration (JS/TS/Python/JSON/YAML)",
+   "whatItDetects": "The code references a cloud instance-metadata address (169.254.169.254 or equivalent).",
+   "whyItMatters": "That endpoint hands out the machine's cloud credentials. Agents should never need it, and it is the first thing attackers try through SSRF.",
+   "remediation": "Remove direct metadata access from agent code, block 169.254.169.254 in outbound URL checks, and require IMDSv2 on AWS.",
+   "impact": "Whoever controls this request can obtain the server's cloud credentials.",
+   "compliance": {
+    "owasp": [
+     "LLM07 - Insecure Plugin Design"
+    ],
+    "nist": [
+     "MS-2.10"
+    ],
+    "soc2": [
+     "CC6.1",
+     "CC6.6"
+    ]
+   }
+  },
+  {
+   "id": "AV-NET-007",
+   "slug": "av-net-007",
+   "code": "UNAUTHENTICATED_AGENT_ENDPOINT",
+   "name": "Agent endpoint with no authentication",
+   "category": "identity",
+   "severity": "high",
+   "pack": "core",
+   "addedIn": "2.0.0",
+   "family": false,
+   "detectionType": "contextual-heuristic",
+   "evidenceType": "heuristic",
+   "supportedContent": "Any text-based agent source or configuration (JS/TS/Python/JSON/YAML)",
+   "whatItDetects": "An HTTP route runs the agent, and nothing in the file checks who is calling it.",
+   "whyItMatters": "Anyone who finds the URL can use your agent — its tools, its data, and your model budget.",
+   "remediation": "Require authentication on the route (session, JWT, or API key) and rate-limit per user.",
+   "impact": "Strangers can run the agent and its tools, and spend your API credits.",
+   "compliance": {
+    "owasp": [
+     "LLM08 - Excessive Agency",
+     "LLM04 - Model Denial of Service"
+    ],
+    "nist": [
+     "GV-4.1"
+    ],
+    "soc2": [
+     "CC6.1"
+    ]
+   }
+  },
+  {
+   "id": "AV-HUMAN-003",
+   "slug": "av-human-003",
+   "code": "PAYMENT_NO_AMOUNT_LIMIT",
+   "name": "Agent can move money with no amount limit",
+   "category": "human-oversight",
+   "severity": "critical",
+   "pack": "core",
+   "addedIn": "2.0.0",
+   "family": false,
+   "detectionType": "contextual-heuristic",
+   "evidenceType": "heuristic",
+   "supportedContent": "Any text-based agent source or configuration (JS/TS/Python/JSON/YAML)",
+   "whatItDetects": "A tool the model can call creates transfers, payouts, payments or refunds, with no maximum amount and no approval step.",
+   "whyItMatters": "One manipulated or confused tool call can move any amount of money, and payments are hard to reverse.",
+   "remediation": "Enforce a hard per-transaction and daily limit in code, and require human approval above a small threshold.",
+   "impact": "The agent can send or refund unlimited amounts without a person agreeing.",
+   "compliance": {
+    "owasp": [
+     "LLM08 - Excessive Agency"
+    ],
+    "nist": [
+     "MG-2.2",
+     "GV-4.1"
+    ],
+    "soc2": [
+     "CC6.1",
+     "CC8.1"
+    ]
+   }
+  },
+  {
+   "id": "AV-HUMAN-004",
+   "slug": "av-human-004",
+   "code": "DESTRUCTIVE_TOOL_NO_CONFIRM",
+   "name": "Destructive tool with no confirmation",
+   "category": "human-oversight",
+   "severity": "high",
+   "pack": "core",
+   "addedIn": "2.0.0",
+   "family": false,
+   "detectionType": "contextual-heuristic",
+   "evidenceType": "heuristic",
+   "supportedContent": "Any text-based agent source or configuration (JS/TS/Python/JSON/YAML)",
+   "whatItDetects": "The agent has a tool that deletes, drops, wipes or terminates things, and nothing asks a person first.",
+   "whyItMatters": "Deletions are usually permanent. A misunderstanding or an injected instruction is enough to lose data or shut down systems.",
+   "remediation": "Require explicit human confirmation for destructive tools, prefer soft-delete, and support a dry-run mode.",
+   "impact": "The agent can permanently delete data or resources on its own.",
+   "compliance": {
+    "owasp": [
+     "LLM08 - Excessive Agency"
+    ],
+    "nist": [
+     "MG-2.2"
+    ],
+    "soc2": [
+     "CC6.1",
+     "CC8.1"
+    ]
+   }
+  },
+  {
+   "id": "AV-HUMAN-005",
+   "slug": "av-human-005",
+   "code": "OUTBOUND_MESSAGE_NO_REVIEW",
+   "name": "Agent sends emails or messages without review",
+   "category": "human-oversight",
+   "severity": "medium",
+   "pack": "core",
+   "addedIn": "2.0.0",
+   "family": false,
+   "detectionType": "contextual-heuristic",
+   "evidenceType": "heuristic",
+   "supportedContent": "Any text-based agent source or configuration (JS/TS/Python/JSON/YAML)",
+   "whatItDetects": "A tool lets the agent send emails, Slack messages or texts directly, with no draft or approval step.",
+   "whyItMatters": "Messages go out in your name and cannot be unsent. Injected instructions commonly use \"send this to…\" to leak data or phish contacts.",
+   "remediation": "Have the agent create drafts, and require a person to approve before sending — especially to new recipients.",
+   "impact": "The agent can contact anyone in your name and include any data it can read.",
+   "compliance": {
+    "owasp": [
+     "LLM08 - Excessive Agency",
+     "LLM06 - Sensitive Information Disclosure"
+    ],
+    "nist": [
+     "MG-2.2"
+    ],
+    "soc2": [
+     "CC6.1"
+    ]
+   }
+  },
+  {
+   "id": "AV-DEP-003",
+   "slug": "av-dep-003",
+   "code": "AI_DEPENDENCY_UNPINNED",
+   "name": "AI libraries installed without a pinned version",
+   "category": "dependencies",
+   "severity": "low",
+   "pack": "core",
+   "addedIn": "2.0.0",
+   "family": false,
+   "detectionType": "pattern-match",
+   "evidenceType": "definite",
+   "supportedContent": "Any text-based agent source or configuration (JS/TS/Python/JSON/YAML)",
+   "whatItDetects": "requirements.txt lists AI libraries with no version or only a minimum version.",
+   "whyItMatters": "These libraries change fast and have had serious security fixes. Unpinned installs can pull in a breaking or compromised release without anyone noticing.",
+   "remediation": "Pin exact versions (==) and use a lock file with hashes (pip-tools, uv, or poetry).",
+   "impact": "A new upstream release changes what your agent runs.",
+   "compliance": {
+    "owasp": [
+     "LLM05 - Supply Chain Vulnerabilities"
+    ],
+    "nist": [
+     "GV-6.1"
+    ],
+    "soc2": [
+     "CC8.1"
+    ]
+   }
+  },
+  {
+   "id": "AV-DEP-004",
+   "slug": "av-dep-004",
+   "code": "DEPENDENCY_FROM_GIT_BRANCH",
+   "name": "Dependency installed from a git branch",
+   "category": "dependencies",
+   "severity": "medium",
+   "pack": "core",
+   "addedIn": "2.0.0",
+   "family": false,
+   "detectionType": "pattern-match",
+   "evidenceType": "definite",
+   "supportedContent": "Any text-based agent source or configuration (JS/TS/Python/JSON/YAML)",
+   "whatItDetects": "A package is installed from a git repository branch (or default branch) instead of a release or a full commit hash.",
+   "whyItMatters": "Whoever can push to that branch decides what code you install next time — no version, no review.",
+   "remediation": "Use a published release, or pin to a full 40-character commit hash.",
+   "impact": "Upstream pushes change your agent's code silently.",
+   "compliance": {
+    "owasp": [
+     "LLM05 - Supply Chain Vulnerabilities"
+    ],
+    "nist": [
+     "GV-6.1"
+    ],
+    "soc2": [
+     "CC8.1"
+    ]
+   }
+  },
+  {
+   "id": "AV-PERM-004",
+   "slug": "av-perm-004",
+   "code": "OVERBROAD_OAUTH_SCOPES",
+   "name": "Agent requests very broad OAuth scopes",
+   "category": "permissions",
+   "severity": "high",
+   "pack": "core",
+   "addedIn": "2.0.0",
+   "family": false,
+   "detectionType": "pattern-match",
+   "evidenceType": "definite",
+   "supportedContent": "Any text-based agent source or configuration (JS/TS/Python/JSON/YAML)",
+   "whatItDetects": "The agent asks for full-account OAuth scopes such as GitHub \"repo\", Google Drive / Gmail full access, or Microsoft \"*.ReadWrite.All\".",
+   "whyItMatters": "The token can do far more than the agent's task. If the agent is manipulated or the token leaks, everything in that account is exposed.",
+   "remediation": "Request the narrowest scopes (e.g. drive.file, gmail.readonly, a fine-grained GitHub token for one repo).",
+   "impact": "Full read/write access to the connected account's repos, mail, or files.",
+   "compliance": {
+    "owasp": [
+     "LLM08 - Excessive Agency"
+    ],
+    "nist": [
+     "GV-4.1"
+    ],
+    "soc2": [
+     "CC6.1",
+     "CC6.3"
+    ]
+   }
+  },
+  {
+   "id": "AV-PERM-005",
+   "slug": "av-perm-005",
+   "code": "AGENT_DB_SUPERUSER",
+   "name": "Agent connects to the database as an admin user",
+   "category": "permissions",
+   "severity": "high",
+   "pack": "core",
+   "addedIn": "2.0.0",
+   "family": false,
+   "detectionType": "pattern-match",
+   "evidenceType": "definite",
+   "supportedContent": "Any text-based agent source or configuration (JS/TS/Python/JSON/YAML)",
+   "whatItDetects": "The agent's database connection uses an administrator account (root, postgres, sa, admin).",
+   "whyItMatters": "Any SQL the agent runs — including injected or hallucinated queries — can read, change, or drop everything in every database.",
+   "remediation": "Create a dedicated database user for the agent with access only to the tables and operations it needs (read-only where possible).",
+   "impact": "One bad query could delete or leak the entire database.",
+   "compliance": {
+    "owasp": [
+     "LLM08 - Excessive Agency"
+    ],
+    "nist": [
+     "GV-4.1"
+    ],
+    "soc2": [
+     "CC6.1",
+     "CC6.3"
+    ]
+   }
+  },
+  {
+   "id": "AV-PERM-006",
+   "slug": "av-perm-006",
+   "code": "CI_AGENT_WRITE_ALL",
+   "name": "AI workflow in CI with write-all permissions",
+   "category": "permissions",
+   "severity": "high",
+   "pack": "core",
+   "addedIn": "2.0.0",
+   "family": false,
+   "detectionType": "pattern-match",
+   "evidenceType": "definite",
+   "supportedContent": "Any text-based agent source or configuration (JS/TS/Python/JSON/YAML)",
+   "whatItDetects": "A GitHub Actions workflow that runs an AI agent grants write-all permissions to the job token.",
+   "whyItMatters": "The agent reads issue and PR text that anyone can write. If that text steers it, a write-all token lets it push code, change releases, or edit workflows.",
+   "remediation": "Set the minimum permissions per job (for example contents: read, pull-requests: write).",
+   "impact": "A prompt in an issue or PR could lead to code being pushed to your repo.",
+   "compliance": {
+    "owasp": [
+     "LLM08 - Excessive Agency"
+    ],
+    "nist": [
+     "GV-4.1"
+    ],
+    "soc2": [
+     "CC6.1",
+     "CC8.1"
+    ]
+   }
+  },
+  {
+   "id": "AV-PERM-007",
+   "slug": "av-perm-007",
+   "code": "CI_AGENT_UNTRUSTED_PR_CHECKOUT",
+   "name": "AI workflow checks out untrusted PR code with secrets",
+   "category": "permissions",
+   "severity": "critical",
+   "pack": "core",
+   "addedIn": "2.0.0",
+   "family": false,
+   "detectionType": "pattern-match",
+   "evidenceType": "definite",
+   "supportedContent": "Any text-based agent source or configuration (JS/TS/Python/JSON/YAML)",
+   "whatItDetects": "A pull_request_target workflow checks out the pull request's own code and runs an AI agent.",
+   "whyItMatters": "pull_request_target runs with your repository's secrets. Checking out an outsider's code there lets their files (and instructions in them) run with those secrets.",
+   "remediation": "Use the pull_request trigger for untrusted code, or never check out the PR head in a pull_request_target job.",
+   "impact": "Anyone who opens a PR could steal repository secrets or push code.",
+   "compliance": {
+    "owasp": [
+     "LLM05 - Supply Chain Vulnerabilities",
+     "LLM01 - Prompt Injection"
+    ],
+    "nist": [
+     "GV-6.1"
+    ],
+    "soc2": [
+     "CC6.1",
+     "CC8.1"
+    ]
+   }
+  },
+  {
+   "id": "AV-PERM-008",
+   "slug": "av-perm-008",
+   "code": "K8S_AGENT_CLUSTER_ADMIN",
+   "name": "Agent's Kubernetes account has cluster-admin",
+   "category": "permissions",
+   "severity": "critical",
+   "pack": "core",
+   "addedIn": "2.0.0",
+   "family": false,
+   "detectionType": "pattern-match",
+   "evidenceType": "definite",
+   "supportedContent": "Any text-based agent source or configuration (JS/TS/Python/JSON/YAML)",
+   "whatItDetects": "A Kubernetes service account is bound to the cluster-admin role.",
+   "whyItMatters": "cluster-admin can do anything in the cluster. If the agent running under it is manipulated, it can read every secret and change every workload.",
+   "remediation": "Bind the agent's service account to a namespaced Role with only the verbs and resources it uses.",
+   "impact": "Full control of the Kubernetes cluster.",
+   "compliance": {
+    "owasp": [
+     "LLM08 - Excessive Agency"
+    ],
+    "nist": [
+     "GV-4.1"
+    ],
+    "soc2": [
+     "CC6.1",
+     "CC6.3"
+    ]
+   }
+  },
+  {
+   "id": "AV-IDENT-002",
+   "slug": "av-ident-002",
+   "code": "IDENTITY_FROM_UNVERIFIED_HEADER",
+   "name": "Caller identity taken from an unverified header",
+   "category": "identity",
+   "severity": "high",
+   "pack": "core",
+   "addedIn": "2.0.0",
+   "family": false,
+   "detectionType": "contextual-heuristic",
+   "evidenceType": "heuristic",
+   "supportedContent": "Any text-based agent source or configuration (JS/TS/Python/JSON/YAML)",
+   "whatItDetects": "The code decides who the caller (user or agent) is from a plain X-Agent-Id / X-User-Id style header, with no signature check.",
+   "whyItMatters": "Anyone can set any header. Trusting it lets a caller pretend to be another user or a more privileged agent.",
+   "remediation": "Derive identity from a verified token (JWT, mTLS, signed request) and ignore identity headers from clients.",
+   "impact": "A caller can impersonate any user or agent.",
+   "compliance": {
+    "owasp": [
+     "LLM08 - Excessive Agency"
+    ],
+    "nist": [
+     "GV-4.1"
+    ],
+    "soc2": [
+     "CC6.1"
+    ]
+   }
+  },
+  {
+   "id": "AV-IDENT-003",
+   "slug": "av-ident-003",
+   "code": "A2A_AGENT_CARD_NO_AUTH",
+   "name": "Published A2A agent card with no authentication",
+   "category": "identity",
+   "severity": "medium",
+   "pack": "core",
+   "addedIn": "2.0.0",
+   "family": false,
+   "detectionType": "contextual-heuristic",
+   "evidenceType": "heuristic",
+   "supportedContent": "Any text-based agent source or configuration (JS/TS/Python/JSON/YAML)",
+   "whatItDetects": "An Agent-to-Agent (A2A) agent card advertises skills but declares no security scheme.",
+   "whyItMatters": "Other agents discover and call you from this card. With no auth declared, any agent can call your skills and you cannot tell callers apart.",
+   "remediation": "Declare securitySchemes (OAuth2 or API key) in the card and enforce them on every request.",
+   "impact": "Unknown agents can invoke this agent's skills.",
+   "compliance": {
+    "owasp": [
+     "LLM07 - Insecure Plugin Design"
+    ],
+    "nist": [
+     "GV-4.1"
+    ],
+    "soc2": [
+     "CC6.1"
+    ]
+   }
+  },
+  {
+   "id": "AV-TOOL-002",
+   "slug": "av-tool-002",
+   "code": "TOOL_ARGS_NOT_VALIDATED",
+   "name": "Tool arguments used without validation",
+   "category": "tools",
+   "severity": "medium",
+   "pack": "core",
+   "addedIn": "2.0.0",
+   "family": false,
+   "detectionType": "contextual-heuristic",
+   "evidenceType": "heuristic",
+   "supportedContent": "Any text-based agent source or configuration (JS/TS/Python/JSON/YAML)",
+   "whatItDetects": "Tool-call arguments from the model are parsed and used directly, with no schema validation.",
+   "whyItMatters": "Model output is untrusted. Missing or unexpected fields, wrong types, or injected values flow straight into your tool code.",
+   "remediation": "Validate arguments with a schema (zod, pydantic, JSON Schema) and reject anything that does not match.",
+   "impact": "Malformed or malicious arguments reach tool logic unchecked.",
+   "compliance": {
+    "owasp": [
+     "LLM02 - Insecure Output Handling",
+     "LLM07 - Insecure Plugin Design"
+    ],
+    "nist": [
+     "MS-2.3"
+    ],
+    "soc2": [
+     "CC7.1"
+    ]
+   }
+  },
+  {
+   "id": "AV-TOOL-003",
+   "slug": "av-tool-003",
+   "code": "GENERIC_HTTP_TOOL",
+   "name": "Agent can call any URL with any method",
+   "category": "tools",
+   "severity": "high",
+   "pack": "core",
+   "addedIn": "2.0.0",
+   "family": false,
+   "detectionType": "contextual-heuristic",
+   "evidenceType": "definite",
+   "supportedContent": "Any text-based agent source or configuration (JS/TS/Python/JSON/YAML)",
+   "whatItDetects": "The agent has a general-purpose HTTP tool that can call any URL, with no host allowlist.",
+   "whyItMatters": "A generic request tool turns any injected instruction into \"send this data there\" or \"call this internal admin API\".",
+   "remediation": "Replace it with specific tools for the APIs you need, or enforce a strict host allowlist and block private IP ranges.",
+   "impact": "The agent can reach any website or internal service and send it data.",
+   "compliance": {
+    "owasp": [
+     "LLM07 - Insecure Plugin Design",
+     "LLM08 - Excessive Agency"
+    ],
+    "nist": [
+     "MG-2.2"
+    ],
+    "soc2": [
+     "CC6.6"
+    ]
+   }
+  },
+  {
+   "id": "AV-AUDIT-002",
+   "slug": "av-audit-002",
+   "code": "AUDIT_LOGGING_DISABLED",
+   "name": "Audit logging turned off",
+   "category": "auditability",
+   "severity": "medium",
+   "pack": "core",
+   "addedIn": "2.0.0",
+   "family": false,
+   "detectionType": "pattern-match",
+   "evidenceType": "definite",
+   "supportedContent": "Any text-based agent source or configuration (JS/TS/Python/JSON/YAML)",
+   "whatItDetects": "Audit logging is explicitly switched off.",
+   "whyItMatters": "Without an audit trail you cannot tell what the agent did, for whom, or why — after an incident or for compliance.",
+   "remediation": "Keep audit logging on in production and record every tool call (who, what, when, result).",
+   "impact": "Agent actions leave no record.",
+   "compliance": {
+    "owasp": [
+     "LLM08 - Excessive Agency"
+    ],
+    "nist": [
+     "MS-2.8",
+     "GV-1.5"
+    ],
+    "soc2": [
+     "CC7.2",
+     "CC4.1"
+    ]
+   }
+  },
+  {
+   "id": "AV-FW-009",
+   "slug": "av-fw-009",
+   "code": "LLAMAINDEX_PANDAS_QUERY_ENGINE",
+   "name": "LlamaIndex PandasQueryEngine runs model-written code",
+   "category": "runtime",
+   "severity": "high",
+   "pack": "framework",
+   "addedIn": "2.0.0",
+   "family": false,
+   "detectionType": "pattern-match",
+   "evidenceType": "definite",
+   "supportedContent": "Agent source using the named framework (LangChain, CrewAI, AutoGen, OpenAI Agents SDK, Claude Agent SDK, computer-use tools)",
+   "whatItDetects": "The app uses LlamaIndex's PandasQueryEngine, which executes Python the model writes.",
+   "whyItMatters": "Questions from users go to the model, and the model's code runs on your server. Crafted questions have been shown to run arbitrary commands this way.",
+   "remediation": "Do not expose PandasQueryEngine to untrusted users. Use fixed, parameterized queries, or run it in an isolated sandbox with no secrets or network.",
+   "impact": "A user question could execute code on the server.",
+   "compliance": {
+    "owasp": [
+     "LLM02 - Insecure Output Handling",
+     "LLM08 - Excessive Agency"
+    ],
+    "nist": [
+     "MG-2.2"
+    ],
+    "soc2": [
+     "CC6.8",
+     "CC7.1"
+    ]
+   }
+  },
+  {
+   "id": "AV-FW-010",
+   "slug": "av-fw-010",
+   "code": "VERCEL_AI_HIGH_MAX_STEPS",
+   "name": "Vercel AI SDK agent allowed hundreds of steps",
+   "category": "runtime",
+   "severity": "medium",
+   "pack": "framework",
+   "addedIn": "2.0.0",
+   "family": false,
+   "detectionType": "pattern-match",
+   "evidenceType": "definite",
+   "supportedContent": "Agent source using the named framework (LangChain, CrewAI, AutoGen, OpenAI Agents SDK, Claude Agent SDK, computer-use tools)",
+   "whatItDetects": "A Vercel AI SDK call allows 100 or more tool steps per request.",
+   "whyItMatters": "Each step is a model call plus a tool call. A loop or an injection can run up large bills and many side effects before stopping.",
+   "remediation": "Keep the step limit to what the task needs (often 5–10) and add a per-user budget.",
+   "impact": "One request can trigger hundreds of tool calls.",
+   "compliance": {
+    "owasp": [
+     "LLM04 - Model Denial of Service",
+     "LLM08 - Excessive Agency"
+    ],
+    "nist": [
+     "MG-2.2"
+    ],
+    "soc2": [
+     "A1.1"
+    ]
+   }
+  },
+  {
+   "id": "AV-FW-011",
+   "slug": "av-fw-011",
+   "code": "SEMANTIC_KERNEL_AUTO_INVOKE_NO_FILTER",
+   "name": "Semantic Kernel auto-invokes functions with no filter",
+   "category": "human-oversight",
+   "severity": "medium",
+   "pack": "framework",
+   "addedIn": "2.0.0",
+   "family": false,
+   "detectionType": "contextual-heuristic",
+   "evidenceType": "heuristic",
+   "supportedContent": "Agent source using the named framework (LangChain, CrewAI, AutoGen, OpenAI Agents SDK, Claude Agent SDK, computer-use tools)",
+   "whatItDetects": "Semantic Kernel automatically runs any plugin function the model picks, and no function-invocation filter is registered.",
+   "whyItMatters": "Filters are where Semantic Kernel lets you block or approve sensitive calls. Without one, every plugin function is callable on the model's say-so.",
+   "remediation": "Register an auto-function-invocation filter that blocks or asks for approval on sensitive functions.",
+   "impact": "Any plugin function can run without checks.",
+   "compliance": {
+    "owasp": [
+     "LLM08 - Excessive Agency"
+    ],
+    "nist": [
+     "MG-2.2"
+    ],
+    "soc2": [
+     "CC6.1"
+    ]
+   }
+  },
+  {
+   "id": "AV-FW-012",
+   "slug": "av-fw-012",
+   "code": "CLAUDE_CODE_BROAD_BASH_ALLOW",
+   "name": "Claude Code allowed to run any shell command",
+   "category": "tools",
+   "severity": "high",
+   "pack": "framework",
+   "addedIn": "2.0.0",
+   "family": false,
+   "detectionType": "pattern-match",
+   "evidenceType": "definite",
+   "supportedContent": "Agent source using the named framework (LangChain, CrewAI, AutoGen, OpenAI Agents SDK, Claude Agent SDK, computer-use tools)",
+   "whatItDetects": "Claude Code settings allow every Bash command without asking (\"Bash\" or \"Bash(*)\").",
+   "whyItMatters": "Any command the model decides to run — including ones suggested by files or web pages it reads — runs without your approval.",
+   "remediation": "Allow only specific commands (for example \"Bash(npm test)\", \"Bash(git status)\") and leave everything else on ask.",
+   "impact": "The agent can run any command on this machine without asking.",
+   "compliance": {
+    "owasp": [
+     "LLM08 - Excessive Agency"
+    ],
+    "nist": [
+     "MG-2.2"
+    ],
+    "soc2": [
+     "CC6.1",
+     "CC6.8"
+    ]
+   }
+  },
+  {
+   "id": "AV-FW-013",
+   "slug": "av-fw-013",
+   "code": "EDITOR_AGENT_AUTO_APPROVE",
+   "name": "AI editor set to run every tool without asking",
+   "category": "human-oversight",
+   "severity": "high",
+   "pack": "framework",
+   "addedIn": "2.0.0",
+   "family": false,
+   "detectionType": "pattern-match",
+   "evidenceType": "definite",
+   "supportedContent": "Agent source using the named framework (LangChain, CrewAI, AutoGen, OpenAI Agents SDK, Claude Agent SDK, computer-use tools)",
+   "whatItDetects": "The editor's AI agent mode (VS Code Copilot / Cursor) is set to auto-approve all tools or terminal commands.",
+   "whyItMatters": "Coding agents read untrusted files, issues and web pages. With auto-approve on, an instruction hidden in any of them can run commands on your machine.",
+   "remediation": "Turn global auto-approve off and auto-approve only specific, safe commands.",
+   "impact": "Files you open could make the editor agent run commands silently.",
+   "compliance": {
+    "owasp": [
+     "LLM01 - Prompt Injection",
+     "LLM08 - Excessive Agency"
+    ],
+    "nist": [
+     "MG-2.2"
+    ],
+    "soc2": [
+     "CC6.8"
+    ]
+   }
+  },
+  {
+   "id": "AV-FW-014",
+   "slug": "av-fw-014",
+   "code": "SMOLAGENTS_UNRESTRICTED_IMPORTS",
+   "name": "smolagents code agent may import anything",
+   "category": "runtime",
+   "severity": "high",
+   "pack": "framework",
+   "addedIn": "2.0.0",
+   "family": false,
+   "detectionType": "contextual-heuristic",
+   "evidenceType": "definite",
+   "supportedContent": "Agent source using the named framework (LangChain, CrewAI, AutoGen, OpenAI Agents SDK, Claude Agent SDK, computer-use tools)",
+   "whatItDetects": "A smolagents CodeAgent is allowed to import \"*\" or system modules (os, subprocess, socket…) while running locally.",
+   "whyItMatters": "CodeAgent runs model-written Python. With these imports allowed and no remote sandbox, that code can read files, run commands and reach the network.",
+   "remediation": "Allow only the modules the task needs, and use a remote sandbox executor (e2b, Docker, Modal).",
+   "impact": "Model-written code gets full access to the host.",
+   "compliance": {
+    "owasp": [
+     "LLM08 - Excessive Agency",
+     "LLM02 - Insecure Output Handling"
+    ],
+    "nist": [
+     "MG-2.2"
+    ],
+    "soc2": [
+     "CC6.8"
+    ]
+   }
+  },
+  {
+   "id": "AV-FW-015",
+   "slug": "av-fw-015",
+   "code": "LANGCHAIN_DANGEROUS_DESERIALIZATION",
+   "name": "LangChain loads a saved index with dangerous deserialization on",
+   "category": "runtime",
+   "severity": "high",
+   "pack": "framework",
+   "addedIn": "2.0.0",
+   "family": false,
+   "detectionType": "pattern-match",
+   "evidenceType": "definite",
+   "supportedContent": "Agent source using the named framework (LangChain, CrewAI, AutoGen, OpenAI Agents SDK, Claude Agent SDK, computer-use tools)",
+   "whatItDetects": "A LangChain vector store (FAISS, etc.) is loaded with allow_dangerous_deserialization=True.",
+   "whyItMatters": "That flag loads the index with pickle, which runs code. If the index file is ever replaced or comes from someone else, loading it runs their code.",
+   "remediation": "Only load index files you created and store them where no one else can write. Prefer a hosted vector database or a format that does not use pickle.",
+   "impact": "A tampered index file executes code when the agent starts.",
+   "compliance": {
+    "owasp": [
+     "LLM05 - Supply Chain Vulnerabilities"
+    ],
+    "nist": [
+     "MS-2.3"
+    ],
+    "soc2": [
+     "CC7.1"
+    ]
+   }
+  },
+  {
+   "id": "AV-FW-016",
+   "slug": "av-fw-016",
+   "code": "OPENAI_AGENTS_HANDOFF_NO_FILTER",
+   "name": "OpenAI Agents SDK hands full history to other agents",
+   "category": "permissions",
+   "severity": "low",
+   "pack": "framework",
+   "addedIn": "2.0.0",
+   "family": false,
+   "detectionType": "contextual-heuristic",
+   "evidenceType": "heuristic",
+   "supportedContent": "Agent source using the named framework (LangChain, CrewAI, AutoGen, OpenAI Agents SDK, Claude Agent SDK, computer-use tools)",
+   "whatItDetects": "Agents hand off to each other with no input_filter, so each receiving agent gets the full conversation and tool history.",
+   "whyItMatters": "Data one agent was allowed to see (tool results, documents) is passed to agents that may have different tools and trust levels.",
+   "remediation": "Add an input_filter to handoffs (for example handoff_filters.remove_all_tools) to pass only what the next agent needs.",
+   "impact": "Sensitive tool output can reach agents that should not see it.",
+   "compliance": {
+    "owasp": [
+     "LLM06 - Sensitive Information Disclosure"
+    ],
+    "nist": [
+     "GV-4.1"
+    ],
+    "soc2": [
+     "C1.1"
+    ]
+   }
+  },
+  {
+   "id": "AV-FW-017",
+   "slug": "av-fw-017",
+   "code": "CREWAI_NO_MAX_RPM",
+   "name": "CrewAI crew with tools and no request limit",
+   "category": "runtime",
+   "severity": "low",
+   "pack": "framework",
+   "addedIn": "2.0.0",
+   "family": false,
+   "detectionType": "contextual-heuristic",
+   "evidenceType": "heuristic",
+   "supportedContent": "Agent source using the named framework (LangChain, CrewAI, AutoGen, OpenAI Agents SDK, Claude Agent SDK, computer-use tools)",
+   "whatItDetects": "A CrewAI crew whose agents have tools sets no max_rpm, max_iter or max_execution_time.",
+   "whyItMatters": "Crews can loop between agents. Without limits a single run can make a very large number of model and tool calls.",
+   "remediation": "Set max_rpm on the crew and max_iter / max_execution_time on agents.",
+   "impact": "Runaway runs can spike cost and repeat side effects.",
+   "compliance": {
+    "owasp": [
+     "LLM04 - Model Denial of Service"
+    ],
+    "nist": [
+     "MG-2.2"
+    ],
+    "soc2": [
+     "A1.1"
+    ]
+   }
+  },
+  {
+   "id": "AV-FW-018",
+   "slug": "av-fw-018",
+   "code": "LANGGRAPH_TOOLS_NO_INTERRUPT",
+   "name": "LangGraph agent runs tools with no human checkpoint",
+   "category": "human-oversight",
+   "severity": "medium",
+   "pack": "framework",
+   "addedIn": "2.0.0",
+   "family": false,
+   "detectionType": "contextual-heuristic",
+   "evidenceType": "heuristic",
+   "supportedContent": "Agent source using the named framework (LangChain, CrewAI, AutoGen, OpenAI Agents SDK, Claude Agent SDK, computer-use tools)",
+   "whatItDetects": "A LangGraph agent has tools that change things (send, delete, pay, deploy…) and no interrupt for human review.",
+   "whyItMatters": "LangGraph supports pausing before a tool runs so a person can approve it. Without it, write actions happen on the model's decision alone.",
+   "remediation": "Add interrupt_before=[\"tools\"] (or interrupt() inside sensitive tools) and resume only after approval.",
+   "impact": "Consequential actions run without a person seeing them first.",
+   "compliance": {
+    "owasp": [
+     "LLM08 - Excessive Agency"
+    ],
+    "nist": [
+     "MG-2.2"
+    ],
+    "soc2": [
+     "CC6.1"
+    ]
+   }
+  },
+  {
+   "id": "AV-FW-019",
+   "slug": "av-fw-019",
+   "code": "GOOGLE_ADK_CODE_EXECUTOR_LOCAL",
+   "name": "Google ADK runs generated code without a sandbox",
+   "category": "runtime",
+   "severity": "high",
+   "pack": "framework",
+   "addedIn": "2.0.0",
+   "family": false,
+   "detectionType": "pattern-match",
+   "evidenceType": "definite",
+   "supportedContent": "Agent source using the named framework (LangChain, CrewAI, AutoGen, OpenAI Agents SDK, Claude Agent SDK, computer-use tools)",
+   "whatItDetects": "A Google ADK agent uses UnsafeLocalCodeExecutor to run model-written code on the host.",
+   "whyItMatters": "The executor is named \"unsafe\" for a reason: generated code runs with your app's full access.",
+   "remediation": "Use BuiltInCodeExecutor or a container/VM-based executor with no secrets mounted.",
+   "impact": "Model-written code can read files, secrets and the network on the host.",
+   "compliance": {
+    "owasp": [
+     "LLM08 - Excessive Agency",
+     "LLM02 - Insecure Output Handling"
+    ],
+    "nist": [
+     "MG-2.2"
+    ],
+    "soc2": [
+     "CC6.8"
+    ]
+   }
+  }
+ ]
+}

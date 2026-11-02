@@ -184,6 +184,8 @@ const parseJwt = (token: string): { header: Record<string, unknown>; payload: Re
 export interface FirebaseUser {
   uid: string
   email?: string
+  /** True only when Firebase says the email address was verified (Google sign-in, or a clicked verification link). */
+  emailVerified?: boolean
 }
 
 /**
@@ -221,7 +223,7 @@ export async function verifyFirebaseIdToken(token: string | null | undefined, en
 
   if (isAuthEmulated(env)) {
     if (parsed.header.alg !== 'none') return null // reject anything claiming a real algorithm while in emulator mode — never partially trust it
-    return { uid: parsed.payload.sub, email: typeof parsed.payload.email === 'string' ? parsed.payload.email : undefined }
+    return { uid: parsed.payload.sub, email: typeof parsed.payload.email === 'string' ? parsed.payload.email : undefined, emailVerified: parsed.payload.email_verified === true }
   }
 
   const kid = typeof parsed.header.kid === 'string' ? parsed.header.kid : ''
@@ -236,5 +238,5 @@ export async function verifyFirebaseIdToken(token: string | null | undefined, en
   const valid = await crypto.subtle.verify('RSASSA-PKCS1-v1_5', key, toArrayBuffer(parsed.signature), textEncoder.encode(parsed.signed))
   if (!valid) return null
 
-  return { uid: parsed.payload.sub, email: typeof parsed.payload.email === 'string' ? parsed.payload.email : undefined }
+  return { uid: parsed.payload.sub, email: typeof parsed.payload.email === 'string' ? parsed.payload.email : undefined, emailVerified: parsed.payload.email_verified === true }
 }

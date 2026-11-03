@@ -285,7 +285,7 @@ def handle(ticket):
     fileName: 'env-agent.js',
     description: 'Credentials are referenced from deployment environment variables.',
     demonstrates: 'Secret Handling, Least Privilege',
-    expected: 'Improved / re-scan required',
+    expected: 'VERIFIED',
     whyItMatters: 'Secrets should live in environment variables or a secret manager, not source code.',
     content: `const apiKey = process.env.AGENT_API_KEY
 if (!apiKey) throw new Error('Missing AGENT_API_KEY environment variable')
@@ -297,7 +297,7 @@ await tool.execute('read_customer')`,
     fileName: 'scoped-agent.ts',
     description: 'Tool execution is restricted to an explicit allowlist.',
     demonstrates: 'Tool Misuse, Privilege Compromise',
-    expected: 'Improved / re-scan required',
+    expected: 'VERIFIED',
     whyItMatters: 'Allowlists reduce blast radius when prompts or upstream inputs are compromised.',
     content: `const allowedTools = ['read_ticket', 'add_comment']
 const agent = { name: 'SupportAgent', tools: allowedTools, permissions: ['tickets:read', 'tickets:comment'], rateLimit: 40, auditLog: true }
@@ -312,7 +312,7 @@ export async function run({ toolName, payload }) {
     fileName: 'approval-agent.ts',
     description: 'Sensitive action requires human approval before tool execution.',
     demonstrates: 'Human Approval, Intent Verification',
-    expected: 'Improved / re-scan required',
+    expected: 'VERIFIED',
     whyItMatters: 'High-impact actions need a human checkpoint when automation confidence is not enough.',
     content: `const agent = { name: 'PurchaseAgent', tools: ['create_purchase_order'], permissions: ['purchase:create'], auditLog: true, rateLimit: 10 }
 

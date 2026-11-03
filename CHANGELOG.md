@@ -3,6 +3,23 @@
 All notable user-facing changes to Agent Verify are documented here. The CLI/SDK package has its
 own more granular changelog at [packages/cli/CHANGELOG.md](./packages/cli/CHANGELOG.md).
 
+## [2.0.1] - 2026-11-03
+
+### Changed
+
+- **Fairer verdicts for agents that don't use A2SPA.** Request-signing checks now depend on what the agent can do.
+  Read-only agents (they read and answer, but change nothing) can be VERIFIED without request signing; it shows as a
+  low-severity suggestion. Agents that take actions (send email, edit files or data, run commands) pass with signed
+  requests or a human approval step. High-impact agents (payments, refunds, deploys, deleting users, broad
+  permissions) still need signed requests, or human approval plus an audit log. Any signing method counts — HMAC,
+  JWT, A2SPA or your own.
+- Placeholder values such as `YOUR_API_KEY` or `sk-your-key-here` are no longer reported as hardcoded secrets.
+- YAML-style broad permissions (`permissions: all`, `tools: - '*'`) are now detected.
+
+### Fixed
+
+- A very long line containing repeated `SELECT` could make a scan take over a second; it now takes milliseconds.
+
 ## [2.0.0] - 2026-10-30
 
 Agent Verify now runs where you build agents: in your editor, inside your AI coding assistant, and on every pull request.

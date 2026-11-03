@@ -88,7 +88,9 @@ export function Billing({ user }: { user: User }) {
           <p style={{ color: 'var(--text-muted)' }} className="mt-3 text-xs">
             {billingState.isCanceling
               ? billingState.periodEndDate
-                ? `Your ${paidName} plan remains active until ${billingState.periodEndDate}. Update payment method or resume — through Stripe's secure billing portal.`
+                ? billing.status.status === 'trialing'
+                  ? `You canceled during your free trial, so you won't be charged. ${paidName} stays on until ${billingState.periodEndDate}, then your account moves to Free. Changed your mind? Resume in the billing portal.`
+                  : `You won't be charged again. Your ${paidName} plan stays on until ${billingState.periodEndDate}, then your account moves to Free. Changed your mind? Resume in the billing portal.`
                 : `Your ${paidName} plan is canceling at the end of the current billing period. Update payment method or resume — through Stripe's secure billing portal.`
               : `Update payment method${billingState.isTeam ? ', change the number of seats' : ''}, view invoices, or cancel — through Stripe's secure billing portal.`}
           </p>

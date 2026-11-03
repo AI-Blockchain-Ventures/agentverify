@@ -28,6 +28,10 @@ PROFILE_ATTESTATION_EXPECTED_KEY_ID = "eIO7_uhceQOQ0FDx5bGCODcYEUPkbSgAcuXczunT1
 # "Ask anything" AI answers (src/ask.ts): hard daily cap across everyone, sized to stay inside the
 # Workers AI free daily allowance. When it is reached the site falls back to search only.
 ASK_DAILY_CAP = "150"
+# "Fix my file with AI" for Pro (src/aiFix.ts): hard daily cap across everyone (15 per person a day on
+# top). Each fix costs roughly a cent of Workers AI usage past the free allowance, so 60 a day caps it
+# at well under $1/day. When it is reached, people still get the suggested fixes.
+FIX_DAILY_CAP = "60"
 # Welcome email series (src/ops.ts): 3 short emails over a new account's first week, sent through
 # Resend (needs RESEND_API_KEY + ALERT_FROM_EMAIL). "false" turns them off.
 ONBOARDING_EMAILS = "true"

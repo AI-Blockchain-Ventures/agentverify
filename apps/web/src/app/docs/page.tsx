@@ -110,7 +110,7 @@ agentverify scan ./agents --key av_your_key`}</CodeBlock>
             </Section>
 
             <Section id="web-scanner" title="Web Scanner">
-              <p>The dashboard scanner runs the same <code>@agentverify/scanner</code> engine as the CLI and API against pasted code or an uploaded file, then saves a private report to your account. Reports created this way are client-submitted: they are useful for iterating on your own agent, but they are not server-attested evidence in the same sense as a report saved through an authenticated CLI/API scan. See <a href="#limitations" className="underline">Limitations</a>.</p>
+              <p>The dashboard scanner runs the same <code>@agentverify/scanner</code> engine as the CLI and API against pasted code or an uploaded file, then saves a private report to your account. The scan runs on Agent Verify&apos;s server (the same <code>/v1/scan</code> endpoint the CLI and API use), and the server writes the report, so dashboard, CLI and API reports carry the same evidence. Pro and Team plans also get <strong>Fix &amp; re-check</strong> on the report: edit the code (or let AI fix it) and re-check it instantly without using a monthly scan. See <a href="#limitations" className="underline">Limitations</a>.</p>
             </Section>
 
             <Section id="cli" title="CLI">
@@ -202,9 +202,9 @@ npx agentverify scan . --key av_your_key`}</CodeBlock>
             <Section id="webhooks" title="Webhooks">
               <p>A webhook lets Agent Verify notify another application automatically when something happens in your workspace &mdash; instead of that application having to repeatedly ask &quot;did anything change yet?&quot;, Agent Verify would push an event to a URL you provide, the moment it happens. Owners and Admins configure webhooks from <strong>Dashboard &rarr; Workspace &rarr; Webhooks</strong>.</p>
 
-              <div style={{ backgroundColor: 'var(--surface)', border: '1px solid #E07B3955' }} className="rounded-xl p-4 text-sm">
-                <p style={{ color: 'var(--accent-orange-text)' }} className="font-semibold">IMPLEMENTED, not yet PRODUCTION VERIFIED</p>
-                <p className="mt-1.5">Automatic delivery is fully built and covered by a real integration test suite that sends genuine signed HTTP requests to a real local server and exercises every path below &mdash; but as of this writing it has not yet been deployed to the production Worker, and the Cron Trigger that drives it has not yet been activated in production. Until that deploy happens, webhook delivery behaves exactly as it did before: your configuration is saved and every event is still visible in real time in the <a href="#workspaces" className="underline">Audit Log</a>, but no outbound request is sent yet. This section will be updated to remove this notice once delivery has been verified live in production.</p>
+              <div style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }} className="rounded-xl p-4 text-sm">
+                <p style={{ color: 'var(--accent-green-text)' }} className="font-semibold">Live since 2.0</p>
+                <p className="mt-1.5">Automatic delivery runs in production: a scheduled job sends due deliveries about once a minute, with retries as described below. Every event is also visible in the <a href="#workspaces" className="underline">Audit Log</a>.</p>
               </div>
 
               <h3 style={{ color: 'var(--text-primary)' }} className="pt-2 text-sm font-semibold">How delivery works</h3>
@@ -413,7 +413,7 @@ Content-Type: application/json
             </Section>
 
             <Section id="sharing" title="Sharing Reports">
-              <p>Reports are private by default. An owner can explicitly toggle a report to <strong>Public</strong> from Share settings, which makes it reachable at its canonical URL without signing in; toggling back to <strong>Private</strong> immediately revokes that access. Anyone who can edit the report can regenerate its content by re-scanning, which produces a new report ID and URL &mdash; the old link is unaffected. Password-protected sharing is not implemented yet; the UI will not claim it works until a server can verify a password before releasing report content.</p>
+              <p>Reports are private by default. The owner makes a report public with <strong>Make public &amp; copy link</strong> at the top of the report, which makes it reachable at its canonical URL without signing in; <strong>Make private</strong> immediately revokes that access. Anyone who can edit the report can regenerate its content by re-scanning, which produces a new report ID and URL &mdash; the old link is unaffected. Password-protected sharing is not implemented yet; the UI will not claim it works until a server can verify a password before releasing report content.</p>
             </Section>
 
             <Section id="json-output" title="JSON Output">
@@ -477,7 +477,7 @@ Content-Type: application/json
                 <li>Agent Verify performs <strong>static</strong> analysis of submitted content. It does not execute your agent, and it cannot see behavior that only exists at runtime or in code that wasn&apos;t submitted.</li>
                 <li>Findings are evidence-based and heuristic. A clean report is not a guarantee of safety, and a finding is not proof of exploitation &mdash; both should be read as signals, not deterministic facts.</li>
                 <li><code>NOT ASSESSED</code> means there wasn&apos;t enough agent execution context to issue a verdict &mdash; it must never be read as, or presented as, <code>VERIFIED</code>.</li>
-                <li>Dashboard (browser) scans are self-reported: the report is written by the signed-in browser, not attested by the server. CLI/API scans are computed and saved server-side.</li>
+                <li>Dashboard, CLI and API scans all run and are saved on the server. Fix &amp; re-check results are not saved as reports until you save them as a new scan.</li>
                 <li>Detected secrets are redacted in every report; Agent Verify does not store or display live credential values.</li>
               </ul>
             </Section>
@@ -494,7 +494,7 @@ Content-Type: application/json
 
             <Section id="faq" title="FAQ">
               <p><strong>Does Agent Verify run my agent&apos;s code?</strong> No. Analysis is static; your code is inspected, not executed.</p>
-              <p><strong>Can a report be forged or edited after it&apos;s created?</strong> A report&apos;s verdict, score, and findings are immutable once saved &mdash; only visibility (public/private) can change afterward.</p>
+              <p><strong>Can a report be forged or edited after it&apos;s created?</strong> The database rules stop anyone, including the report&apos;s owner, from changing a saved report&apos;s verdict, score, or findings; only visibility (public/private) can change afterward. Each report also carries a SHA-256 hash of its evidence, so a changed report no longer matches its hash. Someone with direct administrator access to the database could still edit a report and recompute the hash, so the hash is a tamper check, not a signature.</p>
               <p><strong>What happens to scans over my plan&apos;s limit?</strong> The API returns <code>429</code> and no scan is performed or counted against your quota.</p>
               <p><strong>Is the scanner open source?</strong> The web app, CLI, and Worker API are open source. The detection engine (<code>@agentverify/scanner</code>) is proprietary and lives only in the private build behind the API &mdash; the published CLI package is a pure HTTP client and does not bundle it.</p>
               <p><strong>Is an OWASP Agentic Skills assessment a certification?</strong> No. It is an assessment against the OWASP Agentic Skills Top 10, using evidence Agent Verify observed in your package. Controls that are not implemented are shown as not assessed, which is not a pass, and the result is not an OWASP certification or endorsement.</p>

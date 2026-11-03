@@ -14,6 +14,10 @@ for (const theme of themes) {
     test(`accessibility baseline [${theme}]: ${path}`, async ({ page }) => {
       await page.emulateMedia({ colorScheme: theme })
       await page.goto(path)
+      // Colour fades (the page background easing into dark mode) can still be mid-way when axe reads
+      // colours, which reports dark-mode text on a white background. Turn transitions off and settle.
+      await page.addStyleTag({ content: '*,*::before,*::after{transition:none!important;animation:none!important}' })
+      await page.waitForTimeout(100)
       const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa']).analyze()
       if (results.violations.length > 0) {
         console.log(`\n[${theme}] ${path} violations:\n` + results.violations.map(v => `- [${v.impact}] ${v.id}: ${v.description} (${v.nodes.length} node(s))`).join('\n'))

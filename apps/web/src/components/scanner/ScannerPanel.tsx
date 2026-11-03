@@ -157,8 +157,9 @@ export function ScannerPanel({ user, onScanComplete }: ScannerPanelProps) {
   // this is what makes the monthly quota a real, server-enforced limit instead of a localStorage
   // counter anyone could clear, and it's also what keeps the proprietary scanner engine off the
   // client entirely (it no longer ships in this bundle at all).
-  const run = async () => {
-    if (!content.trim() || !user) return
+  const run = async (override?: string) => {
+    const scanContent = typeof override === 'string' ? override : content
+    if (!scanContent.trim() || !user) return
     setLoading(true)
     setScanError(null)
     try {
@@ -166,9 +167,9 @@ export function ScannerPanel({ user, onScanComplete }: ScannerPanelProps) {
         method: 'POST',
         headers: { Authorization: `Bearer ${await user.getIdToken()}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          content,
+          content: scanContent,
           fileName: fileName || 'agent.txt',
-          fileSize: content.length,
+          fileSize: scanContent.length,
           platform: selectedPlatform || undefined,
         }),
       })
@@ -205,8 +206,10 @@ export function ScannerPanel({ user, onScanComplete }: ScannerPanelProps) {
       result={result}
       originalContent={content}
       onNewScan={() => setResult(null)}
+      onSaveAsNewScan={code => { setContent(code); setResult(null); void run(code) }}
       reportUrl={`https://aimodularity.com/agentverify/report/?id=${encodeURIComponent(result.reportId)}`}
       billingStatus={billingStatus}
+      user={user}
     />
   )
 
@@ -404,7 +407,7 @@ export function ScannerPanel({ user, onScanComplete }: ScannerPanelProps) {
         </div>
       )}
       <button
-        onClick={run}
+        onClick={() => void run()}
         disabled={!content.trim() || loading || importing || (!billing.loading && billingStatus.used >= billingStatus.scanQuota)}
         className="mt-5 w-full rounded-2xl bg-[#7C3AED] py-4 font-semibold text-white transition-colors hover:bg-[#6D28D9] disabled:opacity-30"
       >

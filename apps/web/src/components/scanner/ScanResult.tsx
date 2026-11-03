@@ -3,6 +3,7 @@
 import type { ScanResult as ScanResultType } from '@/types'
 import { ReportView } from '@/components/report/ReportView'
 import type { BillingStatus } from '@/lib/billing'
+import type { User } from 'firebase/auth'
 
 interface ScanResultProps {
   result: ScanResultType
@@ -10,9 +11,12 @@ interface ScanResultProps {
   reportUrl?: string
   originalContent?: string
   billingStatus?: BillingStatus
+  /** The signed-in user who ran this scan (they own the saved report and can share it). */
+  user?: User | null
+  onSaveAsNewScan?: (content: string) => void
 }
 
-export function ScanResult({ result, onNewScan, reportUrl, originalContent = '', billingStatus }: ScanResultProps) {
+export function ScanResult({ result, onNewScan, reportUrl, originalContent = '', billingStatus, user = null, onSaveAsNewScan }: ScanResultProps) {
   const reportId = typeof result.reportId === 'string' && result.reportId.startsWith('REPORT-') ? result.reportId : undefined
 
   return (
@@ -33,6 +37,9 @@ export function ScanResult({ result, onNewScan, reportUrl, originalContent = '',
       onNewScan={onNewScan}
       reportUrl={reportUrl}
       billingStatus={billingStatus}
+      user={user}
+      onSaveAsNewScan={onSaveAsNewScan}
+      isOwner={!!user && !!reportId}
     />
   )
 }

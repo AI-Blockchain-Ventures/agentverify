@@ -27,6 +27,8 @@ function ReportPageInner() {
   const [report, setReport] = useState<Record<string, unknown> | null>(null)
   const [loading, setLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
+  // A report we were refused access to is either private or does not exist; the database cannot tell us which.
+  const [accessDenied, setAccessDenied] = useState(false)
   const [linkCopied, setLinkCopied] = useState(false)
   const [upgradePrompt, setUpgradePrompt] = useState<string | null>(null)
 
@@ -36,6 +38,8 @@ function ReportPageInner() {
     const load = async () => {
       setLoading(true)
       setNotFound(false)
+      setAccessDenied(false)
+      let denied = false
       let data: Record<string, unknown> | null = null
       let source: string | null = null
 
@@ -46,7 +50,8 @@ function ReportPageInner() {
           source = 'reports'
         }
       } catch (e) {
-        console.error('reports fetch error:', e)
+        if ((e as { code?: string })?.code === 'permission-denied') denied = true
+        else console.error('reports fetch error:', e)
       }
 
       if (!data && user) {
@@ -61,19 +66,24 @@ function ReportPageInner() {
         }
       }
 
-      if (!data && user) {
+      // Dashboard, CLI and API scans are saved by the server in cliReports. Public ones must open for
+      // everyone, signed in or not, so this lookup never depends on who is viewing.
+      if (!data) {
         try {
           const cliDoc = await getDoc(doc(db, 'cliReports', reportId))
           if (cliDoc.exists()) {
             data = cliDoc.data()
             source = 'cliReports'
+            denied = false
           }
         } catch (e) {
-          console.error('cliReports fetch error:', e)
+          if ((e as { code?: string })?.code === 'permission-denied') denied = true
+          else console.error('cliReports fetch error:', e)
         }
       }
 
       if (!data) {
+        setAccessDenied(denied)
         setNotFound(true)
         setLoading(false)
         return
@@ -226,17 +236,6 @@ function ReportPageInner() {
         </button>
 
         <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:justify-end">
-          {isOwner && (
-            <span
-              style={{
-                color: readyReport.isPublic ? '#00B37E' : 'var(--text-muted)',
-                border: '1px solid var(--border)',
-              }}
-              className="rounded-xl px-3 py-1.5 text-xs font-medium"
-            >
-              {readyReport.isPublic ? '🌐 Public' : '🔒 Private'}
-            </span>
-          )}
           <button
             onClick={downloadPDF}
             style={{ border: '1px solid var(--border)', color: 'var(--text-muted)' }}
@@ -251,7 +250,7 @@ function ReportPageInner() {
           >
             Email
           </button>
-          <button
+          {!isOwner && <button
             onClick={copyLink}
             style={{
               backgroundColor: linkCopied ? '#06B6D4' : 'var(--card)',
@@ -261,7 +260,7 @@ function ReportPageInner() {
             className="flex flex-1 items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-xs font-medium transition-all sm:flex-none sm:py-1.5"
           >
             {linkCopied ? 'Copied' : 'Copy link'}
-          </button>
+          </button>}
         </div>
       </div>
       {upgradePrompt && (
@@ -314,10 +313,19 @@ function ReportPageInner() {
     return (
       <div style={{ backgroundColor: 'var(--bg)' }} className="flex min-h-screen items-center justify-center px-6">
         <div style={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)' }} className="max-w-md rounded-3xl p-8 text-center shadow-2xl shadow-black/5">
-          <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#E07B39]/10 text-lg font-semibold text-[color:var(--accent-orange-text)]">?</div>
-          <p style={{ color: 'var(--text-primary)' }} className="text-xl font-semibold">Report not found</p>
-          <p style={{ color: 'var(--text-muted)' }} className="mt-2 text-sm">This security report may have been deleted, kept private, or opened with an incorrect link.</p>
-          <Link href="/dashboard" className="mt-6 inline-flex rounded-2xl bg-[#7C3AED] px-5 py-3 text-sm font-semibold text-white">Back to dashboard</Link>
+          <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#E07B39]/10 text-lg font-semibold text-[color:var(--accent-orange-text)]">{accessDenied ? '🔒' : '?'}</div>
+          <p style={{ color: 'var(--text-primary)' }} className="text-xl font-semibold">{accessDenied ? 'This report is private' : 'Report not found'}</p>
+          <p style={{ color: 'var(--text-muted)' }} className="mt-2 text-sm">
+            {accessDenied
+              ? user
+                ? 'Only the owner can open it. Ask them to share it: on the report, they click “Make public & copy link”.'
+                : 'If this is your report, sign in to open it. If someone sent you this link, ask them to share it: on the report, they click “Make public & copy link”.'
+              : 'This security report may have been deleted, or the link is incomplete.'}
+          </p>
+          <div className="mt-6 flex flex-wrap justify-center gap-2">
+            {accessDenied && !user && <Link href={`/login?next=${encodeURIComponent(`/report/?id=${reportId ?? ''}`)}`} className="inline-flex rounded-2xl bg-[#7C3AED] px-5 py-3 text-sm font-semibold text-white">Sign in</Link>}
+            <Link href={user ? '/dashboard' : '/'} style={{ border: '1px solid var(--border)', color: 'var(--text-primary)' }} className="inline-flex rounded-2xl px-5 py-3 text-sm font-semibold">{user ? 'Back to dashboard' : 'Scan your own agent'}</Link>
+          </div>
         </div>
       </div>
     )

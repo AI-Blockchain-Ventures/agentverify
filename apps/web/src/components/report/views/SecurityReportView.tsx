@@ -4,7 +4,6 @@ import { useEffect, useState, type SyntheticEvent } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import type { User } from 'firebase/auth'
-import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore'
 import type { ThreatCategoryStatus } from '@/types'
 import { Badge } from '@/components/ui/Badge'
 import { CategoryScores } from '@/components/scanner/CategoryScores'
@@ -20,7 +19,8 @@ import { McpExposures } from '@/components/scanner/McpExposures'
 import { SecurityCategories } from '@/components/scanner/SecurityCategories'
 import { ScoreExplainer } from '@/components/scanner/ScoreExplainer'
 import { canUseProFeature, type BillingStatus } from '@/lib/billing'
-import { db } from '@/lib/firebase'
+import type { ReportSharing } from '@/components/report/ShareBar'
+import { FixWorkspace } from '@/components/report/FixWorkspace'
 import { generateSummary } from '@/lib/generateSummary'
 import { copyToClipboard } from '@/lib/clipboard'
 import { A2SPA_DOCS_URL } from '@/lib/links'
@@ -43,6 +43,10 @@ export interface SecurityReportViewProps {
   onNewScan?: () => void
   reportUrl?: string
   billingStatus: BillingStatus
+  /** Sharing state from ReportView; copying the link through it makes a private report public first. */
+  sharing?: ReportSharing
+  originalContent?: string
+  onSaveAsNewScan?: (content: string) => void
 }
 
 /**
@@ -53,13 +57,8 @@ export interface SecurityReportViewProps {
  * can this agent hurt us?" framing at the top, built ONLY from evidence this component already
  * receives (capability chains, security categories, findings) — never a new, invented attack path.
  */
-export function SecurityReportView({ data, report, reportId, user = null, isOwner = false, onReportUpdate, onNewScan, reportUrl, billingStatus }: SecurityReportViewProps) {
+export function SecurityReportView({ data, report, reportId, user = null, isOwner = false, onNewScan, reportUrl, billingStatus, sharing, originalContent = '', onSaveAsNewScan }: SecurityReportViewProps) {
   const [copied, setCopied] = useState<string | null>(null)
-  const [showShare, setShowShare] = useState(false)
-  const [saving, setSaving] = useState(false)
-  const [saved, setSaved] = useState(false)
-  const [shareError, setShareError] = useState<string | null>(null)
-  const [shareSettings, setShareSettings] = useState({ isPublic: report?.isPublic === true })
   // The section menu sticks just below whatever sticky/fixed top bar the page has (public pages have
   // a 65px site header; the dashboard has none) so it is never hidden underneath it.
   const [stickyTop, setStickyTop] = useState(0)
@@ -79,11 +78,6 @@ export function SecurityReportView({ data, report, reportId, user = null, isOwne
       window.removeEventListener('scroll', measure)
     }
   }, [])
-
-  useEffect(() => {
-    setShareSettings({ isPublic: report?.isPublic === true })
-    setShareError(null)
-  }, [report?.isPublic])
 
   const {
     reportId: normalizedReportId, verified, riskScore: normalizedRiskScore,
@@ -144,55 +138,18 @@ export function SecurityReportView({ data, report, reportId, user = null, isOwne
     }
   }
 
-  const saveShareSettings = async () => {
-    if (!user || !normalizedReportId) return
-    setShareError(null)
-    setSaved(false)
-    if (shareSettings.isPublic === (report?.isPublic === true)) {
-      setSaved(true)
-      setTimeout(() => setSaved(false), 2000)
+  // Copying the report link: for the owner, a private report is made public first so the link works.
+  const copyReportLink = async (key: string) => {
+    if (sharing?.canManage) {
+      if (await sharing.copyShareLink()) {
+        setCopied(key)
+        setTimeout(() => setCopied(null), 2000)
+      }
       return
     }
-    setSaving(true)
-
-    const reportData = report ?? {}
-    const updates = { isPublic: shareSettings.isPublic }
-
-    try {
-      const topRef = doc(db, 'reports', normalizedReportId)
-      await setDoc(topRef, {
-        ...reportData,
-        ...updates,
-        reportId: normalizedReportId,
-        uid: typeof reportData.uid === 'string' ? reportData.uid : user.uid,
-        userId: typeof reportData.userId === 'string' ? reportData.userId : user.uid,
-      }, { merge: true })
-
-      if (report?._source === 'cliReports') {
-        await updateDoc(doc(db, 'cliReports', normalizedReportId), updates)
-      }
-
-      try {
-        await updateDoc(doc(db, 'users', user.uid, 'reports', normalizedReportId), updates)
-      } catch {
-        // The top-level reports document is the canonical sharing state.
-      }
-
-      const savedDoc = await getDoc(topRef)
-      if (!savedDoc.exists() || savedDoc.data().isPublic !== shareSettings.isPublic) {
-        throw new Error('Share setting verification failed')
-      }
-
-      onReportUpdate?.(updates)
-      setSaved(true)
-      setTimeout(() => setSaved(false), 2000)
-    } catch (err) {
-      console.error('Failed to save share settings:', err)
-      setShareError('Share settings could not be saved. Refresh and try again.')
-    } finally {
-      setSaving(false)
-    }
+    await copyText(publicReportUrl, key)
   }
+  const linkIsPrivate = !!sharing?.canManage && !sharing.isPublic
 
   const fixChecklist = buildFixChecklist({
     fileName: data.fileName,
@@ -208,7 +165,9 @@ export function SecurityReportView({ data, report, reportId, user = null, isOwne
   const lockedFromFreeScan = canViewCorrectedSnippets && safeFindings.some(f => f.fixLocked)
 
   // v1.6 quick navigation — only links to sections that actually render for this report.
+  const showFixWorkspace = !!(isOwner && user && badgeReportId.startsWith('REPORT-') && safeFindings.length > 0)
   const quickNav: Array<[string, string]> = [['av-hurt', 'Overview']]
+  if (showFixWorkspace) quickNav.push(['av-fixloop', 'Fix & re-check'])
   if (!verified && reportInsights.highestRisks.length > 0) quickNav.push(['av-top-risks', 'Top risks'])
   if (reportInsights.fixPriority.length > 0) quickNav.push(['av-fix-plan', 'Fix plan'])
   quickNav.push(['av-findings', `Findings (${safeFindings.length})`])
@@ -260,77 +219,29 @@ export function SecurityReportView({ data, report, reportId, user = null, isOwne
       <div style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }} className="no-print mb-6 flex flex-col gap-4 rounded-2xl p-5 md:flex-row md:items-center md:justify-between">
         <div>
           <p style={{ color: 'var(--text-primary)' }} className="text-sm font-semibold">{hasProAccess ? 'Apply these fixes' : 'What to do next'}</p>
-          <p style={{ color: 'var(--text-muted)' }} className="mt-1 text-xs">{hasProAccess ? 'Add A2SPA execution authorization, export PDF evidence, share the report, then run another scan.' : 'Fix the highest-severity findings first, implement A2SPA where execution controls are missing, then re-scan to verify the changes.'}</p>
+          <p style={{ color: 'var(--text-muted)' }} className="mt-1 text-xs">{hasProAccess ? (showFixWorkspace ? 'Use Fix & re-check below: apply the fixes (or let AI do it), check again, and repeat until the score is where you want it.' : 'Apply the fixes in the findings below, then run another scan to confirm them.') : 'Fix the highest-severity findings first, then re-scan to confirm. Pro shows the corrected code and lets you re-check changes instantly.'}</p>
         </div>
         {hasProAccess ? (
           <div className="flex flex-wrap gap-2">
-            <a href={A2SPA_DOCS_URL} target="_blank" rel="noreferrer" className="rounded-xl border border-[var(--border)] px-4 py-2.5 text-center text-sm font-semibold text-[var(--text-primary)] hover:opacity-85">Add A2SPA execution authorization</a>
-            <button onClick={() => copyText(publicReportUrl, 'pro-share-link')} className="rounded-xl border border-[var(--border)] px-4 py-2.5 text-sm font-semibold text-[var(--text-primary)] hover:opacity-85">Share report</button>
-            {onNewScan && <button onClick={onNewScan} className="rounded-xl bg-[#7C3AED] px-4 py-2.5 text-sm font-semibold text-white hover:opacity-85">Run another scan</button>}
+            {showFixWorkspace && <a href="#av-fixloop" className="rounded-xl bg-[#7C3AED] px-4 py-2.5 text-center text-sm font-semibold text-white hover:opacity-85">Fix &amp; re-check</a>}
+            <button onClick={() => void copyReportLink('pro-share-link')} className="rounded-xl border border-[var(--border)] px-4 py-2.5 text-sm font-semibold text-[var(--text-primary)] hover:opacity-85">{copied === 'pro-share-link' ? '✓ Link copied' : linkIsPrivate ? 'Make public & share' : 'Share report'}</button>
+            {onNewScan && <button onClick={onNewScan} className="rounded-xl border border-[var(--border)] px-4 py-2.5 text-sm font-semibold text-[var(--text-primary)] hover:opacity-85">Run another scan</button>}
           </div>
         ) : <Link href="/pricing" className="rounded-xl bg-[#7C3AED] px-4 py-2.5 text-center text-sm font-semibold text-white hover:opacity-85">Upgrade to Pro</Link>}
       </div>
 
-      {isOwner && (
-        <div className="no-print mb-6">
-          <button onClick={() => setShowShare(!showShare)} style={{ color: 'var(--text-muted)', border: '1px solid var(--border)' }} className="mb-3 flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs transition-colors hover:opacity-70">
-            {shareSettings.isPublic ? '🌐 Public' : '🔒 Private'} · Share settings
-          </button>
-          {showShare && (
-            <div style={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)' }} className="mb-6 rounded-xl p-5">
-              <h3 style={{ color: 'var(--text-primary)' }} className="mb-5 text-sm font-semibold">Share Settings</h3>
-              <div className="mb-5 flex items-center justify-between pb-5" style={{ borderBottom: '1px solid var(--border)' }}>
-                <div>
-                  <p style={{ color: 'var(--text-primary)' }} className="text-sm font-medium">Public access</p>
-                  <p style={{ color: 'var(--text-muted)' }} className="mt-0.5 text-xs">{shareSettings.isPublic ? 'Anyone with the link can view this report' : 'Only you can view this report'}</p>
-                </div>
-                <button onClick={() => { setShareError(null); setSaved(false); setShareSettings(s => ({ ...s, isPublic: !s.isPublic })) }} className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${shareSettings.isPublic ? 'bg-[#7C3AED]' : 'bg-[#1A2535]'}`}>
-                  <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${shareSettings.isPublic ? 'translate-x-6' : 'translate-x-1'}`} />
-                </button>
-              </div>
-              {shareError && (
-                <div className="mb-5 rounded-lg border border-[#E03E3E]/30 bg-[#E03E3E]/10 p-3">
-                  <p className="text-xs font-semibold text-[color:var(--accent-red-text)]">Save failed</p>
-                  <p style={{ color: 'var(--text-secondary)' }} className="mt-1 text-xs">{shareError}</p>
-                </div>
-              )}
-              <div className="mb-5 rounded-lg border border-[var(--border)] bg-[var(--surface)] p-3">
-                <p style={{ color: 'var(--text-primary)' }} className="text-xs font-semibold">Sharing model</p>
-                <p style={{ color: 'var(--text-muted)' }} className="mt-1 text-xs">This release supports owner-only private reports or public report links when sharing is available for your plan.</p>
-              </div>
-              <div className="mb-5 rounded-lg border border-[#E07B39]/30 bg-[#E07B39]/10 p-3">
-                <p className="text-xs font-semibold text-[color:var(--accent-orange-text)]">Password-protected sharing is coming next</p>
-                <p style={{ color: 'var(--text-secondary)' }} className="mt-1 text-xs">For now, use Public link or Private owner-only mode. We will not fake password protection until the Worker can verify passwords server-side before report content is delivered.</p>
-              </div>
-              {shareSettings.isPublic && (
-                <div className="mb-5">
-                  <p style={{ color: 'var(--text-primary)' }} className="mb-2 text-sm font-medium">Share link</p>
-                  <div className="relative">
-                    <input readOnly aria-label="Report share link" value={publicReportUrl} style={{ backgroundColor: 'var(--input-bg)', border: '1px solid var(--input-border)', color: 'var(--text-muted)' }} className="w-full rounded-lg px-4 py-2.5 pr-20 font-mono text-xs outline-none" />
-                    <button onClick={() => copyText(publicReportUrl, 'owner-link')} style={{ backgroundColor: copied === 'owner-link' ? '#7C3AED' : 'var(--card)', color: copied === 'owner-link' ? '#060A0F' : 'var(--text-muted)', border: '1px solid var(--border)' }} className="absolute right-2 top-1.5 rounded px-2 py-1 text-xs font-medium transition-all">
-                      {copied === 'owner-link' ? '✓ Copied' : 'Copy'}
-                    </button>
-                  </div>
-                </div>
-              )}
-              {shareSettings.isPublic && artifactHash && (
-                <div className="mb-5">
-                  <p style={{ color: 'var(--text-primary)' }} className="mb-2 text-sm font-medium">Public verification link</p>
-                  <p style={{ color: 'var(--text-muted)' }} className="mb-2 text-xs leading-relaxed">A lightweight trust receipt — verdict, artifact fingerprint, and attestation status only. No findings, no report content. Safe to send to anyone.</p>
-                  <div className="relative">
-                    <input readOnly aria-label="Public verification link" value={`https://aimodularity.com/agentverify/verify/?hash=${artifactHash}`} style={{ backgroundColor: 'var(--input-bg)', border: '1px solid var(--input-border)', color: 'var(--text-muted)' }} className="w-full rounded-lg px-4 py-2.5 pr-20 font-mono text-xs outline-none" />
-                    <button onClick={() => copyText(`https://aimodularity.com/agentverify/verify/?hash=${artifactHash}`, 'verify-link')} style={{ backgroundColor: copied === 'verify-link' ? '#7C3AED' : 'var(--card)', color: copied === 'verify-link' ? '#060A0F' : 'var(--text-muted)', border: '1px solid var(--border)' }} className="absolute right-2 top-1.5 rounded px-2 py-1 text-xs font-medium transition-all">
-                      {copied === 'verify-link' ? '✓ Copied' : 'Copy'}
-                    </button>
-                  </div>
-                </div>
-              )}
-              <button onClick={saveShareSettings} disabled={saving} className="rounded-lg bg-[#7C3AED] px-5 py-2 text-sm font-semibold text-white hover:bg-[#6D28D9] disabled:opacity-50">
-                {saving ? 'Saving...' : saved ? '✓ Saved' : 'Save settings'}
-              </button>
-            </div>
-          )}
-        </div>
+      {showFixWorkspace && user && (
+        <FixWorkspace
+          initialContent={originalContent}
+          fileName={data.fileName}
+          platform={data.platform}
+          reportId={badgeReportId}
+          user={user}
+          findings={safeFindings}
+          baseScore={normalizedRiskScore}
+          canUse={canViewCorrectedSnippets}
+          onSaveAsNewScan={onSaveAsNewScan}
+        />
       )}
 
       <section style={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)' }} className="print-border mb-6 rounded-xl p-6">
@@ -608,7 +519,7 @@ export function SecurityReportView({ data, report, reportId, user = null, isOwne
 
       <RuntimeBOM bom={normalizedBom} />
 
-      {(onNewScan || reportUrl) && <div className="mt-8 flex flex-col gap-3 sm:flex-row">{onNewScan && <button onClick={onNewScan} className="rounded-lg bg-[#7C3AED] px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#6D28D9]">Run New Scan</button>}{reportUrl && <button onClick={() => copyText(publicReportUrl, 'report-link')} style={{ backgroundColor: copied === 'report-link' ? '#7C3AED' : 'var(--card)', color: copied === 'report-link' ? '#060A0F' : 'var(--text-muted)', border: '1px solid var(--border)' }} className="rounded-lg px-5 py-2.5 text-sm font-semibold transition-all hover:opacity-70">{copied === 'report-link' ? '✓ Copied' : 'Copy Report Link'}</button>}</div>}
+      {(onNewScan || reportUrl) && <div className="mt-8 flex flex-col gap-3 sm:flex-row">{onNewScan && <button onClick={onNewScan} className="rounded-lg bg-[#7C3AED] px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#6D28D9]">Run New Scan</button>}{reportUrl && <button onClick={() => void copyReportLink('report-link')} style={{ backgroundColor: copied === 'report-link' ? '#7C3AED' : 'var(--card)', color: copied === 'report-link' ? '#060A0F' : 'var(--text-muted)', border: '1px solid var(--border)' }} className="rounded-lg px-5 py-2.5 text-sm font-semibold transition-all hover:opacity-70">{copied === 'report-link' ? '✓ Copied' : linkIsPrivate ? 'Make public & copy link' : 'Copy Report Link'}</button>}</div>}
 
       <div id="av-share" style={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)' }} className="mt-8 scroll-mt-32 rounded-xl p-6">
         <div className="mb-4 flex items-center gap-3">
@@ -617,6 +528,7 @@ export function SecurityReportView({ data, report, reportId, user = null, isOwne
         </div>
         <p style={{ color: 'var(--text-secondary)' }} className="mb-4 text-sm">
           Share this report with your team or include it in your security documentation.
+          {linkIsPrivate && ' This report is private right now; copying the link makes it public so others can open it.'}
         </p>
         <div className="relative mb-4">
           <input
@@ -626,7 +538,7 @@ export function SecurityReportView({ data, report, reportId, user = null, isOwne
             style={{ backgroundColor: 'var(--input-bg)', border: '1px solid var(--input-border)', color: 'var(--input-text)' }}
             className="w-full rounded-lg px-4 py-2.5 pr-20 font-mono text-xs outline-none"
           />
-          <button onClick={() => copyText(publicReportUrl, 'link')} style={{ backgroundColor: copied === 'link' ? '#7C3AED' : 'var(--card)', color: copied === 'link' ? '#060A0F' : 'var(--text-muted)', border: '1px solid var(--border)' }} className="absolute right-2 top-1.5 rounded px-2 py-1 text-xs font-medium transition-all">
+          <button onClick={() => void copyReportLink('link')} style={{ backgroundColor: copied === 'link' ? '#7C3AED' : 'var(--card)', color: copied === 'link' ? '#060A0F' : 'var(--text-muted)', border: '1px solid var(--border)' }} className="absolute right-2 top-1.5 rounded px-2 py-1 text-xs font-medium transition-all">
             {copied === 'link' ? '✓ Copied' : 'Copy'}
           </button>
         </div>

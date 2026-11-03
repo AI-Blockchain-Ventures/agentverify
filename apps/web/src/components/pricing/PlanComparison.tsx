@@ -24,6 +24,7 @@ const ROWS: Array<{ group: string; items: Array<[string, Cell, Cell, Cell]> }> =
     items: [
       ['Step-by-step fix guidance for every finding', false, true, true],
       ['Corrected code you can copy in', false, true, true],
+      ['Fix & re-check: AI fixes your file, re-check instantly without using a scan', false, true, true],
       ['A2SPA execution-authorization guidance', false, true, true],
       ['Copyable fix checklist (GitHub / Jira / Slack)', true, true, true],
     ],
@@ -47,7 +48,7 @@ const ROWS: Array<{ group: string; items: Array<[string, Cell, Cell, Cell]> }> =
   {
     group: 'Work as a team',
     items: [
-      ['Shared workspace with roles and team API keys', true, true, true],
+      ['Shared workspace with roles', true, true, true],
       ['Pro features for every member', false, false, true],
       ['Onboarding call + priority support', false, false, true],
     ],
@@ -76,7 +77,7 @@ export function PlanComparison() {
               <th style={{ color: 'var(--text-muted)' }} className="px-4 py-3 text-xs font-semibold uppercase tracking-wider">Feature</th>
               <th style={{ color: 'var(--text-primary)' }} className="w-28 px-4 py-3 text-center font-semibold">Free</th>
               <th className="w-28 bg-[#06B6D4]/10 px-4 py-3 text-center font-semibold text-[color:var(--accent-cyan-text)]">Pro · $19.99</th>
-              <th style={{ color: 'var(--text-primary)' }} className="w-32 px-4 py-3 text-center font-semibold">Team · $79</th>
+              <th style={{ color: 'var(--text-primary)' }} className="w-32 px-4 py-3 text-center font-semibold">Team · $25/seat</th>
             </tr>
           </thead>
           <tbody>

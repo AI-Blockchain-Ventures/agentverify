@@ -29,8 +29,8 @@ PROFILE_ATTESTATION_EXPECTED_KEY_ID = "eIO7_uhceQOQ0FDx5bGCODcYEUPkbSgAcuXczunT1
 # Workers AI free daily allowance. When it is reached the site falls back to search only.
 ASK_DAILY_CAP = "150"
 # Welcome email series (src/ops.ts): 3 short emails over a new account's first week, sent through
-# Resend (needs RESEND_API_KEY + ALERT_FROM_EMAIL). Change to "true" when you are ready to send them.
-ONBOARDING_EMAILS = "false"
+# Resend (needs RESEND_API_KEY + ALERT_FROM_EMAIL). "false" turns them off.
+ONBOARDING_EMAILS = "true"
 # Free trial for first-time Pro buyers, in days (1–30; "0" turns it off). Stripe Checkout still takes a
 # card up front and charges when the trial ends unless the customer cancels.
 PRO_TRIAL_DAYS = "14"

@@ -3,6 +3,116 @@
 All notable user-facing changes to Agent Verify are documented here. The CLI/SDK package has its
 own more granular changelog at [packages/cli/CHANGELOG.md](./packages/cli/CHANGELOG.md).
 
+## [2.0.0] - 2026-10-30
+
+Agent Verify now runs where you build agents: in your editor, inside your AI coding assistant, and on every pull request.
+
+### Added
+
+- **GitHub App (PR bot).** Install once; every pull request that changes agent code, prompts, tools or MCP config is
+  scanned automatically. It adds a pass/fail check (fails on critical or high findings) with notes on the exact risky
+  lines, and keeps one comment up to date on every push. PRs that don't touch agent code get a passing "no agent files"
+  check and no comment. Pro and Team add the fixes to the comment. 50 GitHub scans a month on Free, 1,000 on Pro/Team.
+- **Repo monitoring and alerts.** Connected repos are re-scanned when their main branch changes. The new
+  **GitHub & Monitoring** dashboard tab shows each repo's score history and recent PR scans. Slack (and email, when
+  enabled) alerts fire only for NEW findings at your chosen level, or a score drop of 10+.
+- **MCP server: `agentverify mcp`.** Claude Code, Cursor, Windsurf and VS Code can now scan agents for you. Tools:
+  `scan_path` (a file or a whole project as one report, with findings mapped back to file and line), `scan_code`, and
+  `scan_mcp_config` (checks the MCP servers on your computer — only server definitions are read, and secret values are
+  masked on your computer before anything is sent).
+- **VS Code extension.** Underlines risky lines, fills the Problems panel, shows the security score in the status bar,
+  optional scan on save, quick fixes that show the fix (Pro), API key in VS Code's secure storage, and it registers the
+  Agent Verify MCP server for Copilot agent mode automatically.
+- **Team plan, self-serve.** Per-seat checkout (2–100 seats), Team includes every Pro feature and 300 scans per person a
+  month, and the owner adds or removes teammates by email from Billing. Seat changes made in Stripe are picked up
+  automatically; if seats are reduced, the earliest-added members keep theirs. Team checkout switches on once a Team
+  price is configured; until then the pricing page keeps "Talk to us".
+- **MCP security directory** (`/mcp/`). A page for each of 66 popular MCP servers — "Is <server> safe?" — showing what
+  it can do on your computer (run commands, change files, drive a browser, query a database, use your API keys), how to
+  use it safely, code patterns worth reviewing, a pinned install snippet, and a README badge. Ratings describe reach,
+  not intent; secret findings are never published; packages are read as text and never run.
+- **GitHub Action v2** (`@v2`): pins CLI 2.x and lists each finding in the PR comment.
+- **One-click fixes in pull requests (Pro).** For risks with a safe, exact line fix — certificate checks turned off,
+  `yaml.load`, a pasted key (moved to an environment variable), debug mode, `http://` endpoints, unbounded LangChain
+  loops — the PR bot posts a GitHub "suggested change" on the changed line; click **Commit suggestion**. Never repeated
+  on later pushes. Free PR comments say how many one-click fixes are waiting.
+- **Agent Guard (`agentverify/guard`).** Runtime protection for JavaScript/TypeScript agents: allow/deny lists,
+  human approval for risky tools, allowed email/URL domains, rate limits, and blocking any call that carries an API key
+  out. Blocked calls tell the model to stop. Decisions (secrets masked) appear in the new **Agent Guard** dashboard tab.
+- **GitLab and Bitbucket.** Connect a project with an access token (stored encrypted) and a webhook; merge/pull requests
+  get the same pass/fail status and updating comment. New **Repos & PR checks** tab (renamed from GitHub & Monitoring).
+- **Slack app.** `/agentverify scan <public GitHub link or pasted code>`, `/agentverify connect`, `/agentverify help`.
+- **Prompt-injection tests (Pro).** Ten known attacks sent to your own agent (after you prove ownership with a file on
+  its host); canary-based results show which attacks worked. New **Injection tests** dashboard tab.
+- **Compliance evidence pack (Pro).** EU AI Act (Articles 9, 12, 14, 15) and ISO/IEC 42001 (clauses 6.1.2, 6.1.3, 9.1)
+  added to the Compliance view, plus a one-click .zip for auditors: summary, control tables (CSV), findings, the full
+  report, and verification steps. Never "compliant" — only evidence observed, gap identified, or not assessed.
+- **Referrals.** A free month of Pro for each friend who signs up and runs a scan; the friend gets 14 days.
+- **Weekly email (opt-in).** Monday summary of monitored repos, new risks, invite progress; one-click unsubscribe.
+- **Bigger MCP directory** with category comparisons ("X vs Y") and a "new this month" page.
+- **New enterprise look.** Calmer colors, tighter corners, the shield logo in the header, a full footer, a dashboard
+  sidebar with icons and a top bar, and layouts that use the width of large monitors. Partner logos scroll on the homepage.
+- **Ask anything (Ctrl+K).** One box on every page: instant search over answers, docs, the MCP directory, dashboard pages
+  and (signed in) your own findings, plus a short AI answer on Cloudflare Workers AI's free allowance. A hard daily cap
+  keeps it free; when reached, Ask falls back to search. Questions are not stored.
+- **"About you" signup step.** Name, company, role, team size, frameworks and how they heard about Agent Verify — all
+  optional, with "Skip for now".
+- **Admin panel** (`/admin`, only for verified emails in `ADMIN_EMAILS`): every account, how each one pays (Stripe, given
+  by you, team seat, referral), signup details, scans this month, revenue estimate, CSV export, "Sync from Firebase", and
+  **give anyone Pro or Team for free** for a set time or with no end date.
+- **Getting started checklist** now has four steps, including "Connect a repo".
+- **Trust Center** (`/trust`) and **System status** (`/status`) pages.
+- **48 new checks (76 → 124).** MCP tool poisoning, invisible characters and tool shadowing in tool definitions;
+  MCP servers installed from git URLs, run privileged, with sudo, over plain HTTP, bound to every network interface, or
+  handed the whole environment; payments, deletions and outbound messages with no limit or approval; personal data sent
+  to models and full prompts in logs; retrieval with no per-customer filter and unchecked web ingestion; cloud metadata
+  access; unauthenticated agent endpoints; broad OAuth scopes and admin database users; AI agents in CI with
+  `write-all` or checking out untrusted PR code; Kubernetes cluster-admin; identity from unverified headers; A2A agent
+  cards with no auth; and framework checks for LlamaIndex, the Vercel AI SDK, Semantic Kernel, Claude Code, VS Code /
+  Cursor auto-approve, smolagents, LangChain, the OpenAI Agents SDK, CrewAI, LangGraph and Google ADK. Each has a
+  stable ID, a risky and a fixed test sample, and a hostile-input speed test.
+- **Check library** (`/checks`). A help page for every check — what it finds, why it matters, what an attacker could
+  do, how to fix it, and its OWASP / NIST / SOC 2 mapping — with search and filters. Every finding in a report links to
+  its page. The Pro-only code snippet is not published there.
+- **State of MCP Security report** (`/state-of-mcp-security`), computed from the MCP directory data at build time.
+- **What's new in 2.0** page (`/whats-new`), linked from the homepage announcement.
+- **Three new one-click examples** on the homepage scan: a poisoned MCP tool, an AI agent in CI, and a payments agent.
+- **Running the product.** Website and API errors are grouped and emailed to the admin the first time each one
+  happens (at most 10 alerts an hour), with a friendly error page instead of a blank crash. A "Growth funnel" in the
+  admin panel shows demo scans → accounts → verified → first scan → connected repo → paying, from existing data. A
+  **Feedback** button in the dashboard sends messages to the admin panel and by email (reply goes straight to the user).
+  A three-email welcome series (welcome, connect a repo, what Pro adds) for verified new accounts, with one-click
+  opt-out — off until `ONBOARDING_EMAILS = "true"`.
+- **Plans.** Pro's price is read from Stripe (like Team's), optional yearly Pro (`STRIPE_PRO_ANNUAL_PRICE_ID`) with a
+  Monthly/Yearly switch, and a free trial for first-time Pro buyers (`PRO_TRIAL_DAYS`, set to 14 days). Cleaner pricing page.
+- **Ready for marketplaces.** GitHub Action branding for the Marketplace, MCP Registry metadata (`mcpName`,
+  `packages/cli/server.json`), updated VS Code description.
+- **Public demo limit.** Repeat scans of the same code (the Live Demo, the homepage examples) reuse a saved result and
+  don't count toward the limit; new code gets 20 public scans per network per hour (was 5).
+
+### Fixed
+- Live Demo and homepage free scan: every outcome now shows right under the button (scanning, success, demo limit reached, server error, timeout after 30s, no connection), with Try again / sample-report links. Before, a reached demo limit (5 scans per network per hour) showed only a small line off-screen, so "Run live scan" looked like it did nothing. Buttons stay disabled ("Loading…") until the page's JavaScript is ready, so early clicks aren't lost. The Live Demo page no longer overflows sideways on phones. New e2e suite `e2e/live-demo.spec.ts` covers this on desktop, tablet, Android, and (with `E2E_WEBKIT=1`) Safari and iPhone.
+
+- Integrations listed webhooks as "not yet deployed"; delivery is live since 1.6.
+
+### Changed
+
+- Version 2.0.0 across the scanner, CLI, web app and Worker. No scanning rules changed from 1.6.
+- Pricing and the plan comparison describe the PR bot, monitoring, editor tools and per-seat Team.
+
+### Deploy notes
+
+- New database tables: `workers/api/schema/` — `github.sql`, `team.sql`, `growth.sql`, `guard.sql`, `vcs.sql`,
+  `slack.sql`, `redteam.sql`, `admin.sql`, `ops.sql`.
+- Optional vars: `ONBOARDING_EMAILS` (welcome emails, default off), `PRO_TRIAL_DAYS`, `STRIPE_PRO_ANNUAL_PRICE_ID`.
+- `ADMIN_EMAILS` Worker secret (comma-separated) — who can open `/admin`. Workers AI is bound as `AI` in
+  `wrangler.toml`; `ASK_DAILY_CAP` (default 150) keeps Ask inside the free daily allowance.
+- New Worker secrets (only needed for the features that use them): `GITHUB_APP_ID`, `GITHUB_APP_PRIVATE_KEY`,
+  `GITHUB_WEBHOOK_SECRET`, `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`, `GITHUB_APP_SLUG`; `STRIPE_TEAM_PRICE_ID`;
+  optional `RESEND_API_KEY` + `ALERT_FROM_EMAIL` for email alerts and the weekly email; `TOKEN_ENCRYPTION_KEY` (32 random
+  bytes, base64) for GitLab/Bitbucket tokens and injection-test headers; `SLACK_SIGNING_SECRET`, `SLACK_CLIENT_ID`,
+  `SLACK_CLIENT_SECRET`; optional `PUBLIC_GITHUB_TOKEN` for Slack scans of public repos.
+
 ## [1.6.0] - 2026-10-27
 
 ### Added — easier first scan and better search/sharing (2026-10-29)
@@ -100,6 +210,30 @@ own more granular changelog at [packages/cli/CHANGELOG.md](./packages/cli/CHANGE
 
 ### Fixed
 
+- **Privacy Policy and Terms rewritten for 2.0.** They now list everything 2.0 collects and every service provider
+  (Firebase, Cloudflare incl. Workers AI, Stripe, GitHub/GitLab/Bitbucket/Slack, Resend), retention (Guard events 30
+  days, demo cache 6 hours, account deletion within 30 days), user rights, paid plans and refunds, acceptable use for
+  injection tests, AI-answer disclaimer, liability cap, and Florida governing law. The old text said data was never
+  shared with third parties and that paid plans were a future possibility.
+- First live checks: the generic "hardcoded credentials" check no longer flags obvious placeholders such as
+  `"YOUR_API_KEY"`, `"xxxxxxxx"` or an environment-variable name (real values are still caught and redacted); Slack
+  scans explain GitHub rate limits in plain words, and use `PUBLIC_GITHUB_TOKEN` when set.
+- Full pre-launch walkthrough (every page crawled on desktop and phone, signed-in dashboard, admin, billing,
+  feedback, Slack link, rate limits — against the local 2.0 API): Pricing, Developers and the MCP directory no longer
+  scroll sideways on phones (grid columns can't be stretched by code examples); a plan given by the admin no longer
+  shows a "Manage billing" button that had nothing to open; Ask finds checks by their code ("tool poisoning");
+  the 404 and verify pages have proper headings; removed an internal note from the API page. `npm run review`
+  now creates every 2.0 table locally.
+- Security hardening before launch: referral rewards only count accounts with a verified email (stops
+  throwaway-account farming); admin plan grants confirm with Firebase that the account's email is verified (an
+  impostor who signed up first with a partner's address can't receive it); a Slack `/agentverify connect` link now
+  asks before linking a workspace to your account; PR comments escape file names.
+- The cookie banner covered the Live Demo's "Run live scan" button on phones, so taps did nothing. It is now a slim
+  bar on phones and never covers page content.
+- Faster first load: the report viewer and Ask load on demand (homepage JavaScript 337 KB → 119 KB, Live Demo 322 KB →
+  110 KB).
+- Public routes (free scan, Ask) use Cloudflare's built-in rate limiter (`[[ratelimits]]`, 10 a minute per network)
+  on top of the hourly limits.
 - Homepage "How it works" and the dashboard scan panel said scans run "in your browser"; they have
   run on Agent Verify's server since v1.4. The wording now says so.
 

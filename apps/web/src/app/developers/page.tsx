@@ -43,6 +43,67 @@ const STEPS: Array<{ n: string; title: string; body: string; code?: string; code
   },
 ]
 
+const CLAUDE_MCP = `claude mcp add agentverify -e AGENTVERIFY_API_KEY=av_your_key -- npx -y agentverify mcp`
+
+const CURSOR_MCP = `{
+  "mcpServers": {
+    "agentverify": {
+      "command": "npx",
+      "args": ["-y", "agentverify", "mcp"],
+      "env": { "AGENTVERIFY_API_KEY": "av_your_key" }
+    }
+  }
+}`
+
+const WAYS: Array<{ id: string; tag: string; title: string; body: string; points: string[]; code?: string; codeLabel?: string; cta?: { href: string; label: string } }> = [
+  {
+    id: 'github-app',
+    tag: 'Every pull request',
+    title: 'GitHub App',
+    body: 'Install once and every pull request that touches agent code, prompts, tools or MCP config is scanned automatically. No workflow file, no secret to manage.',
+    points: ['Pass/fail check you can make required', 'Notes on the exact risky lines in the diff', 'One comment per PR, updated on every push', 'Monitors your main branch with score history and Slack alerts'],
+    cta: { href: '/dashboard/?tab=github', label: 'Install the GitHub App' },
+  },
+  {
+    id: 'mcp',
+    tag: 'While your AI writes the agent',
+    title: 'Claude Code, Cursor & other AI tools',
+    body: 'Agent Verify runs as an MCP server, so your coding assistant can check the agent it is building. Ask "scan my agent for security issues" or "check my MCP servers".',
+    points: ['scan_path — a file or the whole project, as one report', 'scan_code — code that is not saved yet', 'scan_mcp_config — the MCP servers on your computer (keys are masked before sending)'],
+    code: `# Claude Code
+${CLAUDE_MCP}
+
+# Cursor / Windsurf / VS Code (mcp.json)
+${CURSOR_MCP}`,
+    codeLabel: 'Add Agent Verify to your AI tool',
+  },
+  {
+    id: 'vscode',
+    tag: 'As you type',
+    title: 'VS Code extension',
+    body: 'Risky lines are underlined and listed in the Problems panel. The status bar shows the security score; scan on save if you like. It also adds Agent Verify to Copilot agent mode automatically.',
+    points: ['Scan this file or the whole project', 'Quick fix shows how to fix it (Pro) right in the editor', 'Key stored in VS Code’s secure storage'],
+    cta: { href: 'https://marketplace.visualstudio.com/items?itemName=aiblockchainventures.agentverify-vscode', label: 'Get it on the Marketplace' },
+  },
+  {
+    id: 'guard',
+    tag: 'While the agent runs',
+    title: 'Agent Guard',
+    body: 'Wrap your agent’s tools once. Tools you didn’t allow are blocked, risky ones wait for a person, emails and links only go where you allow, and anything carrying an API key out is stopped. See every decision in the dashboard.',
+    points: ['Allow and deny lists, with wildcards', 'Human approval for refunds, payments, deletes', 'Rate limits and allowed domains', 'Blocked calls tell the model to stop'],
+    code: `import { createGuard } from 'agentverify/guard'
+
+const guard = createGuard({
+  agent: 'support-bot',
+  apiKey: process.env.AGENTVERIFY_API_KEY,
+  policy: { allow: ['lookup_order', 'refund'], requireApproval: ['refund'] },
+  approve: async call => askATeammate(call),
+})
+const tools = guard.wrapAll({ lookup_order, refund })`,
+    codeLabel: 'Agent Guard',
+  },
+]
+
 const EXIT_CODES: Array<[string, string]> = [
   ['0', 'Verified — every scanned file passed'],
   ['1', 'Not verified — a real security finding blocks release'],
@@ -57,14 +118,32 @@ export default function DevelopersPage() {
         <header className="mx-auto max-w-3xl text-center">
           <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[color:var(--accent-cyan-text)]">For developers</p>
           <h1 style={{ color: 'var(--text-primary)' }} className="mt-3 text-4xl font-semibold tracking-tight md:text-5xl">Verify every agent before it ships.</h1>
-          <p style={{ color: 'var(--text-secondary)' }} className="mt-5 text-base leading-7 md:text-lg">Run the same 76 checks from your terminal and your CI pipeline. Risky changes — a pasted key, a wildcard tool list, an unsandboxed code runner, an MCP server with your whole drive — fail the build before they reach production.</p>
+          <p style={{ color: 'var(--text-secondary)' }} className="mt-5 text-base leading-7 md:text-lg">Run the same 124 checks in your editor, from your AI coding assistant, on every pull request, and in CI. Risky changes — a pasted key, a wildcard tool list, an unsandboxed code runner, an MCP server with your whole drive — fail the build before they reach production.</p>
           <div className="mt-7 flex flex-col justify-center gap-3 sm:flex-row">
             <Link href="/dashboard" className="rounded-2xl bg-[#7C3AED] px-6 py-3 text-sm font-semibold text-white hover:opacity-90">Get a free API key</Link>
             <Link href="/docs" style={{ border: '1px solid var(--border)', color: 'var(--text-primary)' }} className="rounded-2xl px-6 py-3 text-sm font-semibold hover:opacity-80">Read the full docs</Link>
           </div>
         </header>
 
-        <section className="mt-14 space-y-6" aria-label="Set up in three steps">
+        <section className="mt-14 grid gap-5 md:grid-cols-2 [&>*]:min-w-0" aria-label="Where Agent Verify runs">
+          {WAYS.map(way => (
+            <div key={way.id} id={way.id} style={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)' }} className="flex scroll-mt-24 flex-col rounded-3xl p-6">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[color:var(--accent-cyan-text)]">{way.tag}</p>
+              <h2 style={{ color: 'var(--text-primary)' }} className="mt-2 text-lg font-semibold">{way.title}</h2>
+              <p style={{ color: 'var(--text-muted)' }} className="mt-2 text-sm leading-6">{way.body}</p>
+              <ul style={{ color: 'var(--text-secondary)' }} className="mt-3 space-y-1.5 text-sm">
+                {way.points.map(point => <li key={point}>✓ {point}</li>)}
+              </ul>
+              {way.code && <div className="mt-4"><CodeBlock code={way.code} label={way.codeLabel ?? way.title} /></div>}
+              {way.cta && (
+                <a href={way.cta.href} className="mt-auto inline-flex self-start rounded-xl bg-[#7C3AED] px-4 py-2 pt-2 text-sm font-semibold text-white hover:opacity-90" style={{ marginTop: '1.25rem' }}>{way.cta.label}</a>
+              )}
+            </div>
+          ))}
+        </section>
+
+        <h2 id="cli" style={{ color: 'var(--text-primary)' }} className="mt-14 scroll-mt-24 text-2xl font-semibold tracking-tight">Command line and CI</h2>
+        <section className="mt-5 space-y-6" aria-label="Set up in three steps">
           {STEPS.map(step => (
             <div key={step.n} style={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)' }} className="grid gap-4 rounded-3xl p-5 md:grid-cols-[220px_1fr] md:p-6">
               <div>
@@ -81,7 +160,7 @@ export default function DevelopersPage() {
           ))}
         </section>
 
-        <section className="mt-14 grid gap-5 md:grid-cols-2">
+        <section className="mt-14 grid gap-5 md:grid-cols-2 [&>*]:min-w-0">
           <div style={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)' }} className="rounded-3xl p-6">
             <h2 style={{ color: 'var(--text-primary)' }} className="text-lg font-semibold">CI exit codes</h2>
             <p style={{ color: 'var(--text-muted)' }} className="mt-1 text-sm">With <code>--ci</code>, your pipeline can tell a real security failure apart from a broken run.</p>
@@ -141,7 +220,7 @@ export default function DevelopersPage() {
             <p style={{ color: 'var(--text-muted)' }} className="mt-1 text-sm leading-6">When an agent passes, add the live Agent Verify badge to your README. It links to the report, so buyers and reviewers can check it themselves.</p>
             <div style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }} className="mt-4 rounded-2xl p-4 text-sm">
               <p style={{ color: 'var(--text-secondary)' }}>Pro adds the corrected code for each finding and a PDF report for clients and auditors.</p>
-              <Link href="/pricing" className="mt-3 inline-flex rounded-xl bg-[#06B6D4] px-4 py-2 text-xs font-semibold text-[#060A0F] hover:opacity-90">Compare plans</Link>
+              <Link href="/pricing" className="mt-3 inline-flex rounded-xl bg-[#7C3AED] px-4 py-2 text-xs font-semibold text-white hover:opacity-90">Compare plans</Link>
             </div>
           </div>
         </section>

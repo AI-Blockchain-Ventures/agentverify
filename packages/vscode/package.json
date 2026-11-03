@@ -1,0 +1,75 @@
+{
+  "name": "agentverify-vscode",
+  "displayName": "Agent Verify — AI Agent Security Scanner",
+  "description": "Security checks for AI agents while you code: 124 tested checks for prompt injection, risky tools, exposed secrets, MCP tool poisoning and unsafe MCP servers, plus LangChain, LangGraph, CrewAI, AutoGen, OpenAI Agents SDK, Claude Agent SDK and more.",
+  "version": "2.0.0",
+  "publisher": "aiblockchainventures",
+  "license": "MIT",
+  "private": true,
+  "icon": "media/icon.png",
+  "homepage": "https://aimodularity.com/agentverify/developers/",
+  "repository": { "type": "git", "url": "https://github.com/AI-Blockchain-Ventures/agentverify" },
+  "bugs": { "url": "https://github.com/AI-Blockchain-Ventures/agentverify/issues" },
+  "engines": { "vscode": "^1.101.0" },
+  "categories": ["Linters", "Programming Languages", "AI", "Other"],
+  "keywords": ["ai agent", "security", "mcp", "langchain", "crewai", "prompt injection", "llm security", "agent security"],
+  "main": "./dist/extension.js",
+  "activationEvents": ["onStartupFinished"],
+  "contributes": {
+    "commands": [
+      { "command": "agentverify.scanFile", "title": "Scan This File", "category": "Agent Verify", "icon": "$(shield)" },
+      { "command": "agentverify.scanWorkspace", "title": "Scan Project", "category": "Agent Verify" },
+      { "command": "agentverify.scanMcpConfig", "title": "Check My MCP Servers", "category": "Agent Verify" },
+      { "command": "agentverify.setApiKey", "title": "Set API Key", "category": "Agent Verify" },
+      { "command": "agentverify.clearApiKey", "title": "Remove API Key", "category": "Agent Verify" },
+      { "command": "agentverify.openReport", "title": "Open Last Report", "category": "Agent Verify" },
+      { "command": "agentverify.clear", "title": "Clear Findings", "category": "Agent Verify" }
+    ],
+    "menus": {
+      "editor/title": [
+        { "command": "agentverify.scanFile", "group": "navigation", "when": "resourceScheme == file && agentverify.showEditorButton" }
+      ],
+      "editor/context": [
+        { "command": "agentverify.scanFile", "group": "agentverify", "when": "resourceScheme == file" }
+      ],
+      "explorer/context": [
+        { "command": "agentverify.scanWorkspace", "group": "agentverify", "when": "explorerResourceIsFolder" }
+      ]
+    },
+    "configuration": {
+      "title": "Agent Verify",
+      "properties": {
+        "agentverify.scanOnSave": {
+          "type": "boolean",
+          "default": false,
+          "description": "Re-scan a file every time you save it (each scan uses one from your monthly quota)."
+        },
+        "agentverify.showEditorButton": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show the shield button in the editor title bar."
+        },
+        "agentverify.apiUrl": {
+          "type": "string",
+          "default": "https://agentverify-api.agentverify.workers.dev/v1/scan",
+          "description": "Scan API address. Leave as is unless Agent Verify support asks you to change it."
+        }
+      }
+    },
+    "mcpServerDefinitionProviders": [
+      { "id": "agentverify.mcp", "label": "Agent Verify" }
+    ]
+  },
+  "scripts": {
+    "build": "esbuild src/extension.ts src/mcp-server.ts --bundle --platform=node --format=cjs --target=node20 --external:vscode --outdir=dist --minify",
+    "typecheck": "tsc --noEmit -p .",
+    "test": "npm run build && esbuild src/mapping.ts --bundle --platform=node --format=esm --outfile=test/.build/mapping.mjs --log-level=warning && node --test test/mapping.test.mjs",
+    "package": "npm run build && npx --yes @vscode/vsce@3.6.0 package --no-dependencies --out agentverify-vscode.vsix"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/vscode": "1.101.0",
+    "esbuild": "^0.28.0",
+    "typescript": "^5.0.0"
+  }
+}

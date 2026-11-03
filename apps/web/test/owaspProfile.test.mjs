@@ -186,13 +186,13 @@ assert.match(signed, /1\.0\.0/, 'bundleVersion must be shown')
 console.log('✓ unsigned vs signed states render distinctly')
 
 // ============================================================================
-// 7. Profile-version "alpha" wording cannot be confused with Agent Verify's own v1.6.0 release.
+// 7. Profile-version "alpha" wording cannot be confused with Agent Verify's own v2.0.0 release.
 // ============================================================================
 assert.match(signed, /1\.0\.0-alpha\.1/, 'the profile mapping version itself must be shown')
 assert.match(signed, /not of Agent Verify/i)
-assert.match(signed, /Agent Verify is released as v1\.6\.0/)
+assert.match(signed, /Agent Verify is released as v2\.0\.0/)
 assert.doesNotMatch(signedCollapsedByDefault, /1\.0\.0-alpha\.1/, 'the technical-details section (which carries the alpha version string) is collapsed by default — secondary, not front-and-center (requirement 12)')
-console.log('✓ profile-version alpha wording is clarified against Agent Verify v1.6.0, and is collapsed/secondary by default')
+console.log('✓ profile-version alpha wording is clarified against Agent Verify v2.0.0, and is collapsed/secondary by default')
 
 // ============================================================================
 // 8. Required disclaimers appear verbatim.

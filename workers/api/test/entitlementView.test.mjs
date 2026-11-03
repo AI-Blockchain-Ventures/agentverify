@@ -81,7 +81,7 @@ test('source order: the entitlement is applied before hashing, signing, and savi
   for (const later of ['computeReportHash(scanResult)', 'buildAttestationPayload(', 'saveReportToFirebase(']) {
     assert.ok(scanRoute.indexOf(later) > applied, `${later} must come after the entitlement is applied`)
   }
-  assert.match(scanRoute, /quota\.plan === 'pro' \? 'pro' : 'free'/, 'the plan comes from the server-side quota check, not the request')
+  assert.match(scanRoute, /hasProFeatures\(quota\.plan\) \? 'pro' : 'free'/, 'the plan comes from the server-side quota check, not the request (Team counts as Pro)')
   const verifyFix = src.slice(src.indexOf('async function handleVerifyFix'), src.indexOf('export default {'))
   assert.match(verifyFix, /applyRemediationEntitlement\(createScanResult\(/, 'fix verification follows the plan too')
 })

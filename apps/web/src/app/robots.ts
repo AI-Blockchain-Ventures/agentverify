@@ -9,7 +9,7 @@ export default function robots(): MetadataRoute.Robots {
         // scan report pages (/report/?id=...) are private-by-default user content and should
         // not be crawled even when a specific one has been made public.
         allow: ['/', '/report/demo/'],
-        disallow: ['/dashboard', '/report/'],
+        disallow: ['/dashboard', '/report/', '/admin'],
       },
     ],
     sitemap: 'https://aimodularity.com/agentverify/sitemap.xml',

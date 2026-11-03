@@ -34,7 +34,7 @@ function FindingRow({ item, color }: { item: string[]; color: 'red' | 'orange' }
 
 export function CategorySection() {
   return (
-    <section className="mx-auto max-w-6xl px-4 py-16 md:px-6 md:py-20">
+    <section className="mx-auto max-w-[1320px] min-[1800px]:max-w-[1520px] px-4 py-16 md:px-6 md:py-20">
       <div className="mb-16 text-center">
           <p style={{ color: 'var(--text-secondary)' }} className="mb-3 text-xs font-semibold uppercase tracking-[0.24em]">Execution-risk coverage</p>
           <h2 style={{ color: 'var(--text-primary)' }} className="text-3xl font-semibold tracking-tight md:text-4xl">What Agent Verify checks before release</h2>

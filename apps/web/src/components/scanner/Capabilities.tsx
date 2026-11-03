@@ -34,7 +34,7 @@ export function Capabilities({ capabilities }: { capabilities: AgentCapability[]
           <div key={cap.id} style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }} className="rounded-xl p-3">
             <div className="flex items-start justify-between gap-2">
               <p style={{ color: 'var(--text-primary)' }} className="text-sm font-medium">{cap.label}</p>
-              <span className={`shrink-0 text-[10px] font-semibold uppercase tracking-wider ${confidenceColor[cap.confidence]}`}>{confidenceLabel[cap.confidence]}</span>
+              <span className={`shrink-0 text-[11px] font-semibold uppercase tracking-wider ${confidenceColor[cap.confidence]}`}>{confidenceLabel[cap.confidence]}</span>
             </div>
             {cap.evidence && <code style={{ color: 'var(--text-muted)' }} className="mt-1 block truncate font-mono text-[11px]">{cap.evidence}</code>}
           </div>

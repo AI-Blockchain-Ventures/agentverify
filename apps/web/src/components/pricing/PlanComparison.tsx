@@ -10,8 +10,9 @@ const ROWS: Array<{ group: string; items: Array<[string, Cell, Cell, Cell]> }> =
   {
     group: 'Find the problems',
     items: [
-      ['Scans per month', '10', '100', 'Per member — sized with you'],
-      ['All 76 security checks (incl. framework + MCP packs)', true, true, true],
+      ['Scans per month', '10', '100', '300 per member'],
+      ['GitHub PR bot + monitoring: scans per month', '50', '1,000', '1,000'],
+      ['All 124 security checks (incl. framework + MCP packs)', true, true, true],
       ['Verdict, 0–100 security score, prioritized findings', true, true, true],
       ['Scan a GitHub repo, a .zip, many files, or an MCP config', true, true, true],
       ['OWASP Agentic Skills assessment (+ optional signature)', true, true, true],
@@ -33,6 +34,14 @@ const ROWS: Array<{ group: string; items: Array<[string, Cell, Cell, Cell]> }> =
       ['PDF security report for clients, auditors, and leadership', false, true, true],
       ['Shareable report link + verified badge', true, true, true],
       ['CLI + GitHub Action to block risky merges', true, true, true],
+      ['VS Code extension + MCP server for Claude Code / Cursor', true, true, true],
+      ['GitLab, Bitbucket and Slack', true, true, true],
+      ['Agent Guard runtime protection (allow lists, approvals, dashboard)', true, true, true],
+      ['One-click fix suggestions in pull requests', false, true, true],
+      ['Prompt-injection tests against your own agent', false, true, true],
+      ['Compliance evidence pack (EU AI Act, ISO 42001, SOC 2, NIST)', false, true, true],
+      ['Fixes inside PR comments and VS Code quick fixes', false, true, true],
+      ['Repo monitoring: score history + Slack alerts on new risks', true, true, true],
     ],
   },
   {
@@ -58,7 +67,7 @@ export function PlanComparison() {
       <div className="text-center">
         <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[color:var(--accent-cyan-text)]">Compare plans</p>
         <h2 id="compare-heading" style={{ color: 'var(--text-primary)' }} className="mt-2 text-3xl font-semibold tracking-tight">Free finds the problems. Pro fixes them.</h2>
-        <p style={{ color: 'var(--text-secondary)' }} className="mx-auto mt-3 max-w-2xl text-sm leading-6">Every plan runs the same 76 checks — we never hide a risk behind a paywall. Pro is for when you need to actually fix what was found, quickly, and show proof that you did.</p>
+        <p style={{ color: 'var(--text-secondary)' }} className="mx-auto mt-3 max-w-2xl text-sm leading-6">Every plan runs the same 124 checks — we never hide a risk behind a paywall. Pro is for when you need to actually fix what was found, quickly, and show proof that you did.</p>
       </div>
       <div tabIndex={0} role="region" aria-label="Plan comparison table" style={{ border: '1px solid var(--border)' }} className="mt-8 overflow-x-auto rounded-3xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#06B6D4]">
         <table className="w-full min-w-[620px] border-collapse text-left text-sm">
@@ -101,7 +110,7 @@ export function ProPreview() {
         <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[color:var(--accent-cyan-text)]">What Pro unlocks</p>
         <h2 id="pro-preview-heading" style={{ color: 'var(--text-primary)' }} className="mt-2 text-3xl font-semibold tracking-tight">Same finding. One tells you it&apos;s broken. One fixes it.</h2>
       </div>
-      <div className="mt-8 grid gap-4 md:grid-cols-2">
+      <div className="mt-8 grid gap-4 md:grid-cols-2 [&>*]:min-w-0">
         <div style={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)' }} className="rounded-3xl p-5">
           <p style={{ color: 'var(--text-muted)' }} className="text-xs font-semibold uppercase tracking-wider">Free</p>
           <p style={{ color: 'var(--text-primary)' }} className="mt-3 text-sm font-semibold">Critical · SQL query built from unescaped input</p>
@@ -109,7 +118,7 @@ export function ProPreview() {
           <pre tabIndex={0} role="region" aria-label="Code with the problem" style={{ backgroundColor: 'var(--surface)', color: 'var(--text-secondary)' }} className="mt-3 overflow-x-auto rounded-xl p-3 font-mono text-xs">db.query(&apos;SELECT * FROM invoices WHERE id = &apos; + invoiceId)</pre>
           <p style={{ color: 'var(--text-muted)' }} className="mt-3 text-xs">You know what&apos;s wrong — now you research the fix yourself.</p>
         </div>
-        <div className="rounded-3xl border border-[#06B6D4]/50 bg-[var(--card)] p-5 shadow-[0_18px_50px_rgba(6,182,212,0.12)]">
+        <div className="rounded-3xl border border-[#06B6D4]/50 bg-[var(--card)] p-5">
           <p className="text-xs font-semibold uppercase tracking-wider text-[color:var(--accent-cyan-text)]">Pro</p>
           <p style={{ color: 'var(--text-primary)' }} className="mt-3 text-sm font-semibold">Critical · SQL query built from unescaped input</p>
           <p style={{ color: 'var(--text-secondary)' }} className="mt-2 text-sm leading-6">Use bound parameters for every value, and give the agent a read-only database role limited to the tables it needs.</p>
@@ -134,11 +143,13 @@ export function ProPreview() {
 }
 
 const FAQ: Array<[string, string]> = [
-  ['Do free scans run fewer checks?', 'No. Every plan runs all 76 checks. Free shows you what is wrong; Pro adds the step-by-step fix, corrected code, A2SPA guidance, and PDF export.'],
+  ['Can I try Pro before paying?', 'Yes. New Pro customers get 14 days free. Checkout asks for a card, and you are only charged when the trial ends — cancel any time before then in Manage billing and you pay nothing.'],
+  ['Do free scans run fewer checks?', 'No. Every plan runs all 124 checks. Free shows you what is wrong; Pro adds the step-by-step fix, corrected code, A2SPA guidance, and PDF export.'],
   ['Can my developers use it before every deploy?', 'Yes, on any plan. Create an API key in the dashboard, then run the CLI or the GitHub Action — risky changes fail the check before they merge. See the Developers page.'],
   ['What counts as a scan?', 'Each scan you run — from the dashboard, the CLI, the API, or the GitHub Action — uses one scan from the same monthly quota. Scanning a whole GitHub repo or .zip is still one scan.'],
   ['Is my code safe?', 'Scans run on Agent Verify’s server, never in your browser. Detected secrets are redacted before anything is saved, and reports stay private until you choose to share them.'],
-  ['How does Team work?', 'Talk to us and we set up a shared workspace for your team with Pro features for every member, roles, team API keys, and an onboarding call.'],
+  ['How does Team work?', 'You pick the number of seats (from 2). Everyone you add gets every Pro feature and 300 scans a month, and you can add or remove people yourself from Billing.'],
+  ['What does the GitHub PR bot do?', 'Install the Agent Verify GitHub App and every pull request that changes agent code gets a pass/fail check, notes on the risky lines, and one comment that updates on each push. Pro adds the fixes to that comment.'],
   ['Can I cancel anytime?', 'Yes. Manage or cancel Pro from the billing portal; you keep Pro until the end of the period you paid for.'],
 ]
 

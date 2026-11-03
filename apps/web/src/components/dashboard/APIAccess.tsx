@@ -140,7 +140,7 @@ export function APIAccess() {
         ) : (
           <button
             onClick={generateKey}
-            className="w-full rounded-2xl bg-[#06B6D4] py-3 font-semibold text-[#080B14] transition-colors hover:bg-[#06B6D4]"
+            className="w-full rounded-2xl bg-[#7C3AED] py-3 font-semibold text-white transition-colors hover:bg-[#6D28D9]"
           >
             Generate API key
           </button>
@@ -185,7 +185,7 @@ export function APIAccess() {
       <section style={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)' }} className="rounded-3xl p-6 shadow-xl shadow-black/5">
         <p className="mb-2 text-xs font-semibold uppercase tracking-[0.22em] text-[color:var(--accent-purple-text)]">Developer CI</p>
         <h2 style={{ color: 'var(--text-primary)' }} className="font-semibold">GitHub pull request scans</h2>
-        <p style={{ color: 'var(--text-muted)' }} className="mt-1 text-xs leading-relaxed">Run Agent Verify in GitHub pull requests with the CLI and `--ci`. Production API enforcement must be deployed before broad rollout.</p>
+        <p style={{ color: 'var(--text-muted)' }} className="mt-1 text-xs leading-relaxed">Add the Agent Verify GitHub Action (or run the CLI with `--ci`) to fail a pull request when it adds a critical or high-risk finding.</p>
         <a href="https://github.com/AI-Blockchain-Ventures/agentverify/blob/main/docs/github-action.md" target="_blank" rel="noreferrer" className="mt-4 inline-flex rounded-2xl border border-[#7C3AED]/30 px-4 py-2 text-xs font-semibold text-[color:var(--accent-purple-text)] transition-opacity hover:opacity-80">
           View CI docs
         </a>

@@ -7,7 +7,7 @@ const STATUSES = ['EVIDENCE_OBSERVED', 'GAP_IDENTIFIED', 'NOT_ASSESSED'] as cons
 export function OwaspProfileSection() {
   return (
     <section style={{ backgroundColor: 'var(--bg)' }} className="px-6 py-16">
-      <div className="mx-auto max-w-6xl">
+      <div className="mx-auto max-w-[1320px] min-[1800px]:max-w-[1520px]">
         <div style={{ border: '1px solid var(--border)', backgroundColor: 'var(--card)' }} className="rounded-[2rem] p-6 shadow-2xl shadow-black/5 md:p-8">
           <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[color:var(--accent-purple-text)]">New &middot; OWASP Agentic Skills</p>
           <h2 style={{ color: 'var(--text-primary)' }} className="mt-2 max-w-2xl text-2xl font-semibold tracking-tight md:text-3xl">Assess agent skills against the OWASP Agentic Skills Top 10.</h2>

@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from 'react'
 import type { ScanResult as ScanResultType } from '@/types'
-import { ScanResult } from '@/components/scanner/ScanResult'
+import dynamic from 'next/dynamic'
+// The full report viewer is large and only needed after a scan, so it loads on demand.
+const ScanResult = dynamic(() => import('@/components/scanner/ScanResult').then(m => m.ScanResult), { ssr: false, loading: () => <p style={{ color: 'var(--text-muted)' }} className="text-sm">Loading the report…</p> })
 import { freeBillingStatus, getApiBaseUrl } from '@/lib/billing'
 import { SCAN_EXAMPLES } from '@/lib/scanExamples'
 import { SAFETY_CHECK_URL } from '@/lib/links'
@@ -11,7 +13,7 @@ const demoKey = 'agentverify-public-demo-last-scan'
 const oneHourMs = 60 * 60 * 1000
 
 // A short, curated set for first-time visitors — each one shows a different kind of risk.
-const QUICK_EXAMPLES = ['Prompt injection', 'Retrieval agent', 'MCP config', 'Risky payment', 'Safety switches off', 'A2SPA-ready'] as const
+const QUICK_EXAMPLES = ['Prompt injection', 'Poisoned MCP tool', 'MCP config', 'AI agent in CI', 'Payments agent', 'Retrieval agent', 'Safety switches off', 'A2SPA-ready'] as const
 const starterExample = SCAN_EXAMPLES['Prompt injection']
 
 const readLastScan = (): number => {
@@ -35,8 +37,13 @@ export function PublicScanDemo({ openAuth }: { openAuth?: (mode: 'signIn' | 'sig
   const [events, setEvents] = useState<string[]>([])
   const [running, setRunning] = useState(false)
   const [blockedUntil, setBlockedUntil] = useState(0)
+  // Shown right under the Run button so a failed scan is never silent or off-screen.
+  const [scanError, setScanError] = useState('')
+  // Static export: the button can't run a scan until React has loaded, so it stays disabled until then.
+  const [ready, setReady] = useState(false)
 
   useEffect(() => {
+    setReady(true)
     const last = readLastScan()
     if (last && Date.now() - last < oneHourMs) setBlockedUntil(last + oneHourMs)
   }, [])
@@ -60,24 +67,29 @@ export function PublicScanDemo({ openAuth }: { openAuth?: (mode: 'signIn' | 'sig
 
     setRunning(true)
     setResult(null)
-    setEvents(['Received your code', 'Running 75+ security checks on Agent Verify’s server'])
+    setScanError('')
+    setEvents(['Received your code', 'Running 120+ security checks on Agent Verify’s server'])
+    const fail = (message: string) => { setScanError(message); setEvents(current => [...current, message]) }
+    const controller = new AbortController()
+    const timer = window.setTimeout(() => controller.abort(), 30_000)
     try {
       const res = await fetch(`${getApiBaseUrl()}/v1/demo/scan`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ content, fileName: fileName || 'public-demo-agent.js', platform: 'Public Demo' }),
+        signal: controller.signal,
       })
       const data = await res.json().catch(() => ({})) as ScanResultType & { error?: string }
       if (res.status === 429) {
-        setEvents(current => [...current, data.error ?? 'Too many public scans right now. Try again later, or create a free account.'])
+        fail('The free demo limit for your network has been reached. Try again later, or create a free account for 10 scans a month.')
         return
       }
       if (res.status === 413) {
-        setEvents(current => [...current, 'That is more than the public scan accepts (200KB). Paste just the agent file, or create a free account to scan up to 5MB.'])
+        fail('That is more than the public scan accepts (200KB). Paste just the agent file, or create a free account to scan up to 5MB.')
         return
       }
-      if (!res.ok || !data.verdict) {
-        setEvents(current => [...current, data.error ?? 'The scan did not complete. Please try different content.'])
+      if (!res.ok || !data.verdict || !Array.isArray(data.findings)) {
+        fail(res.status >= 500 ? 'The scanner is temporarily unavailable. Please try again in a minute.' : data.error ?? 'The scan did not complete. Please try different content.')
         return
       }
       writeLastScan(Date.now())
@@ -86,9 +98,12 @@ export function PublicScanDemo({ openAuth }: { openAuth?: (mode: 'signIn' | 'sig
       setResult(data)
       // Bring the report into view on small screens, where it renders below the fold.
       window.setTimeout(() => document.getElementById('public-scan-result')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50)
-    } catch {
-      setEvents(current => [...current, 'Network error while scanning. Please retry.'])
+    } catch (err) {
+      fail((err as { name?: string })?.name === 'AbortError'
+        ? 'The scan took too long (no answer after 30 seconds). Please try again.'
+        : 'Could not reach the scanner. Check your connection or turn off any content blocker for this site, then try again.')
     } finally {
+      window.clearTimeout(timer)
       setRunning(false)
     }
   }
@@ -98,7 +113,7 @@ export function PublicScanDemo({ openAuth }: { openAuth?: (mode: 'signIn' | 'sig
 
   return (
     <section id="public-scan" style={{ backgroundColor: 'var(--bg)' }} className="scroll-mt-20 px-4 pb-20 sm:px-6">
-      <div className="mx-auto max-w-6xl">
+      <div className="mx-auto max-w-[1320px] min-[1800px]:max-w-[1520px]">
         <div style={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)' }} className="rounded-[2rem] p-5 shadow-2xl shadow-black/10 md:p-7">
           <div className="grid gap-6 lg:grid-cols-[1fr_440px]">
             <div>
@@ -135,7 +150,7 @@ export function PublicScanDemo({ openAuth }: { openAuth?: (mode: 'signIn' | 'sig
               <div style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }} className={`mt-5 rounded-2xl p-4 ${events.length ? '' : 'hidden lg:block'}`} aria-live="polite">
                 <p style={{ color: 'var(--text-primary)' }} className="text-sm font-semibold">Scan progress</p>
                 <div className="mt-2 space-y-1.5">
-                  {(events.length ? events : ['Waiting for you to press Run free scan']).map(item => <p key={item} style={{ color: 'var(--text-muted)' }} className="text-xs">• {item}</p>)}
+                  {(events.length ? events : ['Waiting for you to press Run free scan']).map((item, i) => <p key={`${i}-${item}`} style={{ color: 'var(--text-muted)' }} className="text-xs">• {item}</p>)}
                 </div>
               </div>
               <p style={{ color: 'var(--text-muted)' }} className="mt-3 text-[11px] leading-5">One free public scan per browser per hour. Don&apos;t paste real production keys — any detected secret is redacted, but rotate it anyway.</p>
@@ -159,9 +174,14 @@ export function PublicScanDemo({ openAuth }: { openAuth?: (mode: 'signIn' | 'sig
                 style={{ backgroundColor: 'var(--input-bg)', border: '1px solid var(--input-border)', color: 'var(--input-text)' }}
                 className="h-48 w-full rounded-2xl p-4 font-mono text-xs outline-none lg:h-72 placeholder:text-[var(--input-placeholder)] focus:border-[#7C3AED]/50"
               />
-              <button id="public-scan-run" onClick={runDemo} disabled={running || !content.trim() || cooldownMinutes > 0} className="mt-3 w-full rounded-2xl bg-[#7C3AED] px-5 py-3.5 text-sm font-semibold text-white transition-opacity hover:opacity-85 disabled:opacity-60">
-                {running ? 'Scanning…' : cooldownMinutes > 0 ? `Free scan used — next one in ${cooldownMinutes} min` : 'Run free scan'}
+              <button id="public-scan-run" onClick={runDemo} disabled={!ready || running || !content.trim() || cooldownMinutes > 0} className="mt-3 w-full rounded-2xl bg-[#7C3AED] px-5 py-3.5 text-sm font-semibold text-white transition-opacity hover:opacity-85 disabled:opacity-60">
+                {!ready ? 'Loading…' : running ? 'Scanning…' : cooldownMinutes > 0 ? `Free scan used — next one in ${cooldownMinutes} min` : 'Run free scan'}
               </button>
+              {scanError && (
+                <p role="alert" data-testid="public-scan-error" className="mt-3 rounded-lg p-3 text-sm text-[color:var(--accent-red-text)]" style={{ backgroundColor: 'rgba(217,45,32,0.06)', border: '1px solid rgba(217,45,32,0.3)' }}>
+                  {scanError}
+                </p>
+              )}
               {cooldownMinutes > 0 && openAuth && (
                 <button onClick={() => openAuth('signUp')} className="mt-2 w-full rounded-2xl border border-[#7C3AED]/40 px-5 py-3 text-sm font-semibold text-[color:var(--accent-purple-text)] transition-opacity hover:opacity-80">
                   Create a free account — 10 scans a month

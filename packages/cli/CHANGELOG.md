@@ -2,6 +2,19 @@
 
 All notable changes to the `agentverify` CLI/SDK package are documented here.
 
+## [2.0.0] - 2026-10-30
+
+### Added
+
+- `agentverify mcp`: run Agent Verify as an MCP server (stdio) for Claude Code, Cursor, Windsurf and VS Code.
+  Tools: `scan_path`, `scan_code`, `scan_mcp_config`. Reads `AGENTVERIFY_API_KEY`.
+  `claude mcp add agentverify -e AGENTVERIFY_API_KEY=av_your_key -- npx -y agentverify mcp`
+- Folder scans from the MCP server are combined into one report (60 files / 5MB, agent files first, tests last) and
+  each finding is mapped back to its file and line.
+- MCP config checks read only the server definitions and mask secret values locally before sending.
+- `Finding.line` is now part of the SDK type.
+- `agentverify/guard`: Agent Guard runtime protection (`createGuard`, `wrap`, `wrapAll`, `GuardBlockedError`).
+
 ## [1.6.0] - 2026-10-27
 
 ### Added

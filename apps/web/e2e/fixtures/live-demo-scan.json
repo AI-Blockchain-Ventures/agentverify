@@ -1,0 +1,623 @@
+{
+ "schemaVersion": "1.3.0",
+ "reportId": "REPORT-fnlb4etsny",
+ "verdict": "NOT_VERIFIED",
+ "riskScore": 30,
+ "riskLevel": "High Risk",
+ "confidence": 80,
+ "optimizationScore": 20,
+ "reportInsights": {
+  "executionReadinessScore": 4,
+  "a2spaReadinessScore": 20,
+  "remediationProgressScore": 30,
+  "topBlocker": "Missing cryptographic signature",
+  "nextAction": "Fix first: Missing cryptographic signature. Then re-scan to verify the evidence changed.",
+  "scoreExplanation": [
+   "2 critical, 2 high, and 2 medium findings reduced the score.",
+   "4 execution authorization findings block verification.",
+   "Confidence is 80/100 based on file length, language detection, and visible agent behavior."
+  ],
+  "improvesScore": [
+   "Fix missing cryptographic signature to improve score and reduce critical risk.",
+   "Fix missing nonce validation to improve score and reduce critical risk.",
+   "Fix missing fail-closed enforcement to improve score and reduce high risk.",
+   "Fix rogue agent onboarding risk to improve score and reduce high risk.",
+   "Fix missing audit logging to improve score and reduce medium risk."
+  ],
+  "verificationBlockers": [
+   "Missing cryptographic signature",
+   "Missing nonce validation",
+   "Missing fail-closed enforcement"
+  ],
+  "fixPriority": [
+   {
+    "code": "MISSING_SIGNATURE",
+    "title": "Missing cryptographic signature",
+    "severity": "critical",
+    "priority": "fix_first",
+    "reason": "Blocks execution-readiness because the agent does not show complete authorization evidence."
+   },
+   {
+    "code": "MISSING_NONCE",
+    "title": "Missing nonce validation",
+    "severity": "critical",
+    "priority": "fix_first",
+    "reason": "Blocks execution-readiness because the agent does not show complete authorization evidence."
+   },
+   {
+    "code": "MISSING_FAIL_CLOSED",
+    "title": "Missing fail-closed enforcement",
+    "severity": "high",
+    "priority": "fix_first",
+    "reason": "Blocks execution-readiness because the agent does not show complete authorization evidence."
+   },
+   {
+    "code": "ROGUE_AGENT_RISK",
+    "title": "Rogue agent onboarding risk",
+    "severity": "high",
+    "priority": "fix_next",
+    "reason": "Improves runtime safety and reduces operational risk."
+   },
+   {
+    "code": "MISSING_AUDIT_LOGGING",
+    "title": "Missing audit logging",
+    "severity": "medium",
+    "priority": "fix_next",
+    "reason": "Improves runtime safety and reduces operational risk."
+   },
+   {
+    "code": "MISSING_TIMESTAMP",
+    "title": "Missing timestamp enforcement",
+    "severity": "medium",
+    "priority": "fix_next",
+    "reason": "Blocks execution-readiness because the agent does not show complete authorization evidence."
+   },
+   {
+    "code": "NO_RATE_LIMITING",
+    "title": "No execution rate limiting",
+    "severity": "low",
+    "priority": "nice_to_have",
+    "reason": "Improves runtime safety and reduces operational risk."
+   }
+  ],
+  "scoreFormula": {
+   "startingScore": 100,
+   "deductions": [
+    {
+     "reason": "2 critical findings (\u221220 each)",
+     "points": 40
+    },
+    {
+     "reason": "2 high findings (\u221210 each)",
+     "points": 20
+    },
+    {
+     "reason": "2 medium findings (\u22125 each)",
+     "points": 10
+    }
+   ],
+   "cappedAt": null,
+   "cappedReason": null,
+   "finalScore": 30
+  },
+  "highestRisks": [
+   "Missing cryptographic signature",
+   "Missing nonce validation",
+   "Missing fail-closed enforcement"
+  ],
+  "canWait": [
+   "No execution rate limiting"
+  ]
+ },
+ "threatCategories": [
+  {
+   "id": "prompt-injection",
+   "label": "Prompt Injection",
+   "status": "not_assessed",
+   "severity": "high",
+   "whatItMeans": "Untrusted text may influence system instructions or tool decisions.",
+   "evidencePattern": "Prompt assembly, system prompts, user input, and missing sanitization or boundaries.",
+   "whyItMatters": "A crafted instruction can redirect the agent from its intended task into unsafe execution.",
+   "recommendedFix": "Separate system and user content, sanitize inputs, constrain tools, and verify execution requests before action.",
+   "a2spaImpact": "A2SPA helps by requiring signed execution intent before a prompt-influenced tool call can run."
+  },
+  {
+   "id": "memory-poisoning",
+   "label": "Memory Poisoning",
+   "status": "not_assessed",
+   "severity": "medium",
+   "whatItMeans": "Agent memory can retain stale, sensitive, or attacker-influenced context.",
+   "evidencePattern": "Persistent memory, vector stores, session history, missing TTL, or no context clearing.",
+   "whyItMatters": "Poisoned context can steer future decisions long after the original interaction.",
+   "recommendedFix": "Set TTLs, scope memory to sessions, clear context after tasks, and validate memory writes.",
+   "a2spaImpact": "A2SPA reduces execution impact by requiring fresh authorization even if memory is poisoned."
+  },
+  {
+   "id": "tool-misuse",
+   "label": "Tool Misuse",
+   "status": "detected",
+   "severity": "high",
+   "whatItMeans": "The agent can call tools that change data, money, infrastructure, or external systems.",
+   "evidencePattern": "Tool lists, function calls, invoke/execute paths, broad permissions, or wildcard tools.",
+   "whyItMatters": "Tool calls convert model output into real business actions.",
+   "recommendedFix": "Use allowlisted tools, per-tool scopes, approval gates for sensitive actions, and audit logging.",
+   "a2spaImpact": "A2SPA is directly relevant because it authorizes the intended tool action before execution."
+  },
+  {
+   "id": "privilege-compromise",
+   "label": "Privilege Compromise",
+   "status": "detected",
+   "severity": "high",
+   "whatItMeans": "The agent may hold more authority than the task requires.",
+   "evidencePattern": "Admin/all/wildcard permissions, broad scopes, privileged credentials, or missing least privilege.",
+   "whyItMatters": "A compromised agent can escalate from one task into account-wide or infrastructure-wide impact.",
+   "recommendedFix": "Apply least privilege, split duties, rotate secrets, and bind tools to narrow scopes.",
+   "a2spaImpact": "A2SPA can bind signed authorization to an explicit scope and action."
+  },
+  {
+   "id": "resource-overload",
+   "label": "Resource Overload",
+   "status": "missing_evidence",
+   "severity": "medium",
+   "whatItMeans": "The agent may consume unbounded tokens, API calls, queue jobs, or infrastructure resources.",
+   "evidencePattern": "Missing rate limits, timeouts, token budgets, retry caps, or max call counts.",
+   "whyItMatters": "Runaway agents can create outages, cost spikes, and denial-of-service conditions.",
+   "recommendedFix": "Add rate limits, token budgets, timeouts, retry caps, and circuit breakers.",
+   "a2spaImpact": "A2SPA can make each execution auditable, but resource controls still need explicit limits."
+  },
+  {
+   "id": "intent-breaking",
+   "label": "Intent Breaking",
+   "status": "not_assessed",
+   "severity": "high",
+   "whatItMeans": "The agent may drift from approved user or business intent.",
+   "evidencePattern": "Goal instructions, prompt override language, jailbreak patterns, or missing intent verification.",
+   "whyItMatters": "An agent can complete the wrong task while appearing successful.",
+   "recommendedFix": "Validate requested action intent, constrain allowed goals, and require approval for sensitive deviations.",
+   "a2spaImpact": "A2SPA signs intended execution payloads so execution can be checked against approved intent."
+  },
+  {
+   "id": "identity-spoofing",
+   "label": "Identity Spoofing",
+   "status": "possible",
+   "severity": "high",
+   "whatItMeans": "The execution boundary may not prove which agent or caller requested an action.",
+   "evidencePattern": "Agent identity, caller fields, service accounts, or missing signed identity checks.",
+   "whyItMatters": "Spoofed identity lets rogue callers inherit trusted agent authority.",
+   "recommendedFix": "Verify agent identity, bind identity to the signed payload, and reject unknown callers.",
+   "a2spaImpact": "A2SPA helps by binding action, identity, nonce, and timestamp into signed authorization evidence."
+  },
+  {
+   "id": "command-injection",
+   "label": "Command Injection",
+   "status": "not_assessed",
+   "severity": "critical",
+   "whatItMeans": "Untrusted input may reach a shell or command execution path.",
+   "evidencePattern": "exec/spawn/subprocess/os.system, shell=true, or command strings built from request input.",
+   "whyItMatters": "Command injection can become remote code execution and credential theft.",
+   "recommendedFix": "Avoid shell execution, validate arguments, use allowlisted commands, and pass args as arrays.",
+   "a2spaImpact": "A2SPA can authorize the intended operation, but command safety must be enforced at the tool boundary."
+  },
+  {
+   "id": "supply-chain",
+   "label": "Supply Chain",
+   "status": "not_assessed",
+   "severity": "medium",
+   "whatItMeans": "Dependencies, remote scripts, or plugin sources may change without review.",
+   "evidencePattern": "Unpinned versions, remote install scripts, dynamic imports, or plugin dependencies.",
+   "whyItMatters": "A dependency compromise can silently alter agent behavior or steal secrets.",
+   "recommendedFix": "Pin versions, verify integrity, review plugins, and use lockfiles or signed artifacts.",
+   "a2spaImpact": "A2SPA limits unauthorized execution impact, but dependency integrity still needs supply-chain controls."
+  },
+  {
+   "id": "agent-communication-poisoning",
+   "label": "Agent Communication Poisoning",
+   "status": "not_assessed",
+   "severity": "high",
+   "whatItMeans": "Messages between agents or systems may carry untrusted instructions.",
+   "evidencePattern": "Delegation, handoffs, webhooks, message buses, or subagent communication.",
+   "whyItMatters": "A poisoned message can propagate unsafe instructions across agent chains.",
+   "recommendedFix": "Scope delegated authority, validate messages, sign handoffs, and audit inter-agent actions.",
+   "a2spaImpact": "A2SPA can sign inter-agent execution requests and verify them at each boundary."
+  },
+  {
+   "id": "replay-attacks",
+   "label": "Replay Attacks",
+   "status": "missing_evidence",
+   "severity": "critical",
+   "whatItMeans": "A previously valid execution request may be reused.",
+   "evidencePattern": "Nonce, idempotency key, timestamp, expiry validation, or missing replay controls.",
+   "whyItMatters": "Captured requests can trigger repeated payments, deployments, or data changes.",
+   "recommendedFix": "Require unique nonces, mark them used, enforce timestamps, and reject expired requests.",
+   "a2spaImpact": "Nonce and timestamp validation are core A2SPA readiness evidence."
+  },
+  {
+   "id": "version-drift",
+   "label": "Version Drift",
+   "status": "not_assessed",
+   "severity": "low",
+   "whatItMeans": "Runtime model or agent versions may change without controlled review.",
+   "evidencePattern": "Model names, versions, unpinned model config, or missing version metadata.",
+   "whyItMatters": "Model drift can change decisions, prompts, and tool usage behavior between releases.",
+   "recommendedFix": "Pin model/version config, record release metadata, and re-scan after model changes.",
+   "a2spaImpact": "A2SPA receipts can include model/version metadata for accountability."
+  },
+  {
+   "id": "auditability",
+   "label": "Auditability",
+   "status": "missing_evidence",
+   "severity": "medium",
+   "whatItMeans": "Execution may not leave enough evidence to investigate or prove what happened.",
+   "evidencePattern": "Audit logs, receipts, request IDs, traces, or missing structured execution records.",
+   "whyItMatters": "Without non-repudiation, incidents become difficult to reconstruct and defend.",
+   "recommendedFix": "Write signed/auditable execution receipts with identity, action, timestamp, and result.",
+   "a2spaImpact": "A2SPA audit receipts support accountability at execution boundaries."
+  },
+  {
+   "id": "rogue-agent",
+   "label": "Rogue Agent",
+   "status": "detected",
+   "severity": "high",
+   "whatItMeans": "Unknown or malicious agents may be able to join the workflow.",
+   "evidencePattern": "Agent registration, plugin onboarding, dynamic agents, or missing identity verification.",
+   "whyItMatters": "A rogue agent can inherit trust and execute actions as part of the system.",
+   "recommendedFix": "Verify agent identity during onboarding, approve allowed agents, and bind permissions to identity.",
+   "a2spaImpact": "A2SPA can require verified agent identity before execution authorization is accepted."
+  }
+ ],
+ "findings": [
+  {
+   "id": "1tudsagy",
+   "code": "MISSING_SIGNATURE",
+   "title": "Missing cryptographic signature",
+   "category": "A",
+   "severity": "critical",
+   "evidenceType": "heuristic",
+   "securityCategory": "execution-authorization",
+   "whatIsWrong": "No cryptographic signature was detected in this agent configuration.",
+   "whyItMatters": "Without a signature, there is no proof the payload is authentic before it triggers real-world actions. Any intercepted or modified request will execute without detection.",
+   "capabilityImpact": "An attacker who can intercept or forge a request can trigger this agent's actions without being caught.",
+   "recommendedFix": "",
+   "compliance": {
+    "owasp": [
+     "LLM02 - Insecure Output Handling",
+     "LLM09 - Overreliance"
+    ],
+    "nist": [
+     "GV-1.1 - Policies and Procedures",
+     "MS-2.5 - AI Risk Management"
+    ],
+    "soc2": [
+     "CC6.1 - Logical Access Controls",
+     "CC6.6 - Authentication"
+    ]
+   },
+   "fixLocked": true
+  },
+  {
+   "id": "2wqfxjue",
+   "code": "MISSING_NONCE",
+   "title": "Missing nonce validation",
+   "category": "A",
+   "severity": "critical",
+   "evidenceType": "heuristic",
+   "securityCategory": "execution-authorization",
+   "whatIsWrong": "No nonce or replay protection token was detected.",
+   "whyItMatters": "Without a unique per-request token, replay attacks become trivial. An attacker can capture and re-execute any valid request.",
+   "capabilityImpact": "A captured request (e.g. a payment or deployment) could be replayed to repeat the same action.",
+   "recommendedFix": "",
+   "compliance": {
+    "owasp": [
+     "LLM02 - Insecure Output Handling"
+    ],
+    "nist": [
+     "MS-2.5 - AI Risk Management"
+    ],
+    "soc2": [
+     "CC6.1 - Logical Access Controls",
+     "CC7.2 - Monitoring"
+    ]
+   },
+   "fixLocked": true
+  },
+  {
+   "id": "hj4p8si1",
+   "code": "MISSING_TIMESTAMP",
+   "title": "Missing timestamp enforcement",
+   "category": "A",
+   "severity": "medium",
+   "evidenceType": "heuristic",
+   "securityCategory": "execution-authorization",
+   "whatIsWrong": "No timestamp or expiry validation was detected.",
+   "whyItMatters": "Expired payloads remain valid indefinitely and can trigger execution long after the intended window.",
+   "capabilityImpact": "A request captured today could still trigger a real action months from now.",
+   "recommendedFix": "",
+   "compliance": {
+    "owasp": [
+     "LLM02 - Insecure Output Handling"
+    ],
+    "nist": [
+     "MS-2.5 - AI Risk Management"
+    ],
+    "soc2": [
+     "CC6.1 - Logical Access Controls"
+    ]
+   },
+   "fixLocked": true
+  },
+  {
+   "id": "lbq4lqlj",
+   "code": "MISSING_FAIL_CLOSED",
+   "title": "Missing fail-closed enforcement",
+   "category": "A",
+   "severity": "high",
+   "evidenceType": "heuristic",
+   "securityCategory": "execution-authorization",
+   "whatIsWrong": "No fail-closed pattern detected. Verification failures may still allow execution.",
+   "whyItMatters": "Without a hard block on verification failure, a failed check is just a warning. Execution proceeds regardless.",
+   "capabilityImpact": "A broken or bypassed check does not stop the agent \u2014 it keeps acting as if nothing was wrong.",
+   "recommendedFix": "",
+   "compliance": {
+    "owasp": [
+     "LLM03 - Training Data Poisoning",
+     "LLM08 - Excessive Agency"
+    ],
+    "nist": [
+     "GV-1.1",
+     "MS-2.3"
+    ],
+    "soc2": [
+     "CC6.1 - Logical Access Controls",
+     "A1.1 - Availability"
+    ]
+   },
+   "fixLocked": true
+  },
+  {
+   "id": "lpwgmtjd",
+   "code": "ROGUE_AGENT_RISK",
+   "title": "Rogue agent onboarding risk",
+   "category": "B",
+   "severity": "high",
+   "evidence": "Marketplace",
+   "line": 1,
+   "evidenceType": "heuristic",
+   "securityCategory": "identity",
+   "whatIsWrong": "The agent appears to register, onboard, or invoke remote agents/plugins without visible identity verification.",
+   "whyItMatters": "Unknown agents can inherit trusted tool access. A malicious or spoofed agent can execute actions as if it were approved.",
+   "capabilityImpact": "An unverified agent or plugin could be onboarded and inherit this system's trusted access.",
+   "recommendedFix": "",
+   "compliance": {
+    "owasp": [
+     "LLM07 - Insecure Plugin Design",
+     "LLM08 - Excessive Agency"
+    ],
+    "nist": [
+     "GV-4.1",
+     "MS-2.3"
+    ],
+    "soc2": [
+     "CC6.1",
+     "CC7.2"
+    ]
+   },
+   "fixLocked": true
+  },
+  {
+   "id": "25ylumdn",
+   "code": "MISSING_AUDIT_LOGGING",
+   "title": "Missing audit logging",
+   "category": "B",
+   "severity": "medium",
+   "evidenceType": "heuristic",
+   "securityCategory": "auditability",
+   "whatIsWrong": "No audit logging or execution tracking detected.",
+   "whyItMatters": "Without an audit trail, forensic investigation after a failure or breach is impossible. Compliance requirements cannot be met.",
+   "capabilityImpact": "If this agent is misused, there may be no record of who or what triggered the action.",
+   "recommendedFix": "",
+   "compliance": {
+    "owasp": [
+     "LLM08 - Excessive Agency"
+    ],
+    "nist": [
+     "GV-1.1",
+     "MG-3.1 - Post-Deployment Monitoring"
+    ],
+    "soc2": [
+     "CC7.2 - System Monitoring",
+     "CC4.1 - Monitoring Controls"
+    ]
+   },
+   "fixLocked": true
+  },
+  {
+   "id": "1rmb8qre",
+   "code": "NO_RATE_LIMITING",
+   "title": "No execution rate limiting",
+   "category": "B",
+   "severity": "low",
+   "evidenceType": "heuristic",
+   "securityCategory": "runtime",
+   "whatIsWrong": "No rate limiting, token budget, or call quota detected.",
+   "whyItMatters": "Agents without execution budgets can exhaust API quotas, generate unbounded costs, and create denial-of-service conditions.",
+   "capabilityImpact": "A loop or malicious instruction could run this agent's actions an unbounded number of times.",
+   "recommendedFix": "",
+   "compliance": {
+    "owasp": [
+     "LLM04 - Model Denial of Service"
+    ],
+    "nist": [
+     "MG-2.2",
+     "MG-3.1"
+    ],
+    "soc2": [
+     "A1.1 - Availability",
+     "CC7.2"
+    ]
+   },
+   "fixLocked": true
+  }
+ ],
+ "categoryScores": [
+  {
+   "category": "A",
+   "label": "A2SPA Protocol Compliance",
+   "score": 10,
+   "maxScore": 50,
+   "findingCount": 4
+  },
+  {
+   "category": "B",
+   "label": "General Agent Security",
+   "score": 20,
+   "maxScore": 50,
+   "findingCount": 3
+  }
+ ],
+ "securityCategories": [
+  {
+   "id": "identity",
+   "label": "Identity",
+   "findingCount": 1,
+   "highestSeverity": "high",
+   "status": "needs_attention"
+  },
+  {
+   "id": "permissions",
+   "label": "Permissions",
+   "findingCount": 0,
+   "highestSeverity": null,
+   "status": "strong"
+  },
+  {
+   "id": "tools",
+   "label": "Tools",
+   "findingCount": 0,
+   "highestSeverity": null,
+   "status": "strong"
+  },
+  {
+   "id": "mcp",
+   "label": "MCP",
+   "findingCount": 0,
+   "highestSeverity": null,
+   "status": "strong"
+  },
+  {
+   "id": "execution-authorization",
+   "label": "Execution Authorization",
+   "findingCount": 4,
+   "highestSeverity": "critical",
+   "status": "critical"
+  },
+  {
+   "id": "secrets",
+   "label": "Secrets",
+   "findingCount": 0,
+   "highestSeverity": null,
+   "status": "strong"
+  },
+  {
+   "id": "runtime",
+   "label": "Runtime",
+   "findingCount": 1,
+   "highestSeverity": "low",
+   "status": "needs_attention"
+  },
+  {
+   "id": "network",
+   "label": "Network",
+   "findingCount": 0,
+   "highestSeverity": null,
+   "status": "strong"
+  },
+  {
+   "id": "dependencies",
+   "label": "Dependencies",
+   "findingCount": 0,
+   "highestSeverity": null,
+   "status": "strong"
+  },
+  {
+   "id": "auditability",
+   "label": "Auditability",
+   "findingCount": 1,
+   "highestSeverity": "medium",
+   "status": "needs_attention"
+  },
+  {
+   "id": "human-oversight",
+   "label": "Human Oversight",
+   "findingCount": 0,
+   "highestSeverity": null,
+   "status": "strong"
+  }
+ ],
+ "capabilities": [
+  {
+   "id": "invoke_external_apis",
+   "label": "Call external APIs",
+   "evidence": "fetch(",
+   "confidence": "heuristic"
+  }
+ ],
+ "mcpExposures": [],
+ "capabilityChains": [],
+ "a2spaStatus": "partially_detected",
+ "securityControlsDetected": [
+  {
+   "id": "scoped_permissions",
+   "label": "Scoped, non-wildcard permissions",
+   "evidence": "An explicit allowlist/scope pattern was found with no wildcard access."
+  },
+  {
+   "id": "bounded_memory",
+   "label": "Memory is not configured to persist indefinitely",
+   "evidence": "No unbounded-retention pattern was found."
+  },
+  {
+   "id": "prompt_sanitization",
+   "label": "Input sanitization near prompt assembly",
+   "evidence": "A sanitize/validate/escape pattern was found near system prompt construction."
+  },
+  {
+   "id": "scoped_delegation",
+   "label": "Delegation/handoff appears scope-constrained",
+   "evidence": "A scope/constrain/limit pattern was found near delegation code."
+  }
+ ],
+ "notDetermined": [
+  "Runtime-only behavior \u2014 logic that only executes under conditions not present in the submitted content.",
+  "Permissions or credentials granted dynamically at deploy time (IAM roles, injected secrets, runtime config).",
+  "Remote policy or authorization configuration enforced outside this codebase (e.g. an external policy engine).",
+  "Production network ACLs, firewall rules, or VPC/service-mesh configuration.",
+  "External identity provider policy (SSO scopes, OAuth consent grants) not visible in this content.",
+  "Runtime secrets that are not present in the submitted source (e.g. injected via a secret manager)."
+ ],
+ "bom": {
+  "detectedLanguage": "JavaScript",
+  "detectedFramework": null,
+  "detectedPlatform": "Agent Marketplace",
+  "agentName": "MarketplaceRunner",
+  "toolAccessLevel": "Restricted",
+  "credentialExposure": "Not Detected",
+  "memoryPersistence": "Unknown",
+  "auditLogging": "Absent",
+  "humanGates": "Absent",
+  "rateLimiting": "Absent",
+  "promptInjectionSurface": "Not Detected",
+  "delegationScope": "Scoped"
+ },
+ "metadata": {
+  "schemaVersion": "1.3.0",
+  "scannerVersion": "1.6.0",
+  "fileName": "agent-marketplace.js",
+  "fileSize": 314,
+  "scannedAt": "2026-10-31T21:42:18.979Z",
+  "detectedLanguage": "JavaScript",
+  "detectedFramework": null,
+  "selectedPlatform": "Agent Marketplace",
+  "agentName": "MarketplaceRunner",
+  "scanDuration": 0
+ }
+}

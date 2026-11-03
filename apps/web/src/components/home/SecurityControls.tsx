@@ -14,7 +14,7 @@ const controls = [
 export function SecurityControls() {
   return (
     <section style={{ backgroundColor: 'var(--bg)' }} className="px-6 pb-16">
-      <div className="mx-auto max-w-6xl">
+      <div className="mx-auto max-w-[1320px] min-[1800px]:max-w-[1520px]">
         <div style={{ border: '1px solid var(--border)', backgroundColor: 'var(--card)' }} className="rounded-[2rem] p-6 shadow-2xl shadow-black/5 md:p-8">
           <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[color:var(--accent-cyan-text)]">Enterprise privacy &amp; security controls</p>
           <h2 style={{ color: 'var(--text-primary)' }} className="mt-2 text-2xl font-semibold tracking-tight md:text-3xl">What actually protects your data — not a slogan.</h2>

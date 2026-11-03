@@ -3,6 +3,9 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import type { StoredReport } from '@/types'
+import { useAuth } from '@/components/auth/AuthProvider'
+import { apiCall } from '@/lib/v2Api'
+import { DASHBOARD_TAB_EVENT } from '@/components/ask/AskPalette'
 
 const DISMISS_KEY = 'agentverify-getting-started-dismissed'
 
@@ -13,9 +16,22 @@ const DISMISS_KEY = 'agentverify-getting-started-dismissed'
  */
 export function GettingStarted({ reports, onGoToScan, variant = 'card' }: { reports: StoredReport[]; onGoToScan: () => void; variant?: 'card' | 'hero' }) {
   const [dismissed, setDismissed] = useState(false)
+  const [repoConnected, setRepoConnected] = useState(false)
+  const { user } = useAuth()
   useEffect(() => {
     try { setDismissed(window.localStorage.getItem(DISMISS_KEY) === '1') } catch { /* storage blocked: just show it */ }
   }, [])
+  // "Connect a repo" is done once a GitHub App install or a GitLab/Bitbucket connection exists.
+  useEffect(() => {
+    if (!user) return
+    let cancelled = false
+    Promise.all([
+      apiCall<{ installations?: unknown[] }>(user, '/v1/github/installations').then(r => (r.installations?.length ?? 0) > 0).catch(() => false),
+      apiCall<{ connections?: unknown[] }>(user, '/v1/vcs/connections').then(r => (r.connections?.length ?? 0) > 0).catch(() => false),
+    ]).then(([gh, vcs]) => { if (!cancelled) setRepoConnected(gh || vcs) })
+    return () => { cancelled = true }
+  }, [user])
+  const openTab = (tab: 'github') => window.dispatchEvent(new CustomEvent(DASHBOARD_TAB_EVENT, { detail: tab }))
 
   const scanned = reports.length > 0
   const counts = new Map<string, number>()
@@ -31,7 +47,7 @@ export function GettingStarted({ reports, onGoToScan, variant = 'card' }: { repo
       done: scanned,
       title: 'Scan your first agent',
       body: 'Paste code, drop files or a .zip, link a GitHub repo, or check your MCP config.',
-      action: <button onClick={onGoToScan} className="rounded-xl bg-[#06B6D4] px-3 py-1.5 text-xs font-semibold text-[#080B14] hover:opacity-90">Scan now</button>,
+      action: <button onClick={onGoToScan} className="rounded-xl bg-[#7C3AED] px-3 py-1.5 text-xs font-semibold text-white hover:opacity-90">Scan now</button>,
     },
     {
       done: rescanned,
@@ -40,10 +56,16 @@ export function GettingStarted({ reports, onGoToScan, variant = 'card' }: { repo
       action: <button onClick={onGoToScan} style={{ border: '1px solid var(--border)', color: 'var(--text-primary)' }} className="rounded-xl px-3 py-1.5 text-xs font-semibold hover:opacity-80">Re-scan</button>,
     },
     {
+      done: repoConnected,
+      title: 'Connect a repo',
+      body: 'Install the GitHub App (or connect GitLab/Bitbucket) so every pull request is checked before it merges.',
+      action: <button onClick={() => openTab('github')} style={{ border: '1px solid var(--border)', color: 'var(--text-primary)' }} className="rounded-xl px-3 py-1.5 text-xs font-semibold hover:opacity-80">Connect</button>,
+    },
+    {
       done: ciConnected,
-      title: 'Add Agent Verify to CI',
-      body: 'Run the CLI in a GitHub Action so risky changes fail before they merge.',
-      action: <Link href="/developers" style={{ border: '1px solid var(--border)', color: 'var(--text-primary)' }} className="rounded-xl px-3 py-1.5 text-xs font-semibold hover:opacity-80">Set up CI</Link>,
+      title: 'Add Agent Verify to your editor or CI',
+      body: 'Use the VS Code extension, the MCP server in Claude Code / Cursor, or the CLI in CI.',
+      action: <Link href="/developers#mcp" style={{ border: '1px solid var(--border)', color: 'var(--text-primary)' }} className="rounded-xl px-3 py-1.5 text-xs font-semibold hover:opacity-80">Set up</Link>,
     },
   ]
   const doneCount = steps.filter(s => s.done).length
@@ -61,7 +83,7 @@ export function GettingStarted({ reports, onGoToScan, variant = 'card' }: { repo
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[color:var(--accent-purple-text)]">Getting started · {doneCount} of {steps.length} done</p>
             <div className="mt-2 h-1.5 w-40 overflow-hidden rounded-full" style={{ backgroundColor: 'var(--border)' }}>
-              <div className="h-full rounded-full bg-[#06B6D4] transition-all" style={{ width: `${(doneCount / steps.length) * 100}%` }} />
+              <div className="h-full rounded-full bg-[#7C3AED] transition-all" style={{ width: `${(doneCount / steps.length) * 100}%` }} />
             </div>
           </div>
           <button onClick={dismiss} style={{ color: 'var(--text-muted)' }} className="text-xs underline-offset-2 hover:underline">Hide</button>

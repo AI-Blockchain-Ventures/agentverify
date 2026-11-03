@@ -1,6 +1,9 @@
+import { bonusProUntil } from './growth'
+import { activeGrant } from './grants'
+import { touchUserProfile } from './userProfiles'
 import { verifyFirebaseIdToken, type FirebaseServiceAccountEnv } from './firebaseAuth'
 
-export type Plan = 'free' | 'pro'
+export type Plan = 'free' | 'pro' | 'team'
 
 export interface D1Result<T = unknown> {
   results?: T[]
@@ -25,6 +28,12 @@ export interface BillingEnv extends FirebaseServiceAccountEnv {
   STRIPE_SECRET_KEY?: string
   STRIPE_WEBHOOK_SECRET?: string
   STRIPE_PRO_PRICE_ID?: string
+  /** Per-seat Team price. Team checkout stays off until this is set. */
+  STRIPE_TEAM_PRICE_ID?: string
+  /** Optional yearly Pro price. The pricing page shows a Monthly/Yearly switch only when this is set. */
+  STRIPE_PRO_ANNUAL_PRICE_ID?: string
+  /** Optional free trial for Pro, in days (1–30), for people who have never subscribed. Unset or 0 = no trial. */
+  PRO_TRIAL_DAYS?: string
   STRIPE_PORTAL_CONFIGURATION_ID?: string
   BILLING_SUCCESS_URL?: string
   BILLING_CANCEL_URL?: string
@@ -42,6 +51,10 @@ interface SubscriptionState {
   lastStripeEventCreated: number
   updatedAt: number
   schemaVersion: 1
+  /** Pro time earned from referrals (no Stripe subscription). */
+  referralBonus?: boolean
+  /** A plan the admin gave this account for free (no Stripe subscription). */
+  granted?: boolean
 }
 
 interface SubscriptionRow {
@@ -90,7 +103,12 @@ const notConfiguredResponse = (env: BillingEnv, what: 'checkout' | 'billing port
 
 // Single source of truth for scan quotas on the Worker side (mirrors apps/web/src/lib/pricing.ts,
 // which is canonical for the pricing page — the two can't share a module across deployables).
-export const SCAN_QUOTA_BY_PLAN: Record<Plan, number> = { free: 10, pro: 100 }
+export const SCAN_QUOTA_BY_PLAN: Record<Plan, number> = { free: 10, pro: 100, team: 300 }
+
+/** Team includes everything in Pro. Use this, never `plan === 'pro'`, to decide whether paid features apply. */
+export const hasProFeatures = (plan: string): boolean => plan === 'pro' || plan === 'team'
+export const TEAM_MIN_SEATS = 2
+export const TEAM_MAX_SEATS = 100
 
 const hasCheckoutConfig = (env: BillingEnv): boolean =>
   isEnabled(env) && !!env.STRIPE_SECRET_KEY && !!env.STRIPE_PRO_PRICE_ID && !!env.BILLING_SUCCESS_URL && !!env.BILLING_CANCEL_URL && !!env.FIREBASE_PROJECT_ID && hasD1(env)
@@ -98,13 +116,16 @@ const hasCheckoutConfig = (env: BillingEnv): boolean =>
 const hasWebhookConfig = (env: BillingEnv): boolean =>
   isEnabled(env) && !!env.STRIPE_WEBHOOK_SECRET
 
-export const isPlanCheckoutAvailable = (plan: string): boolean => plan === 'pro'
+/** Pro is always self-serve. Team is self-serve only once its per-seat Stripe price is configured. */
+export const isPlanCheckoutAvailable = (plan: string, env?: Pick<BillingEnv, 'STRIPE_TEAM_PRICE_ID'>): boolean =>
+  plan === 'pro' || (plan === 'team' && !!env?.STRIPE_TEAM_PRICE_ID)
 
 const unixToIso = (value: number | null | undefined): string | null => typeof value === 'number' && value > 0 ? new Date(value * 1000).toISOString() : null
 
 const planFromState = (state?: Partial<SubscriptionState> | null): Plan => {
-  const active = state?.plan === 'pro' && (state.status === 'active' || state.status === 'trialing')
-  return active ? 'pro' : 'free'
+  const paid = state?.plan === 'pro' || state?.plan === 'team'
+  const active = paid && (state!.status === 'active' || state!.status === 'trialing')
+  return active ? (state!.plan as Plan) : 'free'
 }
 
 const safeStatus = (state?: Partial<SubscriptionState> | null) => {
@@ -114,24 +135,26 @@ const safeStatus = (state?: Partial<SubscriptionState> | null) => {
     status: state?.status ?? 'free',
     scanQuota: SCAN_QUOTA_BY_PLAN[plan],
     features: {
-      fullRemediation: plan === 'pro',
-      correctedSnippets: plan === 'pro',
-      a2spaGuidance: plan === 'pro',
-      pdfExport: plan === 'pro',
+      fullRemediation: hasProFeatures(plan),
+      correctedSnippets: hasProFeatures(plan),
+      a2spaGuidance: hasProFeatures(plan),
+      pdfExport: hasProFeatures(plan),
     },
     currentPeriodEnd: unixToIso(state?.currentPeriodEnd ?? null),
     cancelAtPeriodEnd: state?.cancelAtPeriodEnd === true,
+    referralBonus: state?.referralBonus === true,
+    granted: state?.granted === true,
   }
 }
 
 /** Thin wrapper around the shared verifyFirebaseIdToken — extracts the Bearer token from this request's Authorization header first. */
-async function verifyFirebaseUser(request: Request, env: BillingEnv): Promise<{ uid: string; email?: string } | null> {
+async function verifyFirebaseUser(request: Request, env: BillingEnv): Promise<{ uid: string; email?: string; emailVerified?: boolean } | null> {
   const token = request.headers.get('Authorization')?.replace(/^Bearer\s+/i, '').trim()
   return verifyFirebaseIdToken(token, env)
 }
 
 const rowToState = (row: SubscriptionRow | null): SubscriptionState | null => row ? {
-  plan: row.plan === 'pro' ? 'pro' : 'free',
+  plan: row.plan === 'team' ? 'team' : row.plan === 'pro' ? 'pro' : 'free',
   status: row.status ?? 'free',
   stripeCustomerId: row.stripe_customer_id ?? null,
   stripeSubscriptionId: row.stripe_subscription_id ?? null,
@@ -147,6 +170,67 @@ async function loadSubscription(env: BillingEnv, uid: string): Promise<Subscript
   if (!env.BILLING_DB) return null
   const row = await env.BILLING_DB.prepare('SELECT * FROM subscriptions WHERE uid = ?').bind(uid).first<SubscriptionRow>()
   return rowToState(row)
+}
+
+/**
+ * This account's own plan: a paid Stripe subscription wins; otherwise a plan the admin gave them (admin.ts).
+ * A grant never touches Stripe — the Stripe ids are kept so the billing portal still works if they also pay.
+ */
+async function loadOwnPlan(env: BillingEnv, uid: string): Promise<SubscriptionState | null> {
+  const own = await loadSubscription(env, uid)
+  if (planFromState(own) !== 'free') return own
+  const grant = await activeGrant(env.BILLING_DB, uid)
+  if (!grant) return own
+  return {
+    plan: grant.plan, status: 'active', stripeCustomerId: own?.stripeCustomerId ?? null, stripeSubscriptionId: null,
+    currentPeriodEnd: grant.until, cancelAtPeriodEnd: false, lastStripeEventId: null, lastStripeEventCreated: 0,
+    updatedAt: Math.floor(Date.now() / 1000), schemaVersion: 1, granted: true,
+  }
+}
+
+/**
+ * The Team owner whose plan covers this member, if any. A member is covered while the owner's Team subscription is
+ * active and the member is within the paid seats (seats include the owner; earliest-added members keep their seat).
+ */
+export async function loadTeamOwnerFor(env: BillingEnv, uid: string): Promise<string | null> {
+  if (!env.BILLING_DB) return null
+  let owners: Array<{ owner_uid: string }> = []
+  try {
+    owners = (await env.BILLING_DB.prepare('SELECT owner_uid FROM team_members WHERE member_uid = ?').bind(uid).all<{ owner_uid: string }>()).results ?? []
+  } catch {
+    return null // team tables not created yet
+  }
+  for (const { owner_uid } of owners) {
+    const owner = await loadOwnPlan(env, owner_uid)
+    if (planFromState(owner) !== 'team') continue
+    const seatRow = await env.BILLING_DB.prepare('SELECT seats FROM team_seats WHERE owner_uid = ?').bind(owner_uid).first<{ seats: number }>()
+    const memberSeats = Math.max(0, (seatRow?.seats ?? 0) - 1)
+    const members = (await env.BILLING_DB.prepare('SELECT member_uid FROM team_members WHERE owner_uid = ? ORDER BY added_at ASC, member_uid ASC').bind(owner_uid).all<{ member_uid: string }>()).results ?? []
+    const position = members.findIndex(m => m.member_uid === uid)
+    if (position >= 0 && position < memberSeats) return owner_uid
+  }
+  return null
+}
+
+/** The subscription that decides this user's plan: their own if it is paid, otherwise a Team seat they hold. */
+async function loadEffectiveSubscription(env: BillingEnv, uid: string): Promise<SubscriptionState | null> {
+  const own = await loadOwnPlan(env, uid)
+  if (planFromState(own) !== 'free') return own
+  const ownerUid = await loadTeamOwnerFor(env, uid)
+  if (ownerUid) {
+    const owner = await loadOwnPlan(env, ownerUid)
+    // A member never sees or controls the owner's Stripe customer/subscription.
+    if (owner) return { ...owner, stripeCustomerId: null, stripeSubscriptionId: null, cancelAtPeriodEnd: false }
+  }
+  const bonusUntil = await bonusProUntil(env.BILLING_DB, uid)
+  if (bonusUntil) {
+    return {
+      plan: 'pro', status: 'active', stripeCustomerId: own?.stripeCustomerId ?? null, stripeSubscriptionId: null,
+      currentPeriodEnd: bonusUntil, cancelAtPeriodEnd: false, lastStripeEventId: null, lastStripeEventCreated: 0,
+      updatedAt: Math.floor(Date.now() / 1000), schemaVersion: 1, referralBonus: true,
+    }
+  }
+  return own
 }
 
 export interface ScanQuotaCheck {
@@ -171,7 +255,7 @@ export async function checkScanQuota(env: BillingEnv, uid: string): Promise<Scan
     return { allowed: true, plan: 'free', used: 0, limit: SCAN_QUOTA_BY_PLAN.free, month }
   }
   const [state, usageRow] = await Promise.all([
-    loadSubscription(env, uid),
+    loadEffectiveSubscription(env, uid),
     env.BILLING_DB.prepare('SELECT scan_count FROM usage_monthly WHERE uid = ? AND month = ?').bind(uid, month).first<{ scan_count: number }>(),
   ])
   const plan = planFromState(state)
@@ -267,13 +351,23 @@ export async function handleCheckout(request: Request, env: BillingEnv): Promise
   if (!user) return billingJson({ error: 'Authentication required' }, 401)
 
   let requestedPlan = 'pro'
+  let requestedSeats: unknown = undefined
+  let requestedInterval: 'month' | 'year' = 'month'
   try {
-    const body = await request.json() as { plan?: string }
+    const body = await request.json() as { plan?: string; seats?: unknown; interval?: unknown }
     requestedPlan = body.plan ?? 'pro'
+    requestedSeats = body.seats
+    requestedInterval = body.interval === 'year' ? 'year' : 'month'
   } catch {
     requestedPlan = 'pro'
   }
-  if (!isPlanCheckoutAvailable(requestedPlan)) return billingJson({ error: 'Checkout is unavailable for this plan' }, 400)
+  if (!isPlanCheckoutAvailable(requestedPlan, env)) return billingJson({ error: 'Checkout is unavailable for this plan' }, 400)
+  const isTeam = requestedPlan === 'team'
+  if (!isTeam && requestedInterval === 'year' && !env.STRIPE_PRO_ANNUAL_PRICE_ID) return billingJson({ error: 'Yearly billing is not available yet.' }, 400)
+  const seats = isTeam ? Number(requestedSeats ?? TEAM_MIN_SEATS) : 1
+  if (isTeam && (!Number.isInteger(seats) || seats < TEAM_MIN_SEATS || seats > TEAM_MAX_SEATS)) {
+    return billingJson({ error: `Team plans have ${TEAM_MIN_SEATS} to ${TEAM_MAX_SEATS} seats.` }, 400)
+  }
 
   // Loaded once, used for two things below: (1) the duplicate-subscription guard, (2) reusing the
   // existing Stripe customer instead of minting a new one on repeat checkouts.
@@ -286,7 +380,7 @@ export async function handleCheckout(request: Request, env: BillingEnv): Promise
   // portal instead (same {url} response shape the checkout caller already expects, so no special
   // frontend handling is required), falling back to a plain rejection if the portal itself isn't
   // configured.
-  if (existingState?.stripeCustomerId && existingState.plan === 'pro' && (existingState.status === 'active' || existingState.status === 'trialing')) {
+  if (existingState?.stripeCustomerId && (existingState.plan === 'pro' || existingState.plan === 'team') && (existingState.status === 'active' || existingState.status === 'trialing')) {
     if (env.STRIPE_PORTAL_CONFIGURATION_ID && env.BILLING_CANCEL_URL) {
       const portalBody = new URLSearchParams({
         customer: existingState.stripeCustomerId,
@@ -304,12 +398,23 @@ export async function handleCheckout(request: Request, env: BillingEnv): Promise
     mode: 'subscription',
     success_url: env.BILLING_SUCCESS_URL!,
     cancel_url: env.BILLING_CANCEL_URL!,
-    'line_items[0][price]': env.STRIPE_PRO_PRICE_ID!,
-    'line_items[0][quantity]': '1',
+    'line_items[0][price]': isTeam ? env.STRIPE_TEAM_PRICE_ID! : requestedInterval === 'year' ? env.STRIPE_PRO_ANNUAL_PRICE_ID! : env.STRIPE_PRO_PRICE_ID!,
+    'line_items[0][quantity]': String(seats),
     client_reference_id: user.uid,
     'metadata[uid]': user.uid,
     'subscription_data[metadata][uid]': user.uid,
   })
+  // Free trial for first-time Pro buyers only (no Stripe customer on file = never subscribed).
+  const trialDays = proTrialDays(env)
+  if (!isTeam && trialDays > 0 && !existingState?.stripeCustomerId) body.set('subscription_data[trial_period_days]', String(trialDays))
+  if (isTeam) {
+    body.set('metadata[plan]', 'team')
+    body.set('subscription_data[metadata][plan]', 'team')
+    // Let the buyer change the seat count on Stripe's page.
+    body.set('line_items[0][adjustable_quantity][enabled]', 'true')
+    body.set('line_items[0][adjustable_quantity][minimum]', String(TEAM_MIN_SEATS))
+    body.set('line_items[0][adjustable_quantity][maximum]', String(TEAM_MAX_SEATS))
+  }
   // Reuse the Stripe customer already on file for this uid (e.g. a prior canceled/abandoned
   // subscription) instead of always minting a new one. Without this, every repeat checkout
   // created a brand-new Stripe Customer object — orphaning the old one and, in the case of two
@@ -356,7 +461,9 @@ export async function handleStatus(request: Request, env: BillingEnv): Promise<R
     console.warn('Billing status fallback: BILLING_DB is not bound')
   }
   if (!user || !env.BILLING_DB) return billingJson({ ...safeStatus(null), used: 0 })
-  const [state, quota] = await Promise.all([loadSubscription(env, user.uid), checkScanQuota(env, user.uid)])
+  // Every dashboard visit loads billing status, so this is where an account first appears in the admin panel.
+  await touchUserProfile(env.BILLING_DB, user.uid, user.email, undefined, user.emailVerified === true)
+  const [state, quota] = await Promise.all([loadEffectiveSubscription(env, user.uid), checkScanQuota(env, user.uid)])
   // `used` reflects the SAME usage_monthly ledger checkScanQuota enforces against on every real
   // scan (web, CLI, and API alike) — this is real remaining-quota display, not a separate,
   // driftable counter.
@@ -401,7 +508,7 @@ async function saveCheckoutAssociation(env: BillingEnv, event: Record<string, an
         uid, plan, status, stripe_customer_id, stripe_subscription_id, current_period_end,
         cancel_at_period_end, last_stripe_event_id, last_stripe_event_created, updated_at, schema_version
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).bind(uid, 'pro', 'pending', customerId, subscriptionId, null, 0, eventId, eventCreated, now, 1).run()
+    `).bind(uid, object.metadata?.plan === 'team' ? 'team' : 'pro', 'pending', customerId, subscriptionId, null, 0, eventId, eventCreated, now, 1).run()
     return result.success === false ? 'failed' : 'saved'
   }
 
@@ -465,16 +572,21 @@ function extractSubscriptionPeriodEnd(subscription: Record<string, any>, fallbac
   return null
 }
 
-const subscriptionObjectToState = (event: Record<string, any>, object: Record<string, any>, uidOverride?: string, fallbackObject?: Record<string, any>): { uid: string; state: SubscriptionState } | null => {
+const subscriptionObjectToState = (event: Record<string, any>, object: Record<string, any>, uidOverride?: string, fallbackObject?: Record<string, any>, teamPriceId?: string): { uid: string; state: SubscriptionState; seats: number | null } | null => {
   const uid = uidOverride || object.metadata?.uid
   if (typeof uid !== 'string' || !uid) return null
+  const items: Array<Record<string, any>> = Array.isArray(object.items?.data) ? object.items.data : []
+  const teamItem = teamPriceId ? items.find(item => item?.price?.id === teamPriceId) : undefined
+  const isTeam = Boolean(teamItem) || object.metadata?.plan === 'team'
+  const quantity = Number(teamItem?.quantity ?? items[0]?.quantity)
 
   const status = typeof object.status === 'string' ? object.status : 'unknown'
   const subscriptionId = typeof object.id === 'string' && object.object === 'subscription' ? object.id : null
   return {
     uid,
+    seats: isTeam && Number.isInteger(quantity) && quantity > 0 ? quantity : null,
     state: {
-      plan: 'pro',
+      plan: isTeam ? 'team' : 'pro',
       status,
       stripeCustomerId: typeof object.customer === 'string' ? object.customer : null,
       stripeSubscriptionId: subscriptionId,
@@ -488,9 +600,9 @@ const subscriptionObjectToState = (event: Record<string, any>, object: Record<st
   }
 }
 
-async function eventToState(event: Record<string, any>, env: BillingEnv): Promise<{ uid: string; state: SubscriptionState } | null> {
+async function eventToState(event: Record<string, any>, env: BillingEnv): Promise<{ uid: string; state: SubscriptionState; seats: number | null } | null> {
   const object = event.data?.object ?? {}
-  if (object.object === 'subscription') return subscriptionObjectToState(event, object)
+  if (object.object === 'subscription') return subscriptionObjectToState(event, object, undefined, undefined, env.STRIPE_TEAM_PRICE_ID)
 
   const subscriptionId = typeof object.subscription === 'string' ? object.subscription : null
   if (!subscriptionId) return null
@@ -504,7 +616,18 @@ async function eventToState(event: Record<string, any>, env: BillingEnv): Promis
       : typeof object.subscription_details?.metadata?.uid === 'string'
         ? object.subscription_details.metadata.uid
         : undefined
-  return subscriptionObjectToState(event, subscription, uid, object)
+  return subscriptionObjectToState(event, subscription, uid, object, env.STRIPE_TEAM_PRICE_ID)
+}
+
+/** Keep the Team seat count in step with Stripe (the buyer can change it on Stripe's pages). */
+async function saveTeamSeats(env: BillingEnv, uid: string, seats: number | null): Promise<void> {
+  if (!env.BILLING_DB || !seats) return
+  try {
+    await env.BILLING_DB.prepare(`INSERT INTO team_seats (owner_uid, seats, updated_at) VALUES (?, ?, ?)
+      ON CONFLICT(owner_uid) DO UPDATE SET seats = excluded.seats, updated_at = excluded.updated_at`).bind(uid, seats, Math.floor(Date.now() / 1000)).run()
+  } catch (e) {
+    console.error('Team seats could not be saved:', e instanceof Error ? e.message : e)
+  }
 }
 
 export async function handleWebhook(request: Request, env: BillingEnv): Promise<Response> {
@@ -547,6 +670,7 @@ export async function handleWebhook(request: Request, env: BillingEnv): Promise<
           return billingJson({ error: 'Subscription state could not be saved' }, 503)
         }
         if (saved === 'stale') return billingJson({ received: true, stale: true })
+        if (next.state.plan === 'team') await saveTeamSeats(env, next.uid, next.seats)
         return billingJson({ received: true })
       }
     }
@@ -568,7 +692,51 @@ export async function handleWebhook(request: Request, env: BillingEnv): Promise<
     return billingJson({ error: 'Subscription state could not be saved' }, 503)
   }
   if (saved === 'stale') return billingJson({ received: true, stale: true })
+  if (next.state.plan === 'team') await saveTeamSeats(env, next.uid, next.seats)
   return billingJson({ received: true })
+}
+
+let teamPriceCache: { id: string; at: number; value: { unitAmount: number; currency: string; interval: string } | null } | null = null
+
+/** The Team per-seat price as set in Stripe (cached for an hour), so the pricing page always matches checkout. */
+const priceCache = new Map<string, { at: number; value: { unitAmount: number; currency: string; interval: string } | null }>()
+
+/** Unit price of any Stripe price id (cached 1h). Used by the admin panel's revenue estimate. */
+/** PRO_TRIAL_DAYS as a whole number of days, 0 when unset or out of range (1–30). */
+export function proTrialDays(env: Pick<BillingEnv, 'PRO_TRIAL_DAYS'>): number {
+  const n = Math.floor(Number(env.PRO_TRIAL_DAYS ?? 0))
+  return Number.isFinite(n) && n >= 1 && n <= 30 ? n : 0
+}
+
+export async function getPriceInfo(env: BillingEnv, priceId: string | undefined): Promise<{ unitAmount: number; currency: string; interval: string } | null> {
+  if (!priceId || !env.STRIPE_SECRET_KEY) return null
+  const hit = priceCache.get(priceId)
+  if (hit && Date.now() - hit.at < 3600_000) return hit.value
+  let value: { unitAmount: number; currency: string; interval: string } | null = null
+  try {
+    const res = await stripeGet(env, `/v1/prices/${encodeURIComponent(priceId)}`)
+    const price = await res.json() as { unit_amount?: number; currency?: string; recurring?: { interval?: string } }
+    if (res.ok && typeof price.unit_amount === 'number') value = { unitAmount: price.unit_amount, currency: price.currency ?? 'usd', interval: price.recurring?.interval ?? 'month' }
+  } catch {
+    value = null
+  }
+  priceCache.set(priceId, { at: Date.now(), value })
+  return value
+}
+
+export async function getTeamSeatPrice(env: BillingEnv): Promise<{ unitAmount: number; currency: string; interval: string } | null> {
+  if (!env.STRIPE_TEAM_PRICE_ID || !env.STRIPE_SECRET_KEY) return null
+  if (teamPriceCache && teamPriceCache.id === env.STRIPE_TEAM_PRICE_ID && Date.now() - teamPriceCache.at < 3600_000) return teamPriceCache.value
+  let value: { unitAmount: number; currency: string; interval: string } | null = null
+  try {
+    const res = await stripeGet(env, `/v1/prices/${encodeURIComponent(env.STRIPE_TEAM_PRICE_ID)}`)
+    const price = await res.json() as { unit_amount?: number; currency?: string; recurring?: { interval?: string } }
+    if (res.ok && typeof price.unit_amount === 'number') value = { unitAmount: price.unit_amount, currency: price.currency ?? 'usd', interval: price.recurring?.interval ?? 'month' }
+  } catch {
+    value = null
+  }
+  teamPriceCache = { id: env.STRIPE_TEAM_PRICE_ID, at: Date.now(), value }
+  return value
 }
 
 export function getFallbackBillingStatusForTests() {

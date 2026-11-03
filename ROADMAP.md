@@ -135,7 +135,18 @@
 
 ---
 
-## v2.0.0 — Enterprise
+## ✅ v2.0.0 — Everywhere You Build Agents (Built, 2026-10-30)
+
+- GitHub App: automatic PR scans with a pass/fail check, inline notes and one updating comment
+- Repo monitoring: main-branch re-scans, score history, Slack/email alerts on new risks
+- MCP server (`agentverify mcp`) for Claude Code, Cursor, Windsurf and VS Code
+- VS Code extension with Problems-panel findings, status-bar score and quick fixes
+- Self-serve per-seat Team plan with member management
+- Public MCP security directory: "Is <server> safe?" pages for popular MCP servers
+
+---
+
+## v2.x — Enterprise (next)
 
 **Enterprise Dashboard**
 - Scan 100+ agents at once
@@ -149,10 +160,9 @@
 - Custom report branding
 
 **Integrations**
-- VS Code extension — scan while you code
 - Slack bot — scan from team chat
 - Jira integration — create tickets from findings
-- CI/CD: GitHub Actions, GitLab CI, Jenkins
+- CI/CD: GitLab CI, Jenkins (GitHub is covered by the PR bot and Action)
 
 **Advanced Risk Intelligence** *(proprietary, enterprise tier)*
 - Deeper, benchmark-informed risk scoring for regulated and high-stakes deployments

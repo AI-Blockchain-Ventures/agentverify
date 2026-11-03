@@ -1,5 +1,6 @@
 'use client'
 
+import { WeeklyEmailToggle } from '@/components/growth/WeeklyEmailToggle'
 import Link from 'next/link'
 import { useState } from 'react'
 import { collection, deleteDoc, doc, getDocs, query, where } from 'firebase/firestore'
@@ -137,6 +138,8 @@ export function Settings({ onNavigate }: { onNavigate?: (tab: DashboardTab) => v
           Sign out
         </button>
       </section>
+
+      <WeeklyEmailToggle />
 
       <section style={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)' }} className="rounded-3xl p-6 shadow-xl shadow-black/5">
         <h2 style={{ color: 'var(--text-primary)' }} className="text-lg font-semibold">Workspace &amp; billing</h2>

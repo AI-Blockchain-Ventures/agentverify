@@ -21,7 +21,7 @@ import type { Permission, Role } from './rbac'
  */
 
 export type Principal =
-  | { type: 'USER'; uid: string; email?: string }
+  | { type: 'USER'; uid: string; email?: string; emailVerified?: boolean }
   | { type: 'API_KEY'; uid: string; apiKey: string }
   | { type: 'SYSTEM' }
 
@@ -75,7 +75,7 @@ export async function authenticateRequest(request: Request, env: AuthzEnv): Prom
   }
 
   const user = await verifyFirebaseIdToken(token, env)
-  if (user) return { type: 'USER', uid: user.uid, email: user.email }
+  if (user) return { type: 'USER', uid: user.uid, email: user.email, emailVerified: user.emailVerified }
 
   return null
 }

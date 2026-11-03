@@ -14,25 +14,31 @@
   --color-muted: #3D5166;
   --font-sans: Inter, system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+  /* 2.0 enterprise look: tighter corners everywhere (existing rounded-* classes pick these up). */
+  --radius-md: 0.375rem;
+  --radius-lg: 0.5rem;
+  --radius-xl: 0.5rem;
+  --radius-2xl: 0.625rem;
+  --radius-3xl: 0.75rem;
 }
 
 /* DARK THEME (default) */
 :root {
-  --bg: #060A0F;
-  --surface: #0A0F1A;
-  --card: #0D1321;
-  --border: #1A2535;
-  --border-light: #1F2D40;
-  --text-primary: #E8EDF2;
-  --text-secondary: #8896A8;
-  --text-muted: #7C8CA3;
-  --input-bg: #080B14;
-  --input-border: #1A2535;
+  --bg: #0B0D12;
+  --surface: #10131A;
+  --card: #12151C;
+  --border: #232836;
+  --border-light: #2E3445;
+  --text-primary: #F2F4F7;
+  --text-secondary: #B4BBC8;
+  --text-muted: #8A93A5;
+  --input-bg: #0E1117;
+  --input-border: #2E3445;
   --input-text: #94A3B8;
   --input-placeholder: #7C8CA3;
-  --nav-bg: rgba(6, 10, 15, 0.9);
-  --nav-border: #1A2535;
-  --sidebar-bg: #060A0F;
+  --nav-bg: rgba(18, 21, 28, 0.92);
+  --nav-border: #232836;
+  --sidebar-bg: #12151C;
 
   /* Accent colors when used as TEXT (labels, badges, code, links) — WCAG AA (4.5:1)
      against --card/--surface/--bg. These are accessible variants of the same brand hues,
@@ -43,7 +49,7 @@
   --accent-orange-text: #E07B39;
   --accent-green-text: #00B37E;
   --accent-cyan-text: #06B6D4;
-  --accent-purple-text: #9D7BEE;
+  --accent-purple-text: #B9A1FA;
   /* Text drawn on a solid brand-accent-colored surface (buttons, filled badges). */
   --on-accent-text: #FFFFFF;
   /* Large decorative text (e.g. giant step numbers) — WCAG's 3:1 large-text threshold,
@@ -55,27 +61,27 @@
 
 /* LIGHT THEME */
 :root.light {
-  --bg: #EEF3F8;
-  --surface: #F8FAFC;
+  --bg: #F7F8FA;
+  --surface: #F1F3F6;
   --card: #FFFFFF;
-  --border: #CAD5E2;
-  --border-light: #B8C5D4;
-  --text-primary: #111827;
-  --text-secondary: #334155;
-  --text-muted: #475569;
-  --input-bg: #F8FAFC;
-  --input-border: #B8C5D4;
+  --border: #E3E6EB;
+  --border-light: #D0D5DD;
+  --text-primary: #101828;
+  --text-secondary: #344054;
+  --text-muted: #5D6679;
+  --input-bg: #FFFFFF;
+  --input-border: #D0D5DD;
   --input-text: #111827;
   --input-placeholder: #64748B;
   --nav-bg: rgba(255,255,255,0.94);
-  --nav-border: #CAD5E2;
-  --sidebar-bg: #F8FAFC;
+  --nav-border: #E3E6EB;
+  --sidebar-bg: #FFFFFF;
 
   --accent-red-text: #B91C1C;
   --accent-orange-text: #9A3412;
   --accent-green-text: #047857;
-  --accent-cyan-text: #0E7490;
-  --accent-purple-text: #7C3AED;
+  --accent-cyan-text: #155E75;
+  --accent-purple-text: #6D28D9;
   --on-accent-text: #FFFFFF;
   --decorative-text: #7C93AD;
   /* Needs more margin than --accent-purple-text: this pairs specifically against the demo
@@ -94,15 +100,12 @@
     background-color: var(--bg);
     color: var(--text-primary);
     transition: background-color 0.2s, color 0.2s;
-    background-image:
-      radial-gradient(circle at top left, rgba(6,182,212,0.12), transparent 34rem),
-      radial-gradient(circle at top right, rgba(110,58,237,0.10), transparent 30rem);
   }
 
-  ::selection { background: rgba(6,182,212,0.2); }
-  ::-webkit-scrollbar { width: 4px; }
+  ::selection { background: rgba(124,58,237,0.22); }
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
   ::-webkit-scrollbar-track { background: var(--bg); }
-  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+  ::-webkit-scrollbar-thumb { background: var(--border-light); border-radius: 4px; }
 }
 
 @media print {
@@ -166,4 +169,40 @@
     transform: none !important;
   }
   html { scroll-behavior: auto; }
+}
+
+/* ---------------------------------------------------------------------------
+ * 2.0 enterprise layout helpers
+ * ------------------------------------------------------------------------- */
+/* Page width that grows on big monitors instead of leaving a narrow middle column. */
+.av-container { width: 100%; max-width: 1320px; margin-left: auto; margin-right: auto; padding-left: 1rem; padding-right: 1rem; }
+@media (min-width: 768px) { .av-container { padding-left: 1.5rem; padding-right: 1.5rem; } }
+@media (min-width: 1800px) { .av-container { max-width: 1520px; } }
+
+/* "Verify" in the logo's blue-to-purple. */
+.av-wordmark-accent { background: linear-gradient(90deg, #22D3EE, #3B82F6 45%, #7C3AED); -webkit-background-clip: text; background-clip: text; color: transparent; }
+
+/* Keyboard hint chip, e.g. Ctrl K */
+.av-kbd { font: 11px var(--font-mono); border: 1px solid var(--border-light); border-bottom-width: 2px; border-radius: 4px; padding: 0 5px; background: var(--card); color: var(--text-secondary); white-space: nowrap; }
+
+/* "Works with" logo strip that scrolls to the left. */
+.av-marquee { position: relative; overflow: hidden; }
+.av-marquee-track { display: flex; gap: 4rem; width: max-content; animation: av-marquee 36s linear infinite; }
+.av-marquee:hover .av-marquee-track { animation-play-state: paused; }
+.av-marquee::before, .av-marquee::after { content: ""; position: absolute; top: 0; bottom: 0; width: 64px; z-index: 1; pointer-events: none; }
+.av-marquee::before { left: 0; background: linear-gradient(90deg, var(--bg), transparent); }
+.av-marquee::after { right: 0; background: linear-gradient(-90deg, var(--bg), transparent); }
+.av-logo-mono { opacity: 0.55; filter: grayscale(1); transition: opacity 0.18s ease, filter 0.18s ease; }
+:root:not(.light) .av-logo-mono { filter: grayscale(1) invert(1); }
+.av-marquee-item:hover .av-logo-mono { opacity: 1; filter: none; }
+@keyframes av-marquee { to { transform: translateX(-50%); } }
+@media (prefers-reduced-motion: reduce) {
+  .av-marquee-track { animation: none; flex-wrap: wrap; justify-content: center; width: auto; row-gap: 1.25rem; }
+  .av-marquee-dup { display: none; }
+}
+
+/* Grid columns never grow wider than the grid because of a long line inside them (code examples,
+   long package names). Without this, one wide <pre> pushed whole pages sideways on phones. */
+main .grid > * {
+  min-width: 0;
 }

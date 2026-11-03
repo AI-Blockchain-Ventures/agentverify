@@ -1,10 +1,11 @@
 import Link from 'next/link'
 
 // Every number here is a real, tested count from the scanner's check catalog (see /docs#catalog):
-// 76 checks; 5 frameworks with dedicated checks (LangChain, CrewAI, AutoGen, OpenAI Agents SDK, Claude Agent SDK); 19 credential checks.
+// 124 checks; 11 frameworks/tools with dedicated checks (LangChain, LangGraph, CrewAI, AutoGen, OpenAI Agents SDK,
+// Claude Agent SDK / Claude Code, LlamaIndex, Vercel AI SDK, Semantic Kernel, smolagents, Google ADK); 19 credential checks.
 const STATS: Array<[string, string]> = [
-  ['76', 'security checks, every one tested'],
-  ['5', 'agent frameworks with dedicated checks'],
+  ['124', 'security checks, every one tested'],
+  ['11', 'agent frameworks with dedicated checks'],
   ['19', 'kinds of secrets caught (and redacted)'],
   ['3', 'compliance standards mapped: OWASP, NIST, SOC 2'],
 ]
@@ -12,7 +13,7 @@ const STATS: Array<[string, string]> = [
 export function ProofStrip() {
   return (
     <section className="px-4 pb-12 sm:px-6" aria-label="What Agent Verify covers">
-      <div className="mx-auto max-w-6xl">
+      <div className="mx-auto max-w-[1320px] min-[1800px]:max-w-[1520px]">
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
           {STATS.map(([value, label]) => (
             <div key={label} style={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)' }} className="rounded-2xl px-4 py-4 text-center">

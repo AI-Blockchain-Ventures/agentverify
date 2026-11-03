@@ -5,6 +5,8 @@ compatibility_date = "2025-05-19"
 [vars]
 FIREBASE_PROJECT_ID = "agentverify-26e26"
 STRIPE_PRO_PRICE_ID = "price_1Tsm6SRqPRlpuX8nDm5HzHZb"
+# Team plan, per seat ($25/seat/month, 2-seat minimum enforced in code). Turns on self-serve Team checkout.
+STRIPE_TEAM_PRICE_ID = "price_1UXTCXRqPRlpuX8nSxlrZLC2"
 BILLING_SUCCESS_URL = "https://aimodularity.com/agentverify/dashboard/?billing=success"
 BILLING_CANCEL_URL = "https://aimodularity.com/agentverify/pricing/?billing=cancel"
 BILLING_ENABLED = "true"
@@ -23,6 +25,30 @@ PROFILE_ATTESTATION_KEY_PURPOSE = "agentverify-profile-v1"
 # Changing this on a future key rotation is deliberate: a mismatch here refuses to sign (key-identity-mismatch,
 # 503) rather than silently signing under an unexpected key.
 PROFILE_ATTESTATION_EXPECTED_KEY_ID = "eIO7_uhceQOQ0FDx5bGCODcYEUPkbSgAcuXczunT1QA"
+# "Ask anything" AI answers (src/ask.ts): hard daily cap across everyone, sized to stay inside the
+# Workers AI free daily allowance. When it is reached the site falls back to search only.
+ASK_DAILY_CAP = "150"
+# Welcome email series (src/ops.ts): 3 short emails over a new account's first week, sent through
+# Resend (needs RESEND_API_KEY + ALERT_FROM_EMAIL). Change to "true" when you are ready to send them.
+ONBOARDING_EMAILS = "false"
+# Free trial for first-time Pro buyers, in days (1–30; "0" turns it off). Stripe Checkout still takes a
+# card up front and charges when the trial ends unless the customer cancels.
+PRO_TRIAL_DAYS = "14"
+
+# Cloudflare's built-in rate limiter for public routes (free scan, Ask): 10 requests a minute per
+# network (Ask: per account when signed in), shared across each Cloudflare location. On top of the
+# per-hour limits in code. The workers.dev address can't use dashboard WAF rules, so this is the
+# production rate limit for those routes.
+[[ratelimits]]
+name = "PUBLIC_LIMITER"
+namespace_id = "2001"
+  [ratelimits.simple]
+  limit = 10
+  period = 60
+
+# Workers AI, for "Ask anything" answers. Free daily allowance; see ASK_DAILY_CAP above.
+[ai]
+binding = "AI"
 
 [[d1_databases]]
 binding = "BILLING_DB"

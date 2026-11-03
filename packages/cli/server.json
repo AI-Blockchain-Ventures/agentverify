@@ -1,0 +1,36 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-09-29/server.schema.json",
+  "name": "io.github.AI-Blockchain-Ventures/agentverify",
+  "title": "Agent Verify",
+  "description": "Security checks for AI agents and MCP configs: 124 tested checks, from your AI coding assistant.",
+  "websiteUrl": "https://aimodularity.com/agentverify/",
+  "repository": {
+    "url": "https://github.com/AI-Blockchain-Ventures/agentverify",
+    "source": "github"
+  },
+  "version": "2.0.0",
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "agentverify",
+      "version": "2.0.0",
+      "transport": {
+        "type": "stdio"
+      },
+      "packageArguments": [
+        {
+          "type": "positional",
+          "value": "mcp"
+        }
+      ],
+      "environmentVariables": [
+        {
+          "name": "AGENTVERIFY_API_KEY",
+          "description": "Your Agent Verify API key (dashboard \u2192 API / CLI). Free accounts work.",
+          "isRequired": true,
+          "isSecret": true
+        }
+      ]
+    }
+  ]
+}

@@ -7,6 +7,7 @@ import {
   User,
   createUserWithEmailAndPassword,
   onAuthStateChanged,
+  sendEmailVerification,
   sendPasswordResetEmail,
   signInWithEmailAndPassword,
   signInWithPopup,
@@ -60,8 +61,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   const signUp = useCallback(async (email: string, password: string) => {
-    await createUserWithEmailAndPassword(auth, email, password)
+    const cred = await createUserWithEmailAndPassword(auth, email, password)
     trackSignUp()
+    // Confirms the address belongs to them (needed for admin access and trusted email alerts). Never blocks signup.
+    sendEmailVerification(cred.user).catch(() => undefined)
   }, [])
 
   const signInWithGoogle = useCallback(async () => {

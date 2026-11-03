@@ -39,3 +39,23 @@ export function clientIp(request: Request): string {
     ?? request.headers.get('X-Forwarded-For')?.split(',')[0]?.trim()
     ?? 'unknown'
 }
+
+/** Cloudflare's built-in Workers rate limiter (the `[[ratelimits]]` binding in wrangler.toml). */
+export interface RateLimiterBinding {
+  limit(options: { key: string }): Promise<{ success: boolean }>
+}
+
+/**
+ * Edge rate limit, shared by every request in a Cloudflare location (unlike isRateLimited above,
+ * which is per isolate). True when the caller is over the limit. Fails open: if the binding is
+ * missing or errors, the request is allowed and the in-memory limit still applies.
+ */
+export async function edgeRateLimited(binding: RateLimiterBinding | undefined, key: string): Promise<boolean> {
+  if (!binding) return false
+  try {
+    const { success } = await binding.limit({ key })
+    return !success
+  } catch {
+    return false
+  }
+}

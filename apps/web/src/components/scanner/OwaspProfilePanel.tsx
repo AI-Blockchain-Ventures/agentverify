@@ -141,7 +141,7 @@ export function OwaspProfilePanel({ user }: OwaspProfilePanelProps) {
       <button
         onClick={run}
         disabled={!content.trim() || loading}
-        className="mt-6 w-full rounded-2xl bg-[#7C3AED] py-4 font-semibold text-white shadow-[0_18px_50px_rgba(124,58,237,0.22)] transition-colors hover:bg-[#06B6D4] hover:text-[#060A0F] disabled:opacity-30"
+        className="mt-6 w-full rounded-2xl bg-[#7C3AED] py-4 font-semibold text-white shadow-[0_18px_50px_rgba(124,58,237,0.22)] transition-colors hover:bg-[#6D28D9] disabled:opacity-30"
       >
         {loading ? 'Assessing...' : 'Run OWASP assessment'}
       </button>

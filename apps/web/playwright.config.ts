@@ -36,5 +36,11 @@ export default defineConfig({
     // Chrome) and downloading another browser engine just for one viewport size isn't worth it.
     { name: 'tablet', use: { ...devices['Desktop Chrome'], viewport: { width: 768, height: 1024 } } },
     { name: 'mobile', use: { ...devices['Pixel 7'] } },
+    // Safari engine (desktop + iPhone). Opt-in because WebKit must be installed first:
+    //   npx playwright install webkit && E2E_WEBKIT=1 npx playwright test
+    ...(process.env.E2E_WEBKIT ? [
+      { name: 'safari', use: { ...devices['Desktop Safari'] } },
+      { name: 'iphone', use: { ...devices['iPhone 14'] } },
+    ] : []),
   ],
 })

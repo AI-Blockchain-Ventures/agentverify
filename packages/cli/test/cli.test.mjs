@@ -135,7 +135,7 @@ try {
   assert.match(action, /^name: Agent Verify/m)
   assert.match(action, /api-key:/)
   assert.match(action, /AGENTVERIFY_API_KEY: \$\{\{ inputs\.api-key \}\}/)
-  assert.match(action, /npx --yes agentverify scan/)
+  assert.match(action, /npx --yes agentverify@2 scan/, "the Action pins CLI 2.x")
   assert.doesNotMatch(action, /echo .*api-key|echo .*AGENTVERIFY_API_KEY/i)
 
   const docs = readFileSync(resolve(root, 'docs/github-action.md'), 'utf8')

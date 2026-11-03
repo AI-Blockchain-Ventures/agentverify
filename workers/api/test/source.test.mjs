@@ -641,19 +641,25 @@ assert.equal(demoOversized.status, 413)
 const demoMalformed = await worker.fetch(new Request('https://api.test/v1/demo/scan', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{not json' }), {})
 assert.equal(demoMalformed.status, 400)
 
-// Per-IP rate limit: 5 allowed, 6th blocked, from the SAME simulated client IP.
+// Per-IP rate limit for NEW code: 20 allowed, 21st blocked, from the SAME simulated client IP.
 const rateLimitedReq = (n) => new Request('https://api.test/v1/demo/scan', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json', 'CF-Connecting-IP': '203.0.113.9' },
   body: JSON.stringify({ content: fixture.content + n, fileName: 'x' }),
 })
-for (let i = 0; i < 5; i += 1) {
+for (let i = 0; i < 20; i += 1) {
   const res = await worker.fetch(rateLimitedReq(i), {})
-  assert.equal(res.status, 200, `demo scan ${i + 1}/5 from the same IP should be allowed`)
+  assert.equal(res.status, 200, `demo scan ${i + 1}/20 from the same IP should be allowed`)
 }
-const sixthDemoScan = await worker.fetch(rateLimitedReq(5), {})
-assert.equal(sixthDemoScan.status, 429, 'the 6th demo scan from the same IP within the window must be rate-limited')
+const sixthDemoScan = await worker.fetch(rateLimitedReq(20), {})
+assert.equal(sixthDemoScan.status, 429, 'the 21st new-code demo scan from the same IP within the window must be rate-limited')
 assert.match((await sixthDemoScan.json()).error, /Too many public demo scans/)
+// Code that was already scanned (e.g. the Live Demo's fixed sample) reuses the saved result, so it
+// still works after the limit is reached, with CORS headers intact.
+const repeatAfterLimit = await worker.fetch(rateLimitedReq(3), {})
+assert.equal(repeatAfterLimit.status, 200, 'a repeat of already-scanned demo code must not be blocked')
+assert.equal(repeatAfterLimit.headers.get('Access-Control-Allow-Origin'), '*')
+assert.ok(Array.isArray((await repeatAfterLimit.json()).findings))
 
 // A different IP is a separate bucket — not blocked by the first IP's exhausted limit.
 const otherIpScan = await worker.fetch(new Request('https://api.test/v1/demo/scan', {

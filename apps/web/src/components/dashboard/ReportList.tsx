@@ -194,7 +194,7 @@ export function ReportList({ user, onRunScan, onNewReports, onClearNotification 
   if (loading) {
     return (
       <div style={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)' }} className="rounded-3xl p-8 text-center">
-        <div style={{ borderColor: 'var(--border)', borderTopColor: '#06B6D4' }} className="mx-auto mb-4 h-6 w-6 animate-spin rounded-full border-2" />
+        <div style={{ borderColor: 'var(--border)', borderTopColor: '#7C3AED' }} className="mx-auto mb-4 h-6 w-6 animate-spin rounded-full border-2" />
         <p style={{ color: 'var(--text-primary)' }} className="text-sm font-medium">Loading security reports</p>
         <p style={{ color: 'var(--text-muted)' }} className="mt-1 text-xs">Your workspace will appear here in a moment.</p>
       </div>
@@ -204,14 +204,13 @@ export function ReportList({ user, onRunScan, onNewReports, onClearNotification 
   if (!reports.length) {
     return (
       <div style={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)' }} className="rounded-3xl p-8 text-center shadow-2xl shadow-black/5 md:p-12">
-        <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#7C3AED]/10 text-lg font-semibold text-[color:var(--accent-purple-text)]">R</div>
         <h3 style={{ color: 'var(--text-primary)' }} className="text-lg font-semibold">No security reports yet</h3>
         <p style={{ color: 'var(--text-muted)' }} className="mt-2 text-sm">
           Run your first scan to create a private report with findings and recommended fixes.
         </p>
         <button
           onClick={onRunScan}
-          className="mt-6 rounded-2xl bg-[#06B6D4] px-5 py-3 text-sm font-semibold text-[#080B14] hover:bg-[#06B6D4] transition-colors"
+          className="mt-6 rounded-2xl bg-[#7C3AED] px-5 py-3 text-sm font-semibold text-white hover:bg-[#6D28D9] transition-colors"
         >
           Scan agent
         </button>
@@ -304,7 +303,7 @@ export function ReportList({ user, onRunScan, onNewReports, onClearNotification 
       {newCount > 0 && (
         <div className="mb-4 flex items-center justify-between rounded-xl border border-[#06B6D4]/20 bg-[#06B6D4]/5 px-4 py-3">
           <div className="flex items-center gap-2">
-            <span className="h-2 w-2 rounded-full bg-[#06B6D4] animate-pulse" />
+            <span className="h-2 w-2 rounded-full bg-[#7C3AED] animate-pulse" />
             <span style={{ color: 'var(--text-primary)' }} className="text-sm">
               {newCount} new report{newCount > 1 ? 's' : ''} added
             </span>

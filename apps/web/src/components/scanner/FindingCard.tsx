@@ -5,6 +5,15 @@ import type { Finding } from '@/types'
 import { copyToClipboard } from '@/lib/clipboard'
 import Link from 'next/link'
 import { isNewInV16 } from '@/lib/release'
+import checkSlugs from '@/data/checkSlugs.json'
+
+/** Help page for a finding code (exact code, or its family prefix), if the check library has one. */
+function helpPageFor(code: string): string | null {
+  const exact = (checkSlugs.exact as Record<string, string>)[code]
+  if (exact) return `/checks/${exact}`
+  const fam = (checkSlugs.families as Array<[string, string]>).find(([prefix]) => code.startsWith(prefix))
+  return fam ? `/checks/${fam[1]}` : null
+}
 
 /**
  * What a Free report shows where the Pro fix would be: a blurred placeholder (never the real fix —
@@ -173,7 +182,7 @@ if not verified:
             </span>
             <span style={{ color: 'var(--text-muted)' }} className="text-xs">{severityLabel[finding.severity]}</span>
             <span style={{ color: 'var(--text-primary)' }} className="text-sm font-medium">{finding.title}</span>
-            {isNewInV16(finding.code) && <span className="rounded-full bg-[#7C3AED]/12 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[color:var(--accent-purple-text)]" title="This check was added in Agent Verify v1.6">New in v1.6</span>}
+            {isNewInV16(finding.code) && <span className="rounded-full bg-[#7C3AED]/12 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-[color:var(--accent-purple-text)]" title="This check was added in Agent Verify v1.6">New in v1.6</span>}
             {typeof finding.line === 'number' && <span style={{ color: 'var(--text-muted)' }} className="font-mono text-[11px]">line {finding.line}</span>}
           </div>
           {!open && (
@@ -192,6 +201,9 @@ if not verified:
           <div>
             <span style={{ color: 'var(--text-muted)' }} className="text-xs font-semibold uppercase tracking-wider">Why it matters</span>
             <p style={{ color: 'var(--text-secondary)' }} className="mt-1">{finding.whyItMatters}</p>
+            {helpPageFor(finding.code) && (
+              <Link href={helpPageFor(finding.code)!} className="mt-1.5 inline-block text-xs font-semibold text-[color:var(--accent-purple-text)] hover:underline">Learn more about this check →</Link>
+            )}
           </div>
           <div style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }} className="rounded-lg p-3">
             <span style={{ color: 'var(--text-muted)' }} className="text-xs font-semibold uppercase tracking-wider">Severity explained</span>
@@ -207,7 +219,7 @@ if not verified:
             <div>
               <div className="flex items-center justify-between gap-2">
                 <span style={{ color: 'var(--text-muted)' }} className="text-xs font-semibold uppercase tracking-wider">Evidence{finding.line ? ` — line ${finding.line}` : ''}</span>
-                {finding.evidenceType && <span style={{ color: 'var(--text-muted)' }} className="text-[10px] font-medium uppercase tracking-wider" title={evidenceTypeLabel[finding.evidenceType]}>{finding.evidenceType}</span>}
+                {finding.evidenceType && <span style={{ color: 'var(--text-muted)' }} className="text-[11px] font-medium uppercase tracking-wider" title={evidenceTypeLabel[finding.evidenceType]}>{finding.evidenceType}</span>}
               </div>
               <pre tabIndex={0} role="region" aria-label="Finding evidence" style={{ backgroundColor: 'var(--input-bg)', border: '1px solid var(--border)' }} className="mt-1 overflow-x-auto rounded-lg px-3 py-2 font-mono text-xs text-[color:var(--accent-cyan-text)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#06B6D4]">
                 {finding.evidence}

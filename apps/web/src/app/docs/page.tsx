@@ -365,7 +365,7 @@ Content-Type: application/json
             </Section>
 
             <Section id="catalog" title="Verification Check Catalog">
-              <p>Agent Verify runs <strong>76 distinct, independently-tested verification checks</strong> (32 of them new in v1.6, including framework-specific packs for LangChain, CrewAI, AutoGen, the OpenAI Agents SDK, and the Claude Agent SDK, plus an MCP configuration pack) &mdash; not a marketing round number. Each check has a stable ID (e.g. <code>AV-SECRET-003</code>, <code>AV-MCP-005</code>), a category, severity, detection type, and its own regression test asserting it actually fires. Every check the scanner can produce is cross-checked in both directions against a real test suite: no catalog entry exists without a working code path, and no working code path exists without a catalog entry.</p>
+              <p>Agent Verify runs <strong>124 distinct, independently-tested verification checks</strong> (48 of them new in v2.0 &mdash; MCP tool poisoning, hidden characters, tool shadowing, risky MCP server setups, payments and deletions without limits or approval, personal data sent to models, retrieval without a per-customer filter, AI agents in CI, and framework packs for LangChain, LangGraph, CrewAI, AutoGen, LlamaIndex, the OpenAI Agents SDK, the Claude Agent SDK and Claude Code, the Vercel AI SDK, Semantic Kernel, smolagents and Google ADK). &mdash; not a marketing round number. Each check has a stable ID (e.g. <code>AV-SECRET-003</code>, <code>AV-MCP-005</code>), a category, severity, detection type, and its own regression test asserting it actually fires. Every check the scanner can produce is cross-checked in both directions against a real test suite: no catalog entry exists without a working code path, and no working code path exists without a catalog entry. Every check has its own help page with what it means and how to fix it: see the <Link href="/checks" className="font-semibold text-[color:var(--accent-purple-text)]">check library</Link>.</p>
               <table className="w-full border-collapse text-xs">
                 <thead>
                   <tr style={{ borderBottom: '1px solid var(--border)' }}>
@@ -374,12 +374,12 @@ Content-Type: application/json
                   </tr>
                 </thead>
                 <tbody>
-                  {[['Secrets', 12], ['Runtime', 8], ['MCP', 9], ['Execution authorization', 4], ['Permissions', 3], ['Network', 3], ['Human oversight', 1], ['Auditability', 1], ['Tools', 1], ['Dependencies', 1], ['Identity', 1]].map(([label, count]) => (
+                  {[['Runtime', 29], ['Secrets', 26], ['MCP', 18], ['Permissions', 12], ['Human oversight', 10], ['Network', 7], ['Tools', 6], ['Dependencies', 5], ['Execution authorization', 4], ['Identity', 4], ['Auditability', 3]].map(([label, count]) => (
                     <tr key={label as string} style={{ borderBottom: '1px solid var(--border)' }}><td className="py-1.5 pr-4">{label}</td><td className="py-1.5 font-mono">{count}</td></tr>
                   ))}
                 </tbody>
               </table>
-              <p>Beyond the 76 checks, the scanner separately runs 19 capability detectors (what an agent can do), 10 MCP tool classifiers, 8 capability-chain (&quot;blast radius&quot;) combination rules, and 14 threat-category assessments &mdash; these are classification/context systems, not pass/fail checks, and are counted separately so the 76 stays an honest number of real, distinct checks rather than an inflated one.</p>
+              <p>Beyond the 124 checks, the scanner separately runs 19 capability detectors (what an agent can do), 10 MCP tool classifiers, 8 capability-chain (&quot;blast radius&quot;) combination rules, and 14 threat-category assessments &mdash; these are classification/context systems, not pass/fail checks, and are counted separately so the 124 stays an honest number of real, distinct checks rather than an inflated one.</p>
             </Section>
 
             <Section id="taxonomy" title="Risk Taxonomy">

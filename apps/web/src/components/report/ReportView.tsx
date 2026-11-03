@@ -101,8 +101,9 @@ export function ReportView({
           <div className="grid gap-8 lg:grid-cols-[1fr_240px] lg:items-center">
             <div>
               <Badge variant={verified ? 'verified' : 'failed'}>{verdictLabel}</Badge>
-              <h1 className={`mt-5 text-3xl font-bold tracking-tight md:text-4xl ${verified ? 'text-[color:var(--accent-green-text)]' : 'text-[color:var(--accent-red-text)]'}`}>{verified ? 'Execution authorized' : 'Action required before deployment'}</h1>
-              <p style={{ color: 'var(--text-secondary)' }} className="mt-3 max-w-2xl text-sm leading-6 md:text-base">{verified ? 'This agent satisfies the execution trust controls visible in the submitted configuration.' : 'This report found execution-trust gaps that should be fixed before this agent is connected to production tools, payments, deployments, or sensitive data.'}</p>
+              <h1 className={`mt-5 text-3xl font-bold tracking-tight md:text-4xl ${verified ? 'text-[color:var(--accent-green-text)]' : 'text-[color:var(--accent-red-text)]'}`}>{verified ? 'No blocking problems found' : 'Action required before deployment'}</h1>
+              <p style={{ color: 'var(--text-secondary)' }} className="mt-3 max-w-2xl text-sm leading-6 md:text-base">{verified ? "Agent Verify's checks found the controls this agent needs in the code you submitted, and no blocking problems." : 'This report found execution-trust gaps that should be fixed before this agent is connected to production tools, payments, deployments, or sensitive data.'}</p>
+              <p style={{ color: 'var(--text-muted)' }} className="mt-2 max-w-2xl text-xs leading-5">This is a check of the code and configuration you submitted (static analysis), not a security certification. It cannot see how the agent behaves when it runs, or settings that live outside this code. <a href="/agentverify/docs/#limitations" className="underline">What this does not cover</a></p>
               <div className="mt-5 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4">
                 <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[color:var(--accent-purple-text)]">Next action</p>
                 <p style={{ color: 'var(--text-primary)' }} className="mt-2 text-sm font-medium">{nextAction}</p>

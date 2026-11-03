@@ -21,6 +21,7 @@ export default function OwaspAgenticSkillsPage() {
       <div className="mx-auto max-w-4xl px-4 py-10 md:px-6">
         <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[color:var(--accent-purple-text)]">OWASP profile assessment</p>
         <h1 style={{ color: 'var(--text-primary)' }} className="mt-2 text-3xl font-bold tracking-tight md:text-4xl">OWASP Agentic Skills Top 10</h1>
+        <p data-testid="owasp-coverage" style={{ border: '1px solid var(--border)', color: 'var(--text-primary)', backgroundColor: 'var(--surface)' }} className="mt-3 inline-flex rounded-full px-3 py-1 text-xs font-semibold">Coverage today: 3 of 10 controls (AST02, AST03, AST04) &middot; the other 7 show as not assessed</p>
         <p style={{ color: 'var(--text-secondary)' }} className="mt-3 max-w-2xl text-sm leading-6">
           Assess an agent skill package against the OWASP Agentic Skills Top 10. The result tells you what was assessed, what evidence was observed, which gaps were identified, and what could not be assessed &mdash; and, if you ask, carries a cryptographic signature from Agent Verify.
         </p>

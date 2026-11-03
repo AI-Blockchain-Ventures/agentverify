@@ -4,6 +4,7 @@ import { useEffect } from 'react'
 import { usePathname } from 'next/navigation'
 import { installErrorReporter } from '@/lib/errorReporter'
 import { useAuthNav } from '@/components/auth/useAuthNav'
+import { useAuth } from '@/components/auth/AuthProvider'
 import { Footer } from '@/components/layout/Footer'
 import { Navbar } from '@/components/layout/Navbar'
 import { ReferralCapture } from '@/components/growth/ReferralCapture'
@@ -13,13 +14,17 @@ const AskPalette = dynamic(() => import('@/components/ask/AskPalette').then(m =>
 
 export function LayoutChrome({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
+  const { user, loading } = useAuth()
+  // A report opened by a signed-in person sits inside the dashboard's sidebar instead (see report/page.tsx).
+  const isReport = pathname === '/report' || pathname === '/report/'
   // /verify is a standalone public "trust receipt" page (see its own doc comment) — deliberately
   // presented without the marketing site's nav/footer around it, same reasoning as /dashboard.
   const hideChrome = pathname === '/dashboard' || pathname.startsWith('/dashboard/') ||
     pathname === '/verify' || pathname.startsWith('/verify/') ||
     pathname === '/admin' || pathname.startsWith('/admin/') ||
     pathname === '/signup' || pathname.startsWith('/signup/') ||
-    pathname === '/login' || pathname.startsWith('/login/')
+    pathname === '/login' || pathname.startsWith('/login/') ||
+    (isReport && (loading || !!user))
   const openAuth = useAuthNav()
   // Report crashes on any page to the admin (see lib/errorReporter.ts).
   useEffect(() => installErrorReporter(), [])

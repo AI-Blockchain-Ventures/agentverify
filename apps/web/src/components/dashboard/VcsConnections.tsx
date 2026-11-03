@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { User } from 'firebase/auth'
 import { apiCall } from '@/lib/v2Api'
+import { noAutofill, noAutofillSecret } from '@/lib/noAutofill'
 
 interface Conn { id: string; provider: 'gitlab' | 'bitbucket'; host: string; project: string; created_at: number }
 interface Created { id: string; provider: 'gitlab' | 'bitbucket'; project: string; webhookUrl: string; webhookSecret: string }
@@ -82,7 +83,7 @@ export function VcsConnections({ user }: { user: User }) {
             <div key={label} className="mt-3">
               <p style={{ color: 'var(--text-muted)' }} className="text-xs font-semibold">{label}</p>
               <div className="mt-1 flex gap-2">
-                <input readOnly value={value} onFocus={e => e.currentTarget.select()} style={input} className="min-w-0 flex-1 rounded-lg px-2 py-1.5 font-mono text-xs" aria-label={label} />
+                <input {...noAutofill} readOnly value={value} onFocus={e => e.currentTarget.select()} style={input} className="min-w-0 flex-1 rounded-lg px-2 py-1.5 font-mono text-xs" aria-label={label} />
                 <button onClick={() => copy(value)} className="rounded-lg px-3 text-xs font-semibold" style={{ border: '1px solid var(--border)', color: 'var(--text-primary)' }}>Copy</button>
               </div>
             </div>
@@ -91,7 +92,7 @@ export function VcsConnections({ user }: { user: User }) {
           <button onClick={() => setCreated(null)} className="mt-3 text-xs font-semibold text-[color:var(--accent-purple-text)] hover:underline">Done</button>
         </div>
       ) : (
-        <form onSubmit={connect} className="mt-5 grid gap-3 sm:grid-cols-2">
+        <form autoComplete="off" onSubmit={connect} className="mt-5 grid gap-3 sm:grid-cols-2">
           <label className="text-xs font-semibold" style={{ color: 'var(--text-primary)' }}>
             Code host
             <select value={provider} onChange={e => setProvider(e.target.value as 'gitlab' | 'bitbucket')} style={input} className="mt-1 w-full rounded-xl px-3 py-2 text-sm font-normal">
@@ -102,16 +103,16 @@ export function VcsConnections({ user }: { user: User }) {
           {provider === 'gitlab' && (
             <label className="text-xs font-semibold" style={{ color: 'var(--text-primary)' }}>
               GitLab address
-              <input value={host} onChange={e => setHost(e.target.value)} placeholder="gitlab.com" style={input} className="mt-1 w-full rounded-xl px-3 py-2 text-sm font-normal" />
+              <input {...noAutofill} value={host} onChange={e => setHost(e.target.value)} placeholder="gitlab.com" style={input} className="mt-1 w-full rounded-xl px-3 py-2 text-sm font-normal" />
             </label>
           )}
           <label className="text-xs font-semibold" style={{ color: 'var(--text-primary)' }}>
             {provider === 'gitlab' ? 'Project path' : 'Workspace / repository'}
-            <input required value={project} onChange={e => setProject(e.target.value)} placeholder={provider === 'gitlab' ? 'group/project' : 'workspace/repo'} style={input} className="mt-1 w-full rounded-xl px-3 py-2 text-sm font-normal" />
+            <input {...noAutofill} required value={project} onChange={e => setProject(e.target.value)} placeholder={provider === 'gitlab' ? 'group/project' : 'workspace/repo'} style={input} className="mt-1 w-full rounded-xl px-3 py-2 text-sm font-normal" />
           </label>
           <label className="text-xs font-semibold sm:col-span-2" style={{ color: 'var(--text-primary)' }}>
             Access token
-            <input required type="password" autoComplete="off" value={token} onChange={e => setToken(e.target.value)} style={input} className="mt-1 w-full rounded-xl px-3 py-2 text-sm font-normal" />
+            <input {...noAutofill} required type="password" {...noAutofillSecret} value={token} onChange={e => setToken(e.target.value)} style={input} className="mt-1 w-full rounded-xl px-3 py-2 text-sm font-normal" />
             <span style={{ color: 'var(--text-muted)' }} className="mt-1 block font-normal">{STEPS[provider].token}</span>
           </label>
           <div className="sm:col-span-2">

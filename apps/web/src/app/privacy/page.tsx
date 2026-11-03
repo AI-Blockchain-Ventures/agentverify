@@ -11,6 +11,7 @@ const COLLECT: Array<[string, string, string]> = [
   ['"About you" (optional)', 'Name, company, role, team size, frameworks you use, and how you heard about us. You can skip it.', 'Understanding who uses Agent Verify, and support.'],
   ['Scan results', 'Verdict, score, findings, short evidence snippets (with secrets redacted), file name and platform. We do not store the raw code you submit.', 'Your reports, history and share links.'],
   ['Free public scan (no account)', 'The code you paste is scanned and not stored. Results for identical code may be cached for up to 6 hours so repeat scans are instant. Your network address is used briefly to enforce limits.', 'Running the demo and preventing abuse.'],
+  ['Fix & re-check (Pro)', 'The code you check or ask AI to fix is sent to our server and, for AI fixes, to Cloudflare Workers AI. It is not stored. We keep a daily count of AI fixes per account.', 'Re-scoring your changes and writing AI fixes, and enforcing daily limits.'],
   ['"Ask" questions', 'Your question is sent to Cloudflare Workers AI to write an answer and is not stored. We keep a daily count per account, or per hashed network address.', 'Answering, and enforcing daily limits.'],
   ['Repository connections', 'GitHub installation ID, repository names, scores and pull-request numbers. GitLab and Bitbucket access tokens are encrypted.', 'Pull-request checks and monitoring.'],
   ['Slack', 'Your Slack workspace ID.', 'The /agentverify command.'],

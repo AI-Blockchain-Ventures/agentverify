@@ -42,6 +42,17 @@ test('demo report is clearly labeled synthetic and shows the real scan engine ou
   await expect(page.getByText('Final score')).toBeVisible()
 })
 
+test('demo report shows the same agent before and after fixing, with real scores', async ({ page }) => {
+  await page.goto('report/demo/')
+  const versions = page.getByRole('tablist', { name: 'Demo versions' })
+  await expect(versions.getByRole('tab', { name: /1\. Before/ })).toHaveAttribute('aria-selected', 'true')
+  await versions.getByRole('tab', { name: /3\. After/ }).click()
+  await expect(page.getByText('VERIFIED', { exact: true }).first()).toBeVisible()
+  await expect(versions.getByRole('tab', { name: /3\. After/ })).toContainText('100')
+  await page.getByText('Show the code that was scanned').click()
+  await expect(page.getByText('validateInvoiceId', { exact: false }).first()).toBeVisible()
+})
+
 test('demo report: all six report views render real, distinct content from the same evidence', async ({ page }) => {
   await page.goto('report/demo/')
   const tabs = page.getByRole('tablist', { name: 'Report view' })

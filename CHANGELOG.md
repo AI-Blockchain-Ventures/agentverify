@@ -3,6 +3,25 @@
 All notable user-facing changes to Agent Verify are documented here. The CLI/SDK package has its
 own more granular changelog at [packages/cli/CHANGELOG.md](./packages/cli/CHANGELOG.md).
 
+## [2.0.2] - 2026-11-03
+
+### Changed
+
+- **Sample report shows the fix journey.** The demo report is now one agent in three versions — before (0/100),
+  part-way (45/100) and after fixing (100/100, verified) — each with the code that was scanned.
+- **Clearer verdicts.** A passing report now reads "No blocking problems found" (was "Execution authorized"), and every
+  report and PDF says it checks the submitted code (static analysis) and is not a security certification.
+- Signed-in people go to their dashboard instead of the marketing homepage, and reports open inside the dashboard
+  sidebar instead of the site header.
+- The OWASP Agentic Skills pages show coverage up front: 3 of 10 controls today.
+- Pricing explains exactly what uses a monthly scan, a PR-check scan, or a Slack scan, and what doesn't count.
+- The Trust and Privacy pages cover Fix & re-check and state that your code is never used to train AI models.
+
+### Fixed
+
+- Browsers and password managers no longer fill your email and password into the GitLab/Bitbucket project and token
+  fields or the prompt-injection test form.
+
 ## [2.0.1] - 2026-11-03
 
 ### Added

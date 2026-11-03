@@ -47,11 +47,15 @@ export async function fetchPublicRepo(env: SlackEnv, owner: string, repo: string
   const headers: Record<string, string> = { Accept: 'application/vnd.github+json', 'User-Agent': 'agentverify-slack' }
   if (env.PUBLIC_GITHUB_TOKEN) headers.Authorization = `Bearer ${env.PUBLIC_GITHUB_TOKEN}`
   const info = await fetchFn(`https://api.github.com/repos/${owner}/${repo}`, { headers })
-  if (!info.ok) throw new Error(info.status === 404 ? 'That repository was not found or is private.' : `GitHub said ${info.status}.`)
+  if (!info.ok) {
+    if (info.status === 404) throw new Error('That repository was not found or is private.')
+    if (info.status === 403 || info.status === 429) throw new Error('GitHub is limiting requests right now. Try again in a few minutes, or paste the code with /agentverify scan <code>.')
+    throw new Error(`GitHub answered with an error (${info.status}). Try again in a minute.`)
+  }
   const { default_branch: branch, private: isPrivate } = await info.json() as { default_branch: string; private: boolean }
   if (isPrivate) throw new Error('Private repositories need the GitHub App instead.')
   const treeRes = await fetchFn(`https://api.github.com/repos/${owner}/${repo}/git/trees/${encodeURIComponent(branch)}?recursive=1`, { headers })
-  if (!treeRes.ok) throw new Error(`Could not list files (${treeRes.status}).`)
+  if (!treeRes.ok) throw new Error(treeRes.status === 403 || treeRes.status === 429 ? 'GitHub is limiting requests right now. Try again in a few minutes.' : `Could not list the repository's files (${treeRes.status}).`)
   const tree = (await treeRes.json() as { tree: Array<{ path: string; type: string; size?: number }> }).tree
   const prefix = subpath ? `${subpath}/` : ''
   const paths = tree

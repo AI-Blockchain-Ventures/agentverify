@@ -215,6 +215,9 @@ Agent Verify now runs where you build agents: in your editor, inside your AI cod
   days, demo cache 6 hours, account deletion within 30 days), user rights, paid plans and refunds, acceptable use for
   injection tests, AI-answer disclaimer, liability cap, and Florida governing law. The old text said data was never
   shared with third parties and that paid plans were a future possibility.
+- First live checks: the generic "hardcoded credentials" check no longer flags obvious placeholders such as
+  `"YOUR_API_KEY"`, `"xxxxxxxx"` or an environment-variable name (real values are still caught and redacted); Slack
+  scans explain GitHub rate limits in plain words, and use `PUBLIC_GITHUB_TOKEN` when set.
 - Full pre-launch walkthrough (every page crawled on desktop and phone, signed-in dashboard, admin, billing,
   feedback, Slack link, rate limits — against the local 2.0 API): Pricing, Developers and the MCP directory no longer
   scroll sideways on phones (grid columns can't be stretched by code examples); a plan given by the admin no longer

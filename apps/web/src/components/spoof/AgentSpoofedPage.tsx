@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import type { ScanResult as ScanResultType } from '@/types'
-import { Footer } from '@/components/layout/Footer'
 import dynamic from 'next/dynamic'
 // The full report viewer is large and only needed after a scan, so it loads on demand.
 const ScanResult = dynamic(() => import('@/components/scanner/ScanResult').then(m => m.ScanResult), { ssr: false, loading: () => <p style={{ color: 'var(--text-muted)' }} className="text-sm">Loading the report…</p> })
@@ -115,11 +114,6 @@ export function AgentSpoofedPage() {
   return (
     <main style={{ backgroundColor: 'var(--bg)' }} className="min-h-screen overflow-x-hidden">
       <section className="mx-auto max-w-6xl px-4 py-8 md:px-6 md:py-12">
-        <div className="mb-8 flex items-center justify-between gap-4">
-          <Link href="/" style={{ color: 'var(--text-secondary)' }} className="text-sm font-medium hover:opacity-75">Agent Verify</Link>
-          <Link href="/pricing" className="rounded-lg bg-[#7C3AED] px-4 py-2 text-sm font-semibold text-white hover:bg-[#6D28D9]">View pricing</Link>
-        </div>
-
         <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_420px] lg:items-start">
           <div style={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)' }} className="min-w-0 rounded-2xl p-5 md:p-7">
             <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[color:var(--accent-purple-text)]">Live demo</p>
@@ -188,7 +182,6 @@ export function AgentSpoofedPage() {
           </div>
         )}
       </section>
-      <Footer />
     </main>
   )
 }

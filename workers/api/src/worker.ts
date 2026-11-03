@@ -27,6 +27,7 @@ import { createConnection, deleteConnection, handleVcsWebhook, listConnections, 
 import { addMember as addTeamMember, getTeam, removeMember as removeTeamMember } from './team'
 import { adminGrant, adminImportFirebaseUsers, adminOverview, adminUsers, isAdmin, type AdminEnv } from './admin'
 import { handleAsk, type AskEnv } from './ask'
+import { handleAiFix, type AiFixEnv } from './aiFix'
 import { bumpCounter, funnel, listErrors, pruneErrors, listFeedback, onboardingUnsubscribe, recordError, saveFeedback, sendOnboardingBatch, setFeedbackStatus, type OpsEnv } from './ops'
 import { getUserProfile, saveUserProfile } from './userProfiles'
 
@@ -162,7 +163,7 @@ async function saveReportToFirebase(
   }
 }
 
-type WorkerEnv = BillingEnv & AdminEnv & AskEnv & OpsEnv & AttestationSigningEnv & ProfileAttestationSigningEnv & OrganizationsEnv & AuditLogEnv & WebhooksEnv & WebhooksDeliveryEnv & GithubEnv & GrowthEnv & VcsEnv & SlackEnv & {
+type WorkerEnv = BillingEnv & AdminEnv & AskEnv & AiFixEnv & OpsEnv & AttestationSigningEnv & ProfileAttestationSigningEnv & OrganizationsEnv & AuditLogEnv & WebhooksEnv & WebhooksDeliveryEnv & GithubEnv & GrowthEnv & VcsEnv & SlackEnv & {
   FIREBASE_API_KEY?: string
   FIREBASE_CLIENT_EMAIL?: string
   FIREBASE_PRIVATE_KEY?: string
@@ -350,6 +351,19 @@ async function routeRequest(request: Request, env: WorkerEnv, ctx?: ExecutionCon
 
     if (url.pathname === '/v1/demo/scan' && request.method === 'POST') return handleDemoScan(request, env)
     if (url.pathname === '/v1/verify-fix' && request.method === 'POST') return handleVerifyFix(request, env)
+    if (url.pathname === '/v1/fix/ai' && request.method === 'POST') {
+      const principal = await authenticateRequest(request, env)
+      if (!principal || principal.type !== 'USER') return json({ error: 'Sign in to use AI fixes.' }, 401)
+      const raw = await readBoundedBody(request)
+      if (!raw.ok) return json({ error: 'Request body too large' }, 413)
+      let body: Record<string, unknown>
+      try { body = JSON.parse(decodeBody(raw.bytes)) as Record<string, unknown> } catch { return json({ error: 'Invalid JSON body' }, 400) }
+      if (isRateLimited(`ai-fix:${principal.uid}`, 6, 60 * 1000)) return json({ error: 'One moment: too many AI fixes in a row. Try again in a minute.' }, 429)
+      const pro = hasProFeatures((await checkScanQuota(env, principal.uid)).plan)
+      const scan = (content: string, fileName: string, platform?: string) => applyRemediationEntitlement(createScanResult({ content, fileName, fileSize: content.length, platform }), 'pro')
+      const res = await handleAiFix(env, { uid: principal.uid, pro }, body, scan)
+      return json(res.body, res.status)
+    }
 
     // ── 2.0: "Ask anything" (free Workers AI, capped), signup profile, admin panel ──
     if (url.pathname === '/v1/ask' && request.method === 'POST') {

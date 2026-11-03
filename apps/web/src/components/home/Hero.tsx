@@ -32,7 +32,7 @@ export function Hero({ openAuth }: HeroProps) {
           </h1>
 
           <p style={{ color: 'var(--text-secondary)' }} className="mt-5 max-w-xl text-base leading-relaxed md:text-lg 2xl:max-w-2xl 2xl:text-xl">
-            Find leaked keys, risky tools, MCP access and prompt-injection holes in your agents — then fix them in one click, right in the pull request.
+            Find leaked keys, risky tools, MCP access and prompt-injection holes in your agents. See the exact line, get the fix, and re-check until it passes — in your editor, your pull requests, or the dashboard.
           </p>
 
           <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">

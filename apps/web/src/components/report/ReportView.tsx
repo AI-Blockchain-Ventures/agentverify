@@ -15,6 +15,7 @@ import { ComplianceReportView } from '@/components/report/views/ComplianceReport
 import { AiJsonReportView } from '@/components/report/views/AiJsonReportView'
 import { FullTechnicalReportView } from '@/components/report/views/FullTechnicalReportView'
 import { ScoreRing, SeverityBar } from '@/components/report/ScoreRing'
+import { ShareBar, useReportSharing } from '@/components/report/ShareBar'
 
 export interface ReportViewProps {
   report?: Record<string, unknown>
@@ -36,6 +37,8 @@ export interface ReportViewProps {
   isOwner?: boolean
   onReportUpdate?: (updates: Record<string, unknown>) => void
   billingStatus?: BillingStatus
+  /** Dashboard only: saves edited code from Fix & re-check as a new report. */
+  onSaveAsNewScan?: (content: string) => void
 }
 
 export function ReportView({
@@ -51,7 +54,9 @@ export function ReportView({
   categoryScores,
   bom,
   reportId,
+  originalContent = '',
   onNewScan,
+  onSaveAsNewScan,
   reportUrl,
   user = null,
   isOwner = false,
@@ -75,6 +80,7 @@ export function ReportView({
     ? 'Share this report with stakeholders or export it as a PDF for your security records.'
     : reportInsights.nextAction
   const [reportMode, setReportMode] = useState<ReportMode>('security')
+  const sharing = useReportSharing({ report, reportId: normalizedReportId, user, isOwner, publicReportUrl: normalized.publicReportUrl, onReportUpdate })
   const [reportHash, setReportHash] = useState<string | undefined>(undefined)
   useEffect(() => {
     let cancelled = false
@@ -88,6 +94,8 @@ export function ReportView({
 
   return (
     <main style={{ backgroundColor: 'var(--bg)' }} className="mx-auto max-w-3xl px-4 py-6 md:px-6 md:py-10">
+      <ShareBar sharing={sharing} artifactHash={normalized.artifactHash} />
+
       <section style={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)' }} className="print-border mb-6 overflow-hidden rounded-3xl shadow-2xl shadow-black/10">
         <div className={`p-6 md:p-8 ${verified ? 'bg-[#10B981]/8' : 'bg-[#EF4444]/8'}`}>
           <div className="grid gap-8 lg:grid-cols-[1fr_240px] lg:items-center">
@@ -137,6 +145,9 @@ export function ReportView({
           onNewScan={onNewScan}
           reportUrl={reportUrl}
           billingStatus={billingStatus}
+          sharing={sharing}
+          originalContent={originalContent}
+          onSaveAsNewScan={onSaveAsNewScan}
         />
       )}
 

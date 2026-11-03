@@ -5,6 +5,25 @@ own more granular changelog at [packages/cli/CHANGELOG.md](./packages/cli/CHANGE
 
 ## [2.0.1] - 2026-11-03
 
+### Added
+
+- **Fix & re-check (Pro and Team).** Every report you own now has an editor with your code and the fix for each
+  finding next to it. Press **Check my changes** to re-score it in seconds without using a monthly scan, repeat until
+  the score is where you want it, then **Save as new report**. **Fix my file with AI** rewrites the file to address
+  the findings and shows the new score before you use it (15 AI fixes per person a day). Your code is not stored.
+- **Share bar at the top of every report.** "Make public & copy link" shares a private report in one click; "Make
+  private" turns sharing off.
+
+### Fixed
+
+- Shared report links from dashboard scans showed "Report not found" to anyone not signed in, even when the report was
+  public. They now open for everyone, and a private report says it is private instead of "not found".
+- Copy-link buttons copied the link of a private report, which nobody else could open.
+- The pricing table showed Team at $79 and listed team API keys. Team is $25 per seat (2-seat minimum), and API keys
+  belong to each person.
+- After canceling, the sidebar shows "Pro · ends <date>", and Billing says clearly that you won't be charged.
+- A very long line containing repeated `SELECT` could make a scan take over a second; it now takes milliseconds.
+
 ### Changed
 
 - **Fairer verdicts for agents that don't use A2SPA.** Request-signing checks now depend on what the agent can do.
@@ -15,10 +34,6 @@ own more granular changelog at [packages/cli/CHANGELOG.md](./packages/cli/CHANGE
   JWT, A2SPA or your own.
 - Placeholder values such as `YOUR_API_KEY` or `sk-your-key-here` are no longer reported as hardcoded secrets.
 - YAML-style broad permissions (`permissions: all`, `tools: - '*'`) are now detected.
-
-### Fixed
-
-- A very long line containing repeated `SELECT` could make a scan take over a second; it now takes milliseconds.
 
 ## [2.0.0] - 2026-10-30
 

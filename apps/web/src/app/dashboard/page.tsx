@@ -144,10 +144,11 @@ export default function DashboardPage() {
   // the subscription's current period actually ends. See lib/billing.ts's summarizeBillingState,
   // the single shared interpretation of plan/status/cancelAtPeriodEnd used by Pricing, Settings,
   // and here so none of them can drift out of sync with what the backend actually says.
+  const billingSummary = summarizeBillingState(billing.status)
   const planLabel = billing.error
     ? 'Free'
-    : summarizeBillingState(billing.status).isActivePro
-      ? 'Pro'
+    : billingSummary.isActivePro
+      ? billingSummary.isCanceling && billing.status.currentPeriodEnd ? `Pro · ends ${new Date(billing.status.currentPeriodEnd).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}` : 'Pro'
       : billing.status.status === 'past_due'
         ? 'Past due'
         : billing.status.status === 'canceled'

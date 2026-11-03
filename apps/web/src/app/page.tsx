@@ -17,10 +17,16 @@ import { CTASection } from '@/components/home/CTASection'
 import { LogoMarquee } from '@/components/home/LogoMarquee'
 import { SecurityTeamsSection } from '@/components/home/SecurityTeamsSection'
 import { useAuthNav } from '@/components/auth/useAuthNav'
+import { useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import { useAuth } from '@/components/auth/AuthProvider'
 
 export default function Home() {
-  // Signed-in people can still read the homepage; the header shows a Dashboard button for them.
   const openAuth = useAuthNav()
+  // Signed-in people go straight to their dashboard; the marketing page is for visitors.
+  const { user, loading } = useAuth()
+  const router = useRouter()
+  useEffect(() => { if (!loading && user) router.replace('/dashboard') }, [loading, user, router])
 
   return (
     <main>

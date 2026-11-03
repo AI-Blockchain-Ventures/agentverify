@@ -29,7 +29,7 @@ export function Navbar({ openAuth }: NavbarProps) {
       style={{ backgroundColor: 'var(--nav-bg)', borderBottom: '1px solid var(--nav-border)' }}
     >
       <div className="av-container flex h-16 items-center gap-6 2xl:h-[72px]">
-        <Link href="/" aria-label="Agent Verify home" className="shrink-0 text-base 2xl:text-lg">
+        <Link href={user ? '/dashboard' : '/'} aria-label={user ? 'Agent Verify dashboard' : 'Agent Verify home'} className="shrink-0 text-base 2xl:text-lg">
           <Brand size={34} />
         </Link>
 

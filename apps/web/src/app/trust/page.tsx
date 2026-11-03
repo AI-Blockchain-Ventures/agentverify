@@ -11,7 +11,9 @@ export const metadata: Metadata = pageMetadata('/trust/', 'Trust Center', 'How A
 const SECTIONS: Array<{ id: string; title: string; points: Array<string | [string, string]> }> = [
   { id: 'code', title: 'Your code', points: [
     'We do not store the raw agent code you submit. It is analyzed and then discarded.',
-    'We store the scan results — verdict, score, findings and file name — so your report history works.',
+    'We store the scan results — verdict, score, findings and file name — so your report history works. Findings can include a short evidence snippet from the line that triggered them, with any secret values masked.',
+    'Fix & re-check (Pro) sends your code to our server to re-score it, and, if you press "Fix my file with AI", to Cloudflare Workers AI to write the fixed version. Neither is stored.',
+    'We do not use your code or your reports to train AI models.',
     'You can delete any report from your dashboard. To delete your account and all its data, email hello@aiblockchainventures.com.',
     'Pull-request checks read your repository files through the GitHub App permissions you approve, and keep only the results.',
   ] },

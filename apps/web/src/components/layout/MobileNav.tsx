@@ -119,9 +119,6 @@ export function MobileNavDrawer({
             <Link href="/docs" onClick={onClose} style={{ color: 'var(--text-muted)' }} className="flex items-center gap-3 rounded-2xl px-3 py-3 text-sm font-semibold">
               <span className="w-4 text-center" aria-hidden="true">▥</span><span>Docs</span>
             </Link>
-            <Link href="/" onClick={onClose} style={{ color: 'var(--text-muted)' }} className="flex items-center gap-3 rounded-2xl px-3 py-3 text-sm font-semibold">
-              <span className="w-4 text-center" aria-hidden="true">⌂</span><span>Agent Verify home</span>
-            </Link>
           </div>
         </nav>
 

@@ -11,6 +11,7 @@ export function OwaspProfileSection() {
         <div style={{ border: '1px solid var(--border)', backgroundColor: 'var(--card)' }} className="rounded-[2rem] p-6 shadow-2xl shadow-black/5 md:p-8">
           <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[color:var(--accent-purple-text)]">New &middot; OWASP Agentic Skills</p>
           <h2 style={{ color: 'var(--text-primary)' }} className="mt-2 max-w-2xl text-2xl font-semibold tracking-tight md:text-3xl">Assess agent skills against the OWASP Agentic Skills Top 10.</h2>
+          <p data-testid="owasp-coverage" style={{ border: '1px solid var(--border)', color: 'var(--text-primary)', backgroundColor: 'var(--surface)' }} className="mt-3 inline-flex rounded-full px-3 py-1 text-xs font-semibold">Coverage today: 3 of 10 controls (AST02, AST03, AST04) &middot; the other 7 show as not assessed</p>
           <p style={{ color: 'var(--text-secondary)' }} className="mt-3 max-w-2xl text-sm leading-6">
             Get evidence-based results for supply chain compromise (AST02), over-privileged skills (AST03), and insecure metadata (AST04). Every other control is shown as not assessed &mdash; never as a pass. Ask for a cryptographic signature and anyone can check the assessment against a key we publish independently.
           </p>

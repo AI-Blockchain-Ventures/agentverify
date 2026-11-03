@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useCallback, useEffect, useState } from 'react'
 import type { User } from 'firebase/auth'
 import { apiCall } from '@/lib/v2Api'
+import { noAutofill, noAutofillSecret } from '@/lib/noAutofill'
 
 interface Target { id: string; name: string; url: string; host: string; verified: boolean; verify_token: string }
 interface Result { id: string; name: string; severity: string; outcome: 'passed' | 'failed' | 'review' | 'error'; reply: string }
@@ -80,7 +81,7 @@ export function InjectionTests({ user, isPro }: { user: User; isPro: boolean }) 
               <div className="mt-4 rounded-2xl p-4 text-sm" style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}>
                 <p className="font-semibold" style={{ color: 'var(--text-primary)' }}>Prove you own this agent</p>
                 <p className="mt-1">Publish a text file at <code>https://{t.host}/.well-known/agentverify.txt</code> containing:</p>
-                <input readOnly value={t.verify_token} onFocus={e => e.currentTarget.select()} style={input} className="mt-2 w-full rounded-lg px-2 py-1.5 font-mono text-xs" aria-label="Verification token" />
+                <input {...noAutofill} readOnly value={t.verify_token} onFocus={e => e.currentTarget.select()} style={input} className="mt-2 w-full rounded-lg px-2 py-1.5 font-mono text-xs" aria-label="Verification token" />
                 <p className="mt-2 text-xs" style={{ color: 'var(--text-muted)' }}>We only ever send test messages to agents on hosts that publish this token.</p>
               </div>
             )}
@@ -108,13 +109,13 @@ export function InjectionTests({ user, isPro }: { user: User; isPro: boolean }) 
         )
       })}
 
-      <form onSubmit={add} style={card} className="grid gap-3 rounded-3xl p-6 sm:grid-cols-2">
+      <form autoComplete="off" onSubmit={add} style={card} className="grid gap-3 rounded-3xl p-6 sm:grid-cols-2">
         <h2 style={{ color: 'var(--text-primary)' }} className="text-sm font-semibold uppercase tracking-wider sm:col-span-2">Add an agent to test</h2>
-        <label className="text-xs font-semibold" style={{ color: 'var(--text-primary)' }}>Name<input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="Support bot (staging)" style={input} className="mt-1 w-full rounded-xl px-3 py-2 text-sm font-normal" /></label>
-        <label className="text-xs font-semibold" style={{ color: 'var(--text-primary)' }}>Chat endpoint (HTTPS, POST)<input required value={form.url} onChange={e => setForm({ ...form, url: e.target.value })} placeholder="https://staging.yourapp.com/api/chat" style={input} className="mt-1 w-full rounded-xl px-3 py-2 text-sm font-normal" /></label>
-        <label className="text-xs font-semibold" style={{ color: 'var(--text-primary)' }}>Authorization header (optional, stored encrypted)<input type="password" autoComplete="off" value={form.auth} onChange={e => setForm({ ...form, auth: e.target.value })} placeholder="Bearer test-token" style={input} className="mt-1 w-full rounded-xl px-3 py-2 text-sm font-normal" /></label>
-        <label className="text-xs font-semibold" style={{ color: 'var(--text-primary)' }}>Reply field (optional)<input value={form.responsePath} onChange={e => setForm({ ...form, responsePath: e.target.value })} placeholder="output  or  choices.0.message.content" style={input} className="mt-1 w-full rounded-xl px-3 py-2 text-sm font-normal" /></label>
-        <label className="text-xs font-semibold sm:col-span-2" style={{ color: 'var(--text-primary)' }}>Request body — <code>{'{{prompt}}'}</code> is replaced with each attack<input value={form.bodyTemplate} onChange={e => setForm({ ...form, bodyTemplate: e.target.value })} style={input} className="mt-1 w-full rounded-xl px-3 py-2 font-mono text-xs font-normal" /></label>
+        <label className="text-xs font-semibold" style={{ color: 'var(--text-primary)' }}>Name<input {...noAutofill} value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="Support bot (staging)" style={input} className="mt-1 w-full rounded-xl px-3 py-2 text-sm font-normal" /></label>
+        <label className="text-xs font-semibold" style={{ color: 'var(--text-primary)' }}>Chat endpoint (HTTPS, POST)<input {...noAutofill} required value={form.url} onChange={e => setForm({ ...form, url: e.target.value })} placeholder="https://staging.yourapp.com/api/chat" style={input} className="mt-1 w-full rounded-xl px-3 py-2 text-sm font-normal" /></label>
+        <label className="text-xs font-semibold" style={{ color: 'var(--text-primary)' }}>Authorization header (optional, stored encrypted)<input type="password" {...noAutofillSecret} value={form.auth} onChange={e => setForm({ ...form, auth: e.target.value })} placeholder="Bearer test-token" style={input} className="mt-1 w-full rounded-xl px-3 py-2 text-sm font-normal" /></label>
+        <label className="text-xs font-semibold" style={{ color: 'var(--text-primary)' }}>Reply field (optional)<input {...noAutofill} value={form.responsePath} onChange={e => setForm({ ...form, responsePath: e.target.value })} placeholder="output  or  choices.0.message.content" style={input} className="mt-1 w-full rounded-xl px-3 py-2 text-sm font-normal" /></label>
+        <label className="text-xs font-semibold sm:col-span-2" style={{ color: 'var(--text-primary)' }}>Request body — <code>{'{{prompt}}'}</code> is replaced with each attack<input {...noAutofill} value={form.bodyTemplate} onChange={e => setForm({ ...form, bodyTemplate: e.target.value })} style={input} className="mt-1 w-full rounded-xl px-3 py-2 font-mono text-xs font-normal" /></label>
         <p style={{ color: 'var(--text-muted)' }} className="text-xs sm:col-span-2">Use a staging copy of your agent if you can: the tests ask it to do things like email data out, and a real agent with real tools might try.</p>
         <div className="sm:col-span-2"><button type="submit" disabled={busy === 'add'} className="av-press rounded-xl bg-[#7C3AED] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">{busy === 'add' ? 'Adding…' : 'Add agent'}</button></div>
       </form>

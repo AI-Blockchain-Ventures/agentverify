@@ -5,6 +5,8 @@ compatibility_date = "2025-05-19"
 [vars]
 FIREBASE_PROJECT_ID = "agentverify-26e26"
 STRIPE_PRO_PRICE_ID = "price_1Tsm6SRqPRlpuX8nDm5HzHZb"
+# Team plan, per seat ($25/seat/month, 2-seat minimum enforced in code). Turns on self-serve Team checkout.
+STRIPE_TEAM_PRICE_ID = "price_1UXTCXRqPRlpuX8nSxlrZLC2"
 BILLING_SUCCESS_URL = "https://aimodularity.com/agentverify/dashboard/?billing=success"
 BILLING_CANCEL_URL = "https://aimodularity.com/agentverify/pricing/?billing=cancel"
 BILLING_ENABLED = "true"

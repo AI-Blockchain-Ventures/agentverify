@@ -3,7 +3,7 @@
   "displayName": "Agent Verify — AI Agent Security Scanner",
   "description": "Security checks for AI agents while you code: 124 tested checks for prompt injection, risky tools, exposed secrets, MCP tool poisoning and unsafe MCP servers, plus LangChain, LangGraph, CrewAI, AutoGen, OpenAI Agents SDK, Claude Agent SDK and more.",
   "version": "2.0.0",
-  "publisher": "aiblockchainventures",
+  "publisher": "AIBlockchainVentures",
   "license": "MIT",
   "private": true,
   "icon": "media/icon.png",

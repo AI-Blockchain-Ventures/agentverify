@@ -21,6 +21,7 @@ const columns: Array<{ title: string; links: Array<{ href: string; label: string
     { href: '/checks', label: 'Check library' },
     { href: '/mcp', label: 'MCP safety directory' },
     { href: '/state-of-mcp-security', label: 'State of MCP Security' },
+    { href: '/state-of-agent-security', label: 'State of AI Agent Security' },
     { href: '/owasp-agentic-skills', label: 'OWASP agentic profile' },
     { href: '/profile-attestation', label: 'Signing key' },
     { href: '/whats-new', label: "What's new in 2.0" },

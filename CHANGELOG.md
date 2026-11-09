@@ -3,6 +3,15 @@
 All notable user-facing changes to Agent Verify are documented here. The CLI/SDK package has its
 own more granular changelog at [packages/cli/CHANGELOG.md](./packages/cli/CHANGELOG.md).
 
+## [2.0.3] - 2026-11-09
+
+### Added
+
+- **State of AI Agent Security report** (`/state-of-agent-security/`). We scanned the source code of the 50 most-starred
+  open-source AI agent projects on GitHub: 80% can run shell commands, 76% build commands from changing input, and 3
+  passed every check. Totals only; no project is named next to a result. Possible secrets were reviewed by hand and
+  none are reported as leaks.
+
 ## [2.0.2] - 2026-11-03
 
 ### Changed

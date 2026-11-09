@@ -16,6 +16,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { path: '/checks/', priority: 0.8, changeFrequency: 'weekly' },
     { path: '/whats-new/', priority: 0.7, changeFrequency: 'monthly' },
     { path: '/state-of-mcp-security/', priority: 0.8, changeFrequency: 'monthly' },
+    { path: '/state-of-agent-security/', priority: 0.8, changeFrequency: 'monthly' },
     { path: '/owasp-agentic-skills/', priority: 0.8, changeFrequency: 'monthly' },
     { path: '/profile-attestation/', priority: 0.6, changeFrequency: 'monthly' },
     { path: '/report/demo/', priority: 0.7, changeFrequency: 'monthly' },

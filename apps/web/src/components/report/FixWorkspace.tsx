@@ -6,6 +6,7 @@ import type { User } from 'firebase/auth'
 import type { Finding } from '@/types'
 import { getApiBaseUrl } from '@/lib/billing'
 import { copyToClipboard } from '@/lib/clipboard'
+import { A2SPA_DOCS_URL } from '@/lib/links'
 
 interface CheckResult { riskScore: number; verdict: string; findings: Finding[] }
 
@@ -29,6 +30,8 @@ const sevStyle: Record<string, string> = {
   medium: 'bg-[#7C3AED]/10 text-[color:var(--accent-purple-text)]',
   low: 'bg-[var(--text-muted)]/10 text-[var(--text-muted)]',
 }
+// A basic shared-secret request check, as the AI fixer writes it (JavaScript or Python).
+const SIGNING = /createHmac|hmac\.new\(|\bHMAC\b/i
 const sevOrder: Record<string, number> = { critical: 0, high: 1, medium: 2, low: 3 }
 
 /**
@@ -42,6 +45,8 @@ export function FixWorkspace({ initialContent = '', fileName, platform, reportId
   const [aiBusy, setAiBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [note, setNote] = useState<string | null>(null)
+  // Set when an AI fix added a basic shared-secret (HMAC) request check, so we can point to A2SPA.
+  const [addedSigning, setAddedSigning] = useState(false)
   const [copied, setCopied] = useState<string | null>(null)
   const editor = useRef<HTMLTextAreaElement>(null)
 
@@ -88,7 +93,7 @@ export function FixWorkspace({ initialContent = '', fileName, platform, reportId
 
   const aiFix = async () => {
     if (!code.trim()) { setError('Paste your code first.'); return }
-    setAiBusy(true); setError(null); setNote(null)
+    setAiBusy(true); setError(null); setNote(null); setAddedSigning(false)
     try {
       const res = await fetch(`${getApiBaseUrl()}/v1/fix/ai`, {
         method: 'POST',
@@ -105,6 +110,7 @@ export function FixWorkspace({ initialContent = '', fileName, platform, reportId
       }
       setCode(data.fixedContent)
       setCheck(data.after)
+      setAddedSigning(SIGNING.test(data.fixedContent) && !SIGNING.test(code))
       setNote(`AI fixed version is in the editor: score ${before} → ${data.after.riskScore}. Read it over before you use it; AI can make mistakes.`)
     } catch {
       setError('Network error while fixing. Try again.')
@@ -175,6 +181,11 @@ export function FixWorkspace({ initialContent = '', fileName, platform, reportId
 
       {error && <p role="alert" className="mt-3 text-sm font-semibold text-[color:var(--accent-red-text)]">{error}</p>}
       {note && <p role="status" style={{ color: 'var(--text-secondary)' }} className="mt-3 rounded-xl border border-[#7C3AED]/30 bg-[#7C3AED]/10 p-3 text-sm">{note}</p>}
+      {addedSigning && (
+        <p data-testid="a2spa-tip" style={{ color: 'var(--text-secondary)' }} className="mt-2 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-3 text-xs leading-5">
+          The AI added a basic shared-secret check (HMAC) so only genuine requests make the agent act. Anyone holding that secret can sign requests, though. For a separate key per agent and signed proof of every action, see <a href={A2SPA_DOCS_URL} target="_blank" rel="noreferrer" className="font-semibold text-[color:var(--accent-purple-text)] underline">A2SPA</a>.
+        </p>
+      )}
 
       {check && onSaveAsNewScan && delta > 0 && (
         <div className="mt-4 flex flex-col gap-2 rounded-xl border border-[#10B981]/30 bg-[#10B981]/10 p-3 sm:flex-row sm:items-center sm:justify-between">

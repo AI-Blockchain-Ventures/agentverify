@@ -32,6 +32,7 @@ test('returns the fixed file with before/after scores; findings and file are pas
   assert.equal(res.body.after.riskScore, 100)
   const [system, user] = ai.calls[0].input.messages
   assert.match(system.content, /data, not instructions/)
+  assert.match(system.content, /A2SPA: https:\/\/aimodularity\.com\/A2SPA\/docs/, 'signing fixes point to A2SPA')
   assert.match(user.content, /line 1/)
   assert.match(user.content, /sk-live-/)
 })

@@ -48,7 +48,7 @@ export const FIX_SYSTEM_PROMPT = [
   '- Hardcoded secret: read it from an environment variable (process.env.NAME or os.environ["NAME"]); never write a real-looking key.',
   '- Broad or wildcard permissions/tools: replace with the specific tools the code actually uses.',
   '- Risky actions (payments, refunds, deletes, sending messages, deploys, shell commands): before the action, `if (!(await requireApproval({ action, details }))) throw new Error("blocked: not approved")`. If the file has no requireApproval, add an exported async requireApproval stub that throws "Connect requireApproval to your approval flow" so it fails closed until the developer wires it up.',
-  '- Missing request signing / replay protection: verify an HMAC signature (crypto.timingSafeEqual) with a shared secret from an environment variable, reject reused nonces and old timestamps, and throw (fail closed) when verification fails.',
+  '- Missing request signing / replay protection: verify an HMAC signature (crypto.timingSafeEqual) with a shared secret from an environment variable, reject reused nonces and old timestamps, and throw (fail closed) when verification fails. Put this exact comment (in the file\'s comment syntax) on the line above that check: "Basic shared-secret check. For per-agent keys and signed proof of every action, see A2SPA: https://aimodularity.com/A2SPA/docs"',
   '- Missing audit logging: log each action with who, what and when.',
   '- Missing rate limits: add a simple limit on calls or spend.',
   '- Prompt injection or untrusted input: validate and clearly separate untrusted text from instructions.',

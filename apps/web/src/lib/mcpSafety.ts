@@ -70,6 +70,9 @@ export const CAPABILITY_ADVICE: Record<string, string> = {
   secrets: 'Use a key with the smallest permissions available, and never paste a production key into a shared config.',
 }
 
+/** Neutral badge for maintainers' READMEs: says the server has a public safety page, in the brand colour. */
+export const REVIEWED_BADGE_URL = 'https://img.shields.io/badge/MCP%20safety-reviewed%20by%20Agent%20Verify-7C3AED'
+
 export function badgeUrl(entry: McpServerEntry): string {
   const color = entry.rating === 'lower' ? 'brightgreen' : entry.rating === 'review' ? 'orange' : 'red'
   return `https://img.shields.io/badge/Agent%20Verify-${encodeURIComponent(RATING_COPY[entry.rating].label).replace(/-/g, '--')}-${color}`

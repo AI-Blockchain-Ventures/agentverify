@@ -56,6 +56,7 @@ export const STATIC_ENTRIES: AskEntry[] = [
   // Pages
   { id: 'p-pricing', kind: 'page', title: 'Pricing', url: '/pricing', text: 'Plans and what each includes.', keywords: 'plans' },
   { id: 'p-mcp', kind: 'page', title: 'MCP safety directory', url: '/mcp', text: 'Popular MCP servers checked.', keywords: 'servers directory' },
+  { id: 'p-agent-report', kind: 'page', title: 'State of AI Agent Security report', url: '/state-of-agent-security', text: 'What 50 of the most-starred open-source AI agent projects can do (shell commands, files, browsers), the most common security patterns to review, and how to protect your own agents.' },
   { id: 'p-mcp-report', kind: 'page', title: 'State of MCP Security report', url: '/state-of-mcp-security', text: 'What 500+ popular MCP servers can do, and what that means for security.', keywords: 'report research statistics study mcp state survey' },
   { id: 'p-whats-new', kind: 'page', title: "What's new in 2.0", url: '/whats-new', text: 'Everything added in Agent Verify 2.0.', keywords: 'new release changelog update version 2 launch features' },
   { id: 'p-checks', kind: 'page', title: 'Check library', url: '/checks', text: 'Every security check, what it finds, why it matters and how to fix it.', keywords: 'checks rules library list all help fix' },

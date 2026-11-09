@@ -54,7 +54,7 @@ test('new homepage examples load into the free scan box', async ({ page }) => {
 })
 
 test('every public page has exactly one site header and one site footer', async ({ page }) => {
-  for (const path of ['./', 'pricing/', 'developers/', 'docs/', 'mcp/', 'checks/', 'state-of-mcp-security/', 'whats-new/', 'trust/', 'report/demo/', 'agentspoofed/', 'owasp-agentic-skills/', 'privacy/', 'terms/']) {
+  for (const path of ['./', 'pricing/', 'developers/', 'docs/', 'mcp/', 'checks/', 'state-of-mcp-security/', 'state-of-agent-security/', 'whats-new/', 'trust/', 'report/demo/', 'agentspoofed/', 'owasp-agentic-skills/', 'privacy/', 'terms/']) {
     await page.goto(path)
     await expect(page.locator('footer:has(a[aria-label="Agent Verify home"])'), `${path} site footers`).toHaveCount(1)
     await expect(page.locator('header a[aria-label="Agent Verify home"]'), `${path} site headers`).toHaveCount(1)
@@ -62,7 +62,7 @@ test('every public page has exactly one site header and one site footer', async 
 })
 
 test('no page scrolls sideways (phones included)', async ({ page }) => {
-  for (const path of ['./', 'pricing/', 'developers/', 'docs/', 'mcp/', 'checks/', 'checks/av-mcp-105/', 'state-of-mcp-security/', 'whats-new/', 'trust/', 'report/demo/', 'agentspoofed/', 'privacy/', 'terms/']) {
+  for (const path of ['./', 'pricing/', 'developers/', 'docs/', 'mcp/', 'checks/', 'checks/av-mcp-105/', 'state-of-mcp-security/', 'state-of-agent-security/', 'whats-new/', 'trust/', 'report/demo/', 'agentspoofed/', 'privacy/', 'terms/']) {
     await page.goto(path)
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)
     expect(overflow, `${path} scrolls sideways by ${overflow}px`).toBeLessThanOrEqual(1)

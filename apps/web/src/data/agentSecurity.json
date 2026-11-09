@@ -1,0 +1,338 @@
+{
+ "generatedAt": "2026-11-09T15:02:50.725Z",
+ "scannerVersion": "2.0.0",
+ "method": {
+  "topics": [
+   "ai-agents",
+   "ai-agent",
+   "llm-agent",
+   "autonomous-agents",
+   "agentic-ai"
+  ],
+  "minStars": 800,
+  "languages": [
+   "Python",
+   "TypeScript",
+   "JavaScript"
+  ],
+  "excluded": "curated lists, courses, books, prompt and skill collections, forks, archived projects",
+  "files": "up to 60 source files and 5 MB per project, picked the same way as the Slack repo scan, without docs, Markdown, tests, examples or CI files"
+ },
+ "totals": {
+  "projects": 50,
+  "stars": 4087113,
+  "files": 2834,
+  "verified": 3,
+  "withCriticalOrHigh": 47,
+  "withAnyFinding": 50,
+  "medianScore": 40,
+  "languages": {
+   "Python": 26,
+   "TypeScript": 19,
+   "JavaScript": 5
+  }
+ },
+ "capabilities": [
+  {
+   "id": "execute_commands",
+   "label": "Execute shell commands",
+   "projects": 40
+  },
+  {
+   "id": "read_files",
+   "label": "Read files from the filesystem",
+   "projects": 39
+  },
+  {
+   "id": "invoke_external_apis",
+   "label": "Call external APIs",
+   "projects": 36
+  },
+  {
+   "id": "modify_files",
+   "label": "Write or modify files",
+   "projects": 30
+  },
+  {
+   "id": "delete_files",
+   "label": "Delete files or directories",
+   "projects": 23
+  },
+  {
+   "id": "access_databases",
+   "label": "Read from a database",
+   "projects": 22
+  },
+  {
+   "id": "browser_automation",
+   "label": "Drive a real browser session",
+   "projects": 16
+  },
+  {
+   "id": "modify_databases",
+   "label": "Write to or modify a database",
+   "projects": 13
+  },
+  {
+   "id": "modify_source_code",
+   "label": "Modify source code or repositories",
+   "projects": 9
+  },
+  {
+   "id": "read_customer_data",
+   "label": "Read customer or user data",
+   "projects": 7
+  },
+  {
+   "id": "access_cloud_infrastructure",
+   "label": "Access cloud infrastructure",
+   "projects": 4
+  },
+  {
+   "id": "send_messages",
+   "label": "Send messages (chat/SMS)",
+   "projects": 2
+  },
+  {
+   "id": "issue_refunds",
+   "label": "Issue refunds",
+   "projects": 1
+  }
+ ],
+ "findings": [
+  {
+   "code": "COMMAND_INJECTION_RISK",
+   "projects": 38
+  },
+  {
+   "code": "MISSING_NONCE",
+   "projects": 35
+  },
+  {
+   "code": "MISSING_SIGNATURE",
+   "projects": 29
+  },
+  {
+   "code": "ROGUE_AGENT_RISK",
+   "projects": 23
+  },
+  {
+   "code": "UNBOUNDED_MEMORY",
+   "projects": 19
+  },
+  {
+   "code": "INSECURE_HTTP_ENDPOINT",
+   "projects": 19
+  },
+  {
+   "code": "OVERPERMISSIONED_SCOPE",
+   "projects": 18
+  },
+  {
+   "code": "MISSING_TIMESTAMP",
+   "projects": 13
+  },
+  {
+   "code": "WEBHOOK_WITHOUT_VERIFICATION",
+   "projects": 11
+  },
+  {
+   "code": "MISSING_FAIL_CLOSED",
+   "projects": 10
+  },
+  {
+   "code": "HARDCODED_CREDENTIALS",
+   "projects": 10
+  },
+  {
+   "code": "SAFETY_CONTROLS_DISABLED",
+   "projects": 9
+  },
+  {
+   "code": "DEPENDENCY_FROM_GIT_BRANCH",
+   "projects": 9
+  },
+  {
+   "code": "SUPPLY_CHAIN_RISK",
+   "projects": 9
+  },
+  {
+   "code": "MCP_DANGEROUS_TOOL_EXPOSURE_SHELL_EXEC",
+   "projects": 7
+  },
+  {
+   "code": "DATA_EXFILTRATION_PATH",
+   "projects": 7
+  },
+  {
+   "code": "MCP_SERVER_ENV_PASSTHROUGH",
+   "projects": 7
+  },
+  {
+   "code": "MCP_UNKNOWN_SERVER_CAPABILITY",
+   "projects": 7
+  },
+  {
+   "code": "MISSING_AUDIT_LOGGING",
+   "projects": 7
+  },
+  {
+   "code": "UNSAFE_BROWSER_AUTOMATION",
+   "projects": 6
+  },
+  {
+   "code": "MCP_HIDDEN_UNICODE",
+   "projects": 5
+  },
+  {
+   "code": "UNSAFE_EVAL_EXEC",
+   "projects": 5
+  },
+  {
+   "code": "MCP_DANGEROUS_TOOL_EXPOSURE_BROWSER_AUTOMATION",
+   "projects": 4
+  },
+  {
+   "code": "INDIRECT_PROMPT_INJECTION",
+   "projects": 4
+  },
+  {
+   "code": "SQL_INJECTION_RISK",
+   "projects": 4
+  },
+  {
+   "code": "UNSAFE_DESERIALIZATION",
+   "projects": 4
+  },
+  {
+   "code": "SECRET_DETECTED_DATABASE_CONNECTION_STRING_WITH_EMBEDDED_CREDENTIALS",
+   "projects": 3
+  },
+  {
+   "code": "CLOUD_METADATA_ACCESS",
+   "projects": 3
+  },
+  {
+   "code": "DEBUG_MODE_IN_PRODUCTION",
+   "projects": 3
+  },
+  {
+   "code": "MCP_TOOL_LIST_CAN_CHANGE",
+   "projects": 3
+  },
+  {
+   "code": "SSRF_RISK",
+   "projects": 2
+  },
+  {
+   "code": "MCP_UNPINNED_SERVER",
+   "projects": 2
+  },
+  {
+   "code": "TLS_VERIFICATION_DISABLED",
+   "projects": 2
+  },
+  {
+   "code": "PERMISSIVE_CORS",
+   "projects": 2
+  },
+  {
+   "code": "BROAD_TOOL_ACCESS",
+   "projects": 2
+  },
+  {
+   "code": "MCP_DANGEROUS_TOOL_EXPOSURE_FILESYSTEM",
+   "projects": 2
+  },
+  {
+   "code": "NO_RATE_LIMITING",
+   "projects": 2
+  },
+  {
+   "code": "NO_OUTPUT_TOKEN_LIMIT",
+   "projects": 2
+  },
+  {
+   "code": "DESTRUCTIVE_TOOL_NO_CONFIRM",
+   "projects": 1
+  },
+  {
+   "code": "MCP_SECRET_IN_CONFIG",
+   "projects": 1
+  },
+  {
+   "code": "AUDIT_LOGGING_DISABLED",
+   "projects": 1
+  },
+  {
+   "code": "SECRET_DETECTED_PRIVATE_KEY_MATERIAL",
+   "projects": 1
+  },
+  {
+   "code": "MISSING_HUMAN_GATES",
+   "projects": 1
+  },
+  {
+   "code": "SECRET_DETECTED_AWS_ACCESS_KEY_ID",
+   "projects": 1
+  },
+  {
+   "code": "CLAUDE_AGENT_NO_TOOL_ALLOWLIST",
+   "projects": 1
+  },
+  {
+   "code": "CREWAI_OPEN_DELEGATION",
+   "projects": 1
+  },
+  {
+   "code": "SENSITIVE_DATA_IN_LOGS",
+   "projects": 1
+  },
+  {
+   "code": "AGENT_DB_SUPERUSER",
+   "projects": 1
+  },
+  {
+   "code": "UNBOUNDED_AGENT_LOOP",
+   "projects": 1
+  },
+  {
+   "code": "OPENAI_AGENTS_NO_GUARDRAILS",
+   "projects": 1
+  },
+  {
+   "code": "INSUFFICIENT_EXECUTION_CONTEXT",
+   "projects": 1
+  },
+  {
+   "code": "A2A_AGENT_CARD_NO_AUTH",
+   "projects": 1
+  },
+  {
+   "code": "PRIVILEGED_CONTAINER_CONFIG",
+   "projects": 1
+  }
+ ],
+ "scoreBands": [
+  {
+   "lo": 0,
+   "hi": 39,
+   "projects": 24
+  },
+  {
+   "lo": 40,
+   "hi": 69,
+   "projects": 19
+  },
+  {
+   "lo": 70,
+   "hi": 89,
+   "projects": 5
+  },
+  {
+   "lo": 90,
+   "hi": 100,
+   "projects": 2
+  }
+ ]
+}

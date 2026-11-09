@@ -2,7 +2,7 @@ import Link from 'next/link'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { pageMetadata } from '@/lib/seo'
-import { CAPABILITY_ADVICE, RATING_COPY, badgeUrl, getMcpServer, mcpSafety } from '@/lib/mcpSafety'
+import { CAPABILITY_ADVICE, RATING_COPY, REVIEWED_BADGE_URL, badgeUrl, getMcpServer, mcpSafety } from '@/lib/mcpSafety'
 import { CodeBlock } from '@/components/developers/CodeBlock'
 
 export const dynamicParams = false
@@ -55,6 +55,7 @@ export default function McpServerPage({ params }: { params: { slug: string } }) 
           </div>
           <p style={{ color: 'var(--text-primary)' }} className="mt-3 text-sm leading-6">{r.explain}</p>
           <p style={{ color: 'var(--text-muted)' }} className="mt-1 text-xs">Why: {s.reasons.join('; ')}.</p>
+          <p style={{ color: 'var(--text-muted)' }} className="mt-3 text-xs">Maintain this server? <a href="#maintainers" className="font-semibold text-[color:var(--accent-purple-text)] underline">Get a README badge or ask for a re-scan</a>.</p>
         </section>
 
         <section className="mt-8">
@@ -125,12 +126,13 @@ export default function McpServerPage({ params }: { params: { slug: string } }) 
           <Link href="/developers#mcp" className="rounded-2xl bg-[#7C3AED] px-5 py-3 text-center text-sm font-semibold text-white hover:opacity-90">Check my setup free</Link>
         </section>
 
-        <section className="mt-10 border-t pt-6" style={{ borderColor: 'var(--border)' }}>
+        <section id="maintainers" className="mt-10 scroll-mt-24 border-t pt-6" style={{ borderColor: 'var(--border)' }}>
           <h2 style={{ color: 'var(--text-primary)' }} className="text-sm font-semibold">Maintain {s.name}?</h2>
           <p style={{ color: 'var(--text-muted)' }} className="mt-1 text-xs leading-5">
-            Show users you&apos;ve thought about access: add the badge below. If something here is wrong or you&apos;ve released a fix, <a href={`mailto:hello@aiblockchainventures.com?subject=${encodeURIComponent(`MCP re-scan request: ${s.name}`)}`} className="underline">ask for a re-scan</a> — we update pages on request.
+            Show users you&apos;ve thought about access: add the badge below. It links to this page, so people can see what your server can reach and how to use it safely. If something here is wrong or you&apos;ve released a fix, <a href={`mailto:hello@aiblockchainventures.com?subject=${encodeURIComponent(`MCP re-scan request: ${s.name}`)}`} className="underline">ask for a re-scan</a> — we update pages on request.
           </p>
-          <div className="mt-3"><CodeBlock code={`[![Agent Verify: ${r.label}](${badgeUrl(s)})](${pageUrl})`} label="README badge" /></div>
+          <div className="mt-3"><CodeBlock code={`[![MCP safety: reviewed by Agent Verify](${REVIEWED_BADGE_URL})](${pageUrl})`} label="README badge" /></div>
+          <p style={{ color: 'var(--text-muted)' }} className="mt-2 text-[11px] leading-5">Prefer to show the access level instead? <code className="break-all">{`[![Agent Verify: ${r.label}](${badgeUrl(s)})](${pageUrl})`}</code></p>
           <p style={{ color: 'var(--text-muted)' }} className="mt-4 text-[11px] leading-5">
             Agent Verify reads the package published on npm as text — it is never installed or run. Ratings describe capability, not intent, and are an automated, evidence-based check, not a guarantee. Scanner {mcpSafety.scannerVersion}.
           </p>

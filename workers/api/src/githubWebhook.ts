@@ -9,7 +9,7 @@ import { createScanResult } from './scanResponse'
 import { githubRequest, installationToken, isGithubAppConfigured, userCanAccessInstallation, verifyWebhookSignature, GithubError, type FetchLike, type GithubAppEnv } from './githubApp'
 import {
   CHECK_NAME, COMMENT_MARKER, MAX_FILE_BYTES, MAX_TOTAL_BYTES, buildCheckRun, buildComment, combineFiles, countBySeverity,
-  looksLikeAgentCode, noAgentFilesCheck, selectChangedFiles, isScannablePath, filePriority, MAX_FILES, type ChangedFile, type CheckOutput, type RepoFile,
+  looksLikeAgentCode, noAgentFilesCheck, unreadFilesCheck, withUnreadFiles, selectChangedFiles, isScannablePath, filePriority, MAX_FILES, type ChangedFile, type CheckOutput, type RepoFile,
 } from './githubPr'
 import { sendScanAlerts, type AlertEnv } from './alerts'
 import { commentableLines, fixMarker, FIX_MARKER_PREFIX, suggestLineFix } from './autofix'
@@ -57,16 +57,18 @@ async function useAllowance(db: D1Database, installationId: number, plan: Plan, 
   return true
 }
 
-async function fetchFiles(token: string, repo: string, sha: string, paths: string[], fetchFn: FetchLike): Promise<{ files: RepoFile[]; notes: string[] }> {
+async function fetchFiles(token: string, repo: string, sha: string, paths: string[], fetchFn: FetchLike): Promise<{ files: RepoFile[]; notes: string[]; unread: number }> {
   const files: RepoFile[] = []
   let total = 0
   let skipped = 0
+  // Download failures are counted apart from size limits: a file we could not read was never checked.
+  let unread = 0
   for (const path of paths) {
     let content: string
     try {
       content = await githubRequest<string>(token, 'GET', `/repos/${repo}/contents/${path.split('/').map(encodeURIComponent).join('/')}?ref=${sha}`, undefined, fetchFn, 'application/vnd.github.raw+json')
     } catch {
-      skipped++
+      unread++
       continue
     }
     const size = new TextEncoder().encode(content).length
@@ -75,7 +77,9 @@ async function fetchFiles(token: string, repo: string, sha: string, paths: strin
     files.push({ path, content })
     total += size
   }
-  return { files, notes: skipped ? [`${skipped} file(s) were skipped (too large, binary, or over the 5MB scan limit).`] : [] }
+  const notes = skipped ? [`${skipped} file(s) were skipped (too large, binary, or over the 5MB scan limit).`] : []
+  if (unread) notes.push(`${unread} file(s) could not be downloaded from GitHub and were not checked.`)
+  return { files, notes, unread }
 }
 
 function scanFiles(files: RepoFile[], label: string, plan: Plan, deps: GithubDeps): ScanResult {
@@ -152,10 +156,11 @@ export async function processPullRequest(payload: PrPayload, env: GithubEnv, dep
     await postCheck(token, repo, sha, noAgentFilesCheck(), fetchFn)
     return 'no scannable files'
   }
-  const { files, notes } = await fetchFiles(token, repo, sha, paths, fetchFn)
+  const { files, notes, unread } = await fetchFiles(token, repo, sha, paths, fetchFn)
   if (files.length === 0 || !looksLikeAgentCode(files)) {
-    await postCheck(token, repo, sha, noAgentFilesCheck(), fetchFn)
-    return 'no agent files'
+    // Nothing readable looked like agent code. If some files could not be downloaded, we cannot say that.
+    await postCheck(token, repo, sha, unread ? unreadFilesCheck(unread) : noAgentFilesCheck(), fetchFn)
+    return unread ? 'files unreadable' : 'no agent files'
   }
   if (!(await useAllowance(db, installationId, plan, now))) {
     await postCheck(token, repo, sha, {
@@ -170,7 +175,7 @@ export async function processPullRequest(payload: PrPayload, env: GithubEnv, dep
   }
   const result = scanFiles(files, `${repo}#${pr}`, plan, deps)
   await recordRepoScan(db, { installationId, repo, sha, branch: payload.pull_request.head.ref, trigger: 'pull_request', pr, result, fileCount: files.length, now })
-  await postCheck(token, repo, sha, buildCheckRun(result, files), fetchFn)
+  await postCheck(token, repo, sha, withUnreadFiles(buildCheckRun(result, files), unread), fetchFn)
   const oneClickFixes = await postFixSuggestions(token, repo, pr, sha, result, files, changed, plan === 'pro', fetchFn)
   const linkUrl = `${SITE}/dashboard/?github_installation=${installationId}`
   const body = buildComment(result, { repo, sha, files, plan, notes, linkUrl, oneClickFixes })

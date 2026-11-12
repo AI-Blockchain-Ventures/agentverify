@@ -105,9 +105,19 @@ const SECRET_PATTERNS: RegExp[] = [
   /\beyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}/,
 ]
 
+/**
+ * RegExp.test() on a global (g) or sticky (y) pattern remembers where it stopped (lastIndex), so the same
+ * input could match one call and not the next. Policy checks must give the same answer every time.
+ */
+function testPattern(re: RegExp, value: string): boolean {
+  if (!re.global && !re.sticky) return re.test(value)
+  re.lastIndex = 0
+  try { return re.test(value) } finally { re.lastIndex = 0 }
+}
+
 function matches(name: string, patterns?: Array<string | RegExp>): boolean {
   return (patterns ?? []).some(p => {
-    if (p instanceof RegExp) return p.test(name)
+    if (p instanceof RegExp) return testPattern(p, name)
     if (!p.includes('*')) return p === name
     const re = new RegExp(`^${p.split('*').map(s => s.replace(/[.+?^${}()|[\]\\]/g, '\\$&')).join('.*')}$`)
     return re.test(name)
@@ -162,6 +172,26 @@ export function previewArgs(args: unknown[]): string {
   }
 }
 
+/** A stable snapshot of call arguments, to detect changes between the policy check and execution. */
+function fingerprint(args: unknown[]): string {
+  const seen = new WeakSet<object>()
+  try {
+    return JSON.stringify(args, (_k, v: unknown) => {
+      if (typeof v === 'function') return `[fn ${(v as { name?: string }).name ?? ''}]`
+      if (typeof v === 'bigint') return `${v}n`
+      if (v && typeof v === 'object') {
+        if (seen.has(v)) return '[circular]'
+        seen.add(v)
+        if (v instanceof Map) return { __map: [...v.entries()] }
+        if (v instanceof Set) return { __set: [...v.values()] }
+      }
+      return v
+    })
+  } catch {
+    return previewArgs(args)
+  }
+}
+
 /** The policy decision for one call, before any human approval. Exported for testing and dry runs. */
 export function checkCall(policy: GuardPolicy, tool: string, args: unknown[]): { ok: true; needsApproval: boolean } | { ok: false; reason: string } {
   if (matches(tool, policy.deny)) return { ok: false, reason: 'this tool is on the deny list' }
@@ -181,7 +211,7 @@ export function checkCall(policy: GuardPolicy, tool: string, args: unknown[]): {
       const values = strings(obj[name])
       for (const v of values) {
         if (rule.maxLength !== undefined && v.length > rule.maxLength) return { ok: false, reason: `"${name}" is longer than ${rule.maxLength} characters` }
-        if (rule.deny && rule.deny.test(v)) return { ok: false, reason: `"${name}" matches a blocked pattern` }
+        if (rule.deny && testPattern(rule.deny, v)) return { ok: false, reason: `"${name}" matches a blocked pattern` }
         if (rule.allowDomains?.length) {
           const domains: string[] = []
           for (const m of v.matchAll(/@([A-Za-z0-9.-]+\.[A-Za-z]{2,})/g)) domains.push(m[1])
@@ -266,11 +296,20 @@ export function createGuard(options: GuardOptions): Guard {
       }
       let decision: Decision = 'allowed'
       if (verdict.needsApproval) {
+        // What runs must be exactly what was checked and approved: fingerprint the arguments now and
+        // compare after the (async) approval, so a change made while waiting cannot slip through.
+        const before = fingerprint(args)
         let yes = false
         try { yes = options.approve ? await options.approve({ tool: name, args, agent }) === true : false } catch { yes = false }
         if (!yes) {
           const reason = options.approve ? 'a person did not approve it' : 'it needs human approval and no approver is set up'
           record({ tool: name, decision: 'rejected', reason, argsPreview: preview })
+          throw new GuardBlockedError(name, reason)
+        }
+        const recheck = checkCall(options.policy, name, args)
+        if (fingerprint(args) !== before || !recheck.ok) {
+          const reason = 'its arguments changed while waiting for approval'
+          record({ tool: name, decision: 'blocked', reason, argsPreview: previewArgs(args) })
           throw new GuardBlockedError(name, reason)
         }
         decision = 'approved'

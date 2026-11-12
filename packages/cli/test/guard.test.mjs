@@ -98,3 +98,35 @@ test('CommonJS build works too', () => {
   const cjs = require('../dist/guard.js')
   assert.equal(typeof cjs.createGuard, 'function')
 })
+
+// Reported by an outside reviewer (Nov 2026): a global/sticky RegExp keeps lastIndex between .test() calls,
+// which could flip the same call between allowed and blocked.
+test('global or sticky patterns give the same decision every time', async () => {
+  const deny = /send_/g
+  const g = createGuard({ policy: { deny: [deny] } }).wrapAll(tools)
+  for (let i = 0; i < 4; i++) await assert.rejects(g.send_email({ to: 'a@acme.com' }), /deny list/)
+  const argRule = createGuard({ policy: { args: { send_email: { to: { deny: /evil/gy } } } } }).wrapAll(tools)
+  for (let i = 0; i < 4; i++) await assert.rejects(argRule.send_email({ to: 'evil@x.com' }), /blocked pattern/)
+  const allow = createGuard({ policy: { allow: [/^lookup/g] } }).wrapAll(tools)
+  for (let i = 0; i < 4; i++) assert.deepEqual(await allow.lookup_order({ id: i }), { id: i, status: 'shipped' })
+})
+
+// Reported by an outside reviewer (Nov 2026): arguments were checked before approval and passed to the tool
+// after it, so a change made while waiting for a person could run something that was never checked.
+test('arguments changed while waiting for approval are blocked', async () => {
+  const ran = []
+  const send = async ({ to }) => { ran.push(to); return `sent to ${to}` }
+  const policy = { requireApproval: ['send_email'], args: { send_email: { to: { allowDomains: ['acme.com'] } } } }
+  let pending
+  const g = createGuard({ policy, approve: () => new Promise(r => { pending = r }) }).wrapAll({ send_email: send })
+  const args = { to: 'boss@acme.com' }
+  const call = g.send_email(args)
+  await new Promise(r => setImmediate(r))
+  args.to = 'attacker@evil.com' // changed after the check, before approval
+  pending(true)
+  await assert.rejects(call, /changed while waiting for approval/)
+  assert.deepEqual(ran, [], 'the tool never ran')
+  // Unchanged arguments still run after approval, and two approvals in flight do not mix.
+  const ok = createGuard({ policy, approve: async () => true }).wrapAll({ send_email: send })
+  assert.deepEqual(await Promise.all([ok.send_email({ to: 'a@acme.com' }), ok.send_email({ to: 'b@acme.com' })]), ['sent to a@acme.com', 'sent to b@acme.com'])
+})

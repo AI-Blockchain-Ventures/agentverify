@@ -114,7 +114,8 @@ function gitlab(conn: Connection, token: string, fetchFn: FetchLike): Adapter {
       else if (createIfMissing) await call(fetchFn, `${api}/merge_requests/${iid}/notes`, { method: 'POST', headers: h, body: JSON.stringify({ body }) })
     },
     async setStatus(sha, state, title, url) {
-      const gl = state === 'failure' ? 'failed' : 'success'
+      // Neutral (not checked / not assessed) is GitLab's grey "skipped" state, never a green success.
+      const gl = state === 'failure' ? 'failed' : state === 'neutral' ? 'skipped' : 'success'
       await call(fetchFn, `${api}/statuses/${sha}`, { method: 'POST', headers: h, body: JSON.stringify({ state: gl, name: 'Agent Verify', description: title.slice(0, 255), target_url: url }) })
     },
     fileUrl: (path, line, sha) => `https://${conn.host}/${conn.project}/-/blob/${sha}/${path.split('/').map(encodeURIComponent).join('/')}#L${line}`,
@@ -146,7 +147,7 @@ function bitbucket(conn: Connection, token: string, fetchFn: FetchLike): Adapter
       else if (createIfMissing) await call(fetchFn, `${api}/pullrequests/${id}/comments`, { method: 'POST', headers: h, body: payload })
     },
     async setStatus(sha, state, title, url) {
-      await call(fetchFn, `${api}/commit/${sha}/statuses/build`, { method: 'POST', headers: h, body: JSON.stringify({ key: 'agentverify', name: 'Agent Verify', state: state === 'failure' ? 'FAILED' : 'SUCCESSFUL', description: title.slice(0, 255), url }) })
+      await call(fetchFn, `${api}/commit/${sha}/statuses/build`, { method: 'POST', headers: h, body: JSON.stringify({ key: 'agentverify', name: 'Agent Verify', state: state === 'failure' ? 'FAILED' : state === 'neutral' ? 'STOPPED' : 'SUCCESSFUL', description: title.slice(0, 255), url }) })
     },
     fileUrl: (path, line, sha) => `https://bitbucket.org/${conn.project}/src/${sha}/${path.split('/').map(encodeURIComponent).join('/')}#lines-${line}`,
   }
@@ -238,10 +239,12 @@ export async function processMergeRequest(env: VcsEnv, conn: Connection, mr: MrE
   const paths = selectChangedFiles(await a.changedFiles(mr.id))
   const files: RepoFile[] = []
   let total = 0
+  // Files that could not be downloaded were never checked, so they must not end in a green status.
+  let unread = 0
   for (const path of paths) {
     if (!isScannablePath(path)) continue
     const text = await a.file(path, mr.sha)
-    if (text === null) continue
+    if (text === null) { unread++; continue }
     const size = enc.encode(text).length
     if (size > MAX_FILE_BYTES || total + size > MAX_TOTAL_BYTES || text.includes('\u0000')) continue
     files.push({ path, content: text })
@@ -249,6 +252,10 @@ export async function processMergeRequest(env: VcsEnv, conn: Connection, mr: MrE
   }
   const detailsUrl = `${SITE}/developers/`
   if (files.length === 0 || !looksLikeAgentCode(files)) {
+    if (unread > 0) {
+      await a.setStatus(mr.sha, 'neutral', `Not checked: ${unread} changed file(s) could not be read. Push again to retry.`, detailsUrl)
+      return 'files unreadable'
+    }
     await a.setStatus(mr.sha, 'success', 'No agent files changed', detailsUrl)
     return 'no agent files'
   }
@@ -256,7 +263,7 @@ export async function processMergeRequest(env: VcsEnv, conn: Connection, mr: MrE
   const used = (await db.prepare('SELECT scan_count FROM vcs_usage WHERE connection_id = ? AND month = ?').bind(conn.id, month).first<{ scan_count: number }>())?.scan_count ?? 0
   const limit = pro ? VCS_SCANS_BY_PLAN.pro : VCS_SCANS_BY_PLAN.free
   if (used >= limit) {
-    await a.setStatus(mr.sha, 'success', `Monthly scan limit reached (${limit}) — see ${SITE}/pricing/`, `${SITE}/pricing/`)
+    await a.setStatus(mr.sha, 'neutral', `Not checked: monthly scan limit reached (${limit}). See ${SITE}/pricing/`, `${SITE}/pricing/`)
     return 'over limit'
   }
   await db.prepare(`INSERT INTO vcs_usage (connection_id, month, scan_count, updated_at) VALUES (?, ?, 1, ?)
@@ -265,8 +272,12 @@ export async function processMergeRequest(env: VcsEnv, conn: Connection, mr: MrE
   const run = deps.scanFn ?? createScanResult
   const result = applyRemediationEntitlement(run({ content, fileName: `${conn.project}!${mr.id}`, fileSize: content.length, platform: conn.provider === 'gitlab' ? 'GitLab' : 'Bitbucket' }), pro ? 'pro' : 'free')
   const c = countBySeverity(result.findings ?? [])
-  const conclusion = checkConclusion(result)
-  await a.setStatus(mr.sha, conclusion, `${c.critical} critical, ${c.high} high, ${c.medium} medium · score ${result.riskScore}/100`, detailsUrl)
+  const checked = checkConclusion(result)
+  const conclusion = checked === 'success' && unread > 0 ? 'neutral' : checked
+  const summary = checked === 'neutral'
+    ? 'Not assessed: not enough agent code to check'
+    : `${c.critical} critical, ${c.high} high, ${c.medium} medium · score ${result.riskScore}/100${unread ? ` · ${unread} file(s) not read` : ''}`
+  await a.setStatus(mr.sha, conclusion, summary, detailsUrl)
   const body = buildComment(result, { repo: conn.project, sha: mr.sha, files, plan: pro ? 'pro' : 'free', fileUrl: (p, l) => a.fileUrl(p, l, mr.sha) })
   await a.upsertComment(mr.id, body, (result.findings ?? []).length > 0)
   return `scanned ${files.length} file(s): score ${result.riskScore}`

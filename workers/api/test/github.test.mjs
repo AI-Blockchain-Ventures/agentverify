@@ -280,3 +280,29 @@ test('linking: requires a GitHub sign-in that can access the installation', asyn
   assert.equal(ok.status, 200)
   assert.equal(db.raw.prepare('SELECT linked_uid FROM github_installations WHERE installation_id = 1').get().linked_uid, 'u1')
 })
+
+// Reported by an outside reviewer (Nov 2026): a green check must mean the changed agent code was actually checked.
+test('PR flow: "not assessed" and unreadable files are neutral, never a green pass', async () => {
+  const notAssessed = () => ({ verdict: 'NOT_ASSESSED', riskScore: 0, riskLevel: 'High Risk', findings: [], reportInsights: {} })
+  const files = { prFiles: [{ filename: 'agent.py', status: 'modified' }], contents: { 'agent.py': AGENT } }
+  const na = fakeGithub(files)
+  await processPullRequest(prPayload(), env(makeDb()), { fetchFn: na.fetchFn, scanFn: notAssessed })
+  const naCheck = na.posted('POST', '/check-runs')[0].body
+  assert.equal(naCheck.conclusion, 'neutral')
+  assert.match(naCheck.output.title, /Not assessed/)
+
+  // Every changed agent file failed to download: not "No agent files changed".
+  const gone = fakeGithub({ prFiles: [{ filename: 'agent.py', status: 'modified' }], contents: {} })
+  const out = await processPullRequest(prPayload(), env(makeDb()), { fetchFn: gone.fetchFn, scanFn: fakeScan([]) })
+  assert.equal(out, 'files unreadable')
+  const goneCheck = gone.posted('POST', '/check-runs')[0].body
+  assert.equal(goneCheck.conclusion, 'neutral')
+  assert.match(goneCheck.output.title, /could not be read/)
+
+  // Some files read and clean, one unreadable: still not a full pass.
+  const partial = fakeGithub({ prFiles: [{ filename: 'agent.py', status: 'modified' }, { filename: 'tools.py', status: 'modified' }], contents: { 'agent.py': AGENT } })
+  await processPullRequest(prPayload(), env(makeDb()), { fetchFn: partial.fetchFn, scanFn: fakeScan([]) })
+  const partialCheck = partial.posted('POST', '/check-runs')[0].body
+  assert.equal(partialCheck.conclusion, 'neutral')
+  assert.match(partialCheck.output.title, /1 file not read/)
+})

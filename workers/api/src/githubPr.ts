@@ -85,10 +85,14 @@ export function countBySeverity(findings: Finding[]): Record<'critical' | 'high'
   return c
 }
 
-/** The check fails when the change has a critical or high finding; otherwise it passes. */
-export function checkConclusion(result: ScanResult): 'success' | 'failure' {
+/**
+ * The check fails when the change has a critical or high finding. When the scanner could not assess the
+ * code at all (NOT_ASSESSED) it is neutral, never a green pass for something that was not checked.
+ */
+export function checkConclusion(result: ScanResult): 'success' | 'failure' | 'neutral' {
   const c = countBySeverity(result.findings ?? [])
-  return c.critical + c.high > 0 ? 'failure' : 'success'
+  if (c.critical + c.high > 0) return 'failure'
+  return result.verdict === 'NOT_ASSESSED' ? 'neutral' : 'success'
 }
 
 function escapeMd(s: string): string {
@@ -178,9 +182,11 @@ export function buildCheckRun(result: ScanResult, files: RepoFile[]): CheckOutpu
   const findings = sortFindings(result.findings ?? [])
   const c = countBySeverity(findings)
   const conclusion = checkConclusion(result)
-  const title = findings.length === 0
-    ? `No security findings · score ${result.riskScore}/100`
-    : `${c.critical} critical, ${c.high} high, ${c.medium} medium, ${c.low} low · score ${result.riskScore}/100`
+  const title = conclusion === 'neutral'
+    ? 'Not assessed: not enough agent code to check'
+    : findings.length === 0
+      ? `No security findings · score ${result.riskScore}/100`
+      : `${c.critical} critical, ${c.high} high, ${c.medium} medium, ${c.low} low · score ${result.riskScore}/100`
   const annotations: CheckOutput['annotations'] = []
   for (const f of findings) {
     if (annotations.length >= 50) break
@@ -197,8 +203,34 @@ export function buildCheckRun(result: ScanResult, files: RepoFile[]): CheckOutpu
   }
   const summary = conclusion === 'failure'
     ? `This change adds critical or high security risks to an AI agent. Fix them, then push again to re-check.`
-    : findings.length ? 'No critical or high risks. Lower-severity findings are listed as annotations.' : 'No security findings in the changed agent files.'
+    : conclusion === 'neutral'
+      ? 'Agent Verify could not assess these changes: they do not show enough agent behavior (tools, actions, permissions) to check. This is not a pass. Nothing was verified.'
+      : findings.length ? 'No critical or high risks. Lower-severity findings are listed as annotations.' : 'No security findings in the changed agent files.'
   return { conclusion, title, summary, annotations }
+}
+
+/** Changed agent files that could not be downloaded: the check cannot vouch for code it did not read. */
+export function unreadFilesCheck(count: number): CheckOutput {
+  return {
+    conclusion: 'neutral',
+    title: `Not checked: ${count} changed file${count === 1 ? '' : 's'} could not be read`,
+    summary: 'Agent Verify could not download some changed agent files, so it cannot say they are safe. This is not a pass. Push again to retry.',
+    annotations: [],
+  }
+}
+
+/**
+ * A check that passed but skipped files it could not read becomes neutral, so a green check always means
+ * every changed agent file was actually scanned.
+ */
+export function withUnreadFiles(check: CheckOutput, unread: number): CheckOutput {
+  if (unread === 0 || check.conclusion !== 'success') return check
+  return {
+    ...check,
+    conclusion: 'neutral',
+    title: `${check.title} · ${unread} file${unread === 1 ? '' : 's'} not read`.slice(0, 255),
+    summary: `${check.summary} ${unread} changed file${unread === 1 ? '' : 's'} could not be downloaded and ${unread === 1 ? 'was' : 'were'} not checked, so this is not a full pass. Push again to retry.`,
+  }
 }
 
 /** For PRs that don't touch agent files: a passing check (so it can be required) and no comment. */

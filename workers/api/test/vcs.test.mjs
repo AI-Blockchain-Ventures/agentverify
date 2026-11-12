@@ -16,7 +16,7 @@ const env = db => ({ BILLING_DB: db, TOKEN_ENCRYPTION_KEY: KEY })
 const AGENT = 'from langchain.agents import AgentExecutor\ntools = [lookup]\nr = requests.get(url, verify=False)\n'
 const scanFn = () => ({ verdict: 'NOT_VERIFIED', riskScore: 55, findings: [{ id: 'a', code: 'TLS_VERIFICATION_DISABLED', title: 'TLS off', category: 'B', severity: 'high', whatIsWrong: 'off', whyItMatters: 'w', recommendedFix: 'Turn it on.', line: 3 }] })
 
-function fakeApi({ probeOk = true } = {}) {
+function fakeApi({ probeOk = true, fileFails = false } = {}) {
   const calls = []
   const fetchFn = async (url, init = {}) => {
     const u = new URL(url); const m = init.method ?? 'GET'
@@ -24,11 +24,11 @@ function fakeApi({ probeOk = true } = {}) {
     const ok = d => new Response(typeof d === 'string' ? d : JSON.stringify(d), { status: 200 })
     if (/\/api\/v4\/projects\/[^/]+$/.test(u.pathname) || /^\/2\.0\/repositories\/[^/]+\/[^/]+$/.test(u.pathname)) return probeOk ? ok({}) : new Response('no', { status: 404 })
     if (u.pathname.endsWith('/merge_requests/7/diffs')) return ok([{ new_path: 'agent.py', deleted_file: false }, { new_path: 'old.py', deleted_file: true }])
-    if (u.pathname.includes('/repository/files/')) return ok(AGENT)
+    if (u.pathname.includes('/repository/files/')) return fileFails ? new Response('nf', { status: 404 }) : ok(AGENT)
     if (u.pathname.endsWith('/merge_requests/7/notes')) return m === 'GET' ? ok([]) : ok({ id: 1 })
     if (u.pathname.includes('/statuses/')) return ok({})
     if (u.pathname.endsWith('/pullrequests/9/diffstat')) return ok({ values: [{ status: 'added', new: { path: 'agent.py' } }] })
-    if (u.pathname.includes('/src/')) return ok(AGENT)
+    if (u.pathname.includes('/src/')) return fileFails ? new Response('nf', { status: 404 }) : ok(AGENT)
     if (u.pathname.endsWith('/pullrequests/9/comments')) return m === 'GET' ? ok({ values: [] }) : ok({ id: 1 })
     if (u.pathname.endsWith('/statuses/build')) return ok({})
     return new Response('unexpected ' + u.pathname, { status: 500 })
@@ -114,4 +114,35 @@ test('Bitbucket: HMAC-signed PR event scans and reports; bad signature refused',
   assert.ok(api.calls.find(c => c.m === 'POST' && c.path.endsWith('/pullrequests/9/comments')))
   assert.equal(api.calls.find(c => c.path.endsWith('/diffstat')).headers.Authorization, 'Bearer token-value-123456')
   assert.equal((await handleVcsWebhook(new Request('https://x', { method: 'POST', body: '{}' }), env(db), 'nothex', { waitUntil() {} })).status, 404)
+})
+
+// Reported by an outside reviewer (Nov 2026): GitLab/Bitbucket must not report success for changes that were not checked.
+test('GitLab and Bitbucket: over the limit, unreadable files and "not assessed" are never a green status', async () => {
+  const run = async (provider, { scan = scanFn, apiOpts = {}, fill = 0 } = {}) => {
+    const db = makeDb()
+    const conn = await connect(db, provider)
+    if (fill) db.raw.prepare('INSERT INTO vcs_usage (connection_id, month, scan_count, updated_at) VALUES (?, ?, ?, 0)').run(conn.id, new Date().toISOString().slice(0, 7), fill)
+    const api = fakeApi(apiOpts)
+    const pending = []
+    if (provider === 'gitlab') {
+      const payload = { object_kind: 'merge_request', object_attributes: { iid: 7, action: 'update', oldrev: 'aaa', last_commit: { id: 'abcdef1234567' }, title: 't', url: 'u' } }
+      await handleVcsWebhook(new Request(conn.webhookUrl, { method: 'POST', headers: { 'x-gitlab-token': conn.webhookSecret }, body: JSON.stringify(payload) }), env(db), conn.id, { waitUntil: p => pending.push(p) }, { fetchFn: api.fetchFn, scanFn: scan })
+    } else {
+      const body = JSON.stringify({ pullrequest: { id: 9, source: { commit: { hash: 'fedcba9876543' } }, title: 't', links: { html: { href: 'h' } } } })
+      const sig = 'sha256=' + createHmac('sha256', conn.webhookSecret).update(body).digest('hex')
+      await handleVcsWebhook(new Request(conn.webhookUrl, { method: 'POST', headers: { 'x-hub-signature': sig, 'x-event-key': 'pullrequest:created' }, body }), env(db), conn.id, { waitUntil: p => pending.push(p) }, { fetchFn: api.fetchFn, scanFn: scan })
+    }
+    await Promise.all(pending)
+    return api.calls.find(c => c.m === 'POST' && (c.path.includes('/statuses/abcdef1234567') || c.path.endsWith('/statuses/build'))).body
+  }
+  const notAssessed = () => ({ verdict: 'NOT_ASSESSED', riskScore: 0, findings: [] })
+  for (const [provider, grey] of [['gitlab', 'skipped'], ['bitbucket', 'STOPPED']]) {
+    const over = await run(provider, { fill: 100000 })
+    assert.equal(over.state, grey, `${provider}: over the monthly limit`)
+    assert.match(over.description, /Not checked/)
+    const unread = await run(provider, { apiOpts: { fileFails: true } })
+    assert.equal(unread.state, grey, `${provider}: changed files could not be read`)
+    assert.match(unread.description, /could not be read/)
+    assert.equal((await run(provider, { scan: notAssessed })).state, grey, `${provider}: not assessed`)
+  }
 })

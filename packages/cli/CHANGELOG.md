@@ -2,6 +2,17 @@
 
 All notable changes to the `agentverify` CLI/SDK package are documented here.
 
+## [Unreleased]
+
+### Fixed
+
+- Guard: global (`g`) and sticky (`y`) RegExp rules no longer keep `lastIndex` between calls, so the same call always
+  gets the same decision.
+- Guard: arguments are fingerprinted before human approval and re-checked after it. If they changed while waiting,
+  the call is blocked (`its arguments changed while waiting for approval`).
+
+Thanks to Nathan Freestone for reporting both.
+
 ## [2.0.0] - 2026-10-30
 
 ### Added

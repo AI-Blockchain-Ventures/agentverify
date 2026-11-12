@@ -3,6 +3,26 @@
 All notable user-facing changes to Agent Verify are documented here. The CLI/SDK package has its
 own more granular changelog at [packages/cli/CHANGELOG.md](./packages/cli/CHANGELOG.md).
 
+## [2.0.4] - 2026-11-12
+
+### Fixed
+
+- **A green check now always means the code was checked.** Pull-request checks on GitHub, GitLab and Bitbucket show a
+  neutral (grey) result instead of a pass when the scanner could not assess the changes, when changed files could not
+  be downloaded, or (GitLab and Bitbucket) when the monthly scan limit is reached.
+- **Runtime guard (`agentverify/guard`):** rules written as global or sticky patterns now give the same decision every
+  time, and a call whose arguments change while waiting for human approval is blocked instead of run.
+
+Thanks to Nathan Freestone for the external
+review that found all four issues.
+
+### Changed
+
+- **Fewer false alarms on real codebases.** Code checks now ignore comments, docstrings and description text, and
+  look at the code around each match. For example, code that blocks the cloud metadata address is no longer reported as
+  reaching it, and importing `subprocess` is no longer "command injection" on its own. On 12 company agent repos,
+  serious findings dropped from 44 to 10, and every remaining one was confirmed by hand.
+
 ## [2.0.3] - 2026-11-09
 
 ### Added

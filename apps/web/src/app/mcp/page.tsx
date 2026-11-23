@@ -3,6 +3,7 @@ import type { Metadata } from 'next'
 import { pageMetadata } from '@/lib/seo'
 import { CATEGORY_LABELS, mcpComparisons, mcpSafety } from '@/lib/mcpSafety'
 import { McpDirectory } from '@/components/mcp/McpDirectory'
+import { capabilityLabels, toDirectoryItem } from '@/lib/mcpDirectory'
 
 export const metadata: Metadata = pageMetadata(
   '/mcp',
@@ -37,7 +38,8 @@ export default function McpIndexPage() {
         </section>
 
         <div className="mt-10">
-          <McpDirectory servers={servers} />
+          {/* Only the few fields the list shows are sent to the browser; the full data stays on each server's own page. */}
+          <McpDirectory servers={servers.map(toDirectoryItem)} capLabels={capabilityLabels(servers)} />
         </div>
 
         <section className="mt-12">

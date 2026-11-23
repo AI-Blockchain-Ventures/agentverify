@@ -2,14 +2,36 @@
 
 **Know what your AI agent can do before you deploy it.**
 
-Agent Verify inspects an AI agent or agent package — its permissions, tools, MCP connections,
-execution controls, secrets, runtime configuration, and dependencies — and issues a **VERIFIED**
-or **NOT VERIFIED** result with evidence, before the agent reaches production.
+<p align="center">
+  <img src="docs/assets/agent-verify-demo.gif" width="800" alt="Agent Verify scanning a GitHub repo: paste the link, press Scan agent, and get a 40/100 report that says what to fix first">
+</p>
 
-Traditional security tools scan software. Agent Verify also examines what an AI agent is
-*connected to* and what those connections may let it actually *do* — a legitimate credential,
-valid API access, and an approved tool can still combine into an action the agent should never
-be able to take.
+**The problem:** AI agents are given real tools: databases, email, payments, cloud accounts. One
+leaked key, one tool with too much access, or one hidden instruction in a document can turn a
+helpful agent into a data leak. Normal code scanners don't check what an agent is *connected to*
+or what it's *allowed to do*.
+
+**Agent Verify checks your agent before it ships and protects it while it runs:**
+
+- **124 security checks** on your agent's code, prompts, tools and MCP config. Paste code, upload
+  files or point it at a GitHub repo, and get **VERIFIED** or **NOT VERIFIED** with the exact file
+  and line for every problem.
+- **Fix & re-check:** a plain-English fix and corrected code for each finding, then re-check in
+  seconds (Pro).
+- **Every pull request checked** on GitHub, GitLab and Bitbucket, plus a CLI and GitHub Action
+  that can block risky merges.
+- **Prompt-injection tests** against your own running agent, so you see which attacks it falls
+  for (Pro).
+- **Agent Guard** at runtime: allow lists, a person's approval for risky tools, and every decision
+  on a dashboard.
+- **Works where you build:** a VS Code extension and an MCP server for Claude Code and Cursor.
+
+**Try it:** [scan an agent free](https://aimodularity.com/agentverify/) (your first scan needs no
+account), or from your terminal:
+
+```bash
+npx agentverify scan ./agents --key av_your_key
+```
 
 Agent Verify provides open-source CLI, CI, web integration, and API tooling backed by a
 proprietary verification engine — see [Privacy & proprietary scanner boundary](#privacy--proprietary-scanner-boundary).
@@ -143,9 +165,10 @@ is verifiable without the private engine ever being present.
 
 ## Plans
 
-Free (10 scans/month, basic findings, private report history), Pro ($19.99/month — full
-remediation guidance, corrected snippets, A2SPA implementation guidance, PDF export, 100
-scans/month), Team (coming soon), Enterprise (contact us). Pricing is defined once in
+Free (10 scans/month, all 124 checks, PR checks, private report history), Pro ($19.99/month —
+full remediation guidance, corrected snippets, A2SPA implementation guidance, prompt-injection
+tests, PDF export, 100 scans/month), Team ($25 per seat per month — Pro for every member, 300
+scans per person, shared workspace), Enterprise (contact us). Pricing is defined once in
 `apps/web/src/lib/pricing.ts` and mirrored in the Worker's quota table
 (`workers/api/src/billing.ts`) — see those files for the current source of truth.
 

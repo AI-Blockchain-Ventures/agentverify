@@ -5,9 +5,10 @@ import { join, relative, extname } from 'path'
 import { scan } from './sdk'
 import type { ScanResult } from './types'
 import { runMcpServer } from './mcp'
+import { runHook, runProtect } from './codingGuardCli'
 import { PackageError, SUPPORTED_ASSESSMENT_SCHEMA, SUPPORTED_PROFILES, buildPackage, displayPath, formatAssessment, postProfile, safeText, serializeRequest } from './profile'
 
-const VERSION = '2.0.0'
+const VERSION = '2.1.0'
 const API_URL = process.env.AGENTVERIFY_API_URL ?? 'https://agentverify-api.agentverify.workers.dev/v1/scan'
 const A2SPA_DOCS_URL = 'https://aimodularity.com/A2SPA/docs'
 
@@ -136,11 +137,17 @@ ${c.bold}Usage:${c.reset}
   agentverify scan [dir] --key <api-key>
   agentverify scan --file <file> --key <api-key>
   agentverify mcp
+  agentverify protect [claude-code|cursor] [--global]
 
 ${c.bold}Commands:${c.reset}
   scan          Scan agent files in a directory or a single file
   mcp           Run as an MCP server so Claude Code, Cursor, VS Code and other AI
                 tools can scan agents while you code (reads AGENTVERIFY_API_KEY)
+  protect       Guard your AI coding agent: check every command, file read/write and
+                MCP tool call before Claude Code or Cursor runs it (blocks secrets
+                leaks, destructive commands, force-push to main; asks before installs
+                and deploys). Team rules: .agentverify/policy.json
+  hook          Used by protect: the check Claude Code or Cursor calls before each action
 
 ${c.bold}Options:${c.reset}
   --key, -k     API key (or set AGENTVERIFY_API_KEY env var)
@@ -565,6 +572,11 @@ async function runProfile(args: ReturnType<typeof parseArgs>): Promise<void> {
 }
 
 async function main() {
+  // Coding-agent guard commands take their own arguments and must stay fast and quiet.
+  const first = process.argv[2]
+  if (first === 'hook') process.exit(await runHook(process.argv[3]))
+  if (first === 'protect') process.exit(await runProtect(process.argv.slice(3), VERSION, write))
+
   const args = parseArgs(process.argv)
 
   if (args.version) {

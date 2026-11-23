@@ -9,6 +9,8 @@ const nav = [
   { id: 'quick-start', label: 'Quick Start' },
   { id: 'web-scanner', label: 'Web Scanner' },
   { id: 'cli', label: 'CLI' },
+  { id: 'coding-agents', label: 'Coding Agents' },
+  { id: 'agent-profiles', label: 'Verified Agent Profiles' },
   { id: 'npm', label: 'npm Installation' },
   { id: 'authentication', label: 'Authentication' },
   { id: 'workspaces', label: 'Workspaces' },
@@ -143,6 +145,64 @@ agentverify --version`}</CodeBlock>
                   <tr><td className="py-1.5 pr-4 font-mono">3</td><td className="py-1.5">Execution error &mdash; bad key, network failure, missing file (not a security finding)</td></tr>
                 </tbody>
               </table>
+            </Section>
+
+            <Section id="coding-agents" title="Coding Agents (Claude Code & Cursor)">
+              <p>AI coding agents run commands, read files and install packages on a developer&apos;s machine, often with nobody watching each step. Agent Verify checks each action <strong>before it happens</strong> and either lets it run, asks a person, or blocks it. Normal work (running tests, reading and editing code, committing) goes through untouched.</p>
+              <CodeBlock>{`cd your-project
+npx agentverify protect              # Claude Code and Cursor
+npx agentverify protect claude-code  # just one of them
+npx agentverify protect --global     # every project on this machine`}</CodeBlock>
+              <p>This adds a hook to <code>.claude/settings.json</code> and <code>.cursor/hooks.json</code>, and creates a rules file at <code>.agentverify/policy.json</code>. Commit all three so the whole team is covered. Start a new agent session afterwards: agents load hooks when a session starts.</p>
+              <p>What it does out of the box:</p>
+              <table className="w-full border-collapse text-xs">
+                <thead>
+                  <tr style={{ borderBottom: '1px solid var(--border)' }}>
+                    <th className="py-1.5 pr-4 text-left font-semibold" style={{ color: 'var(--text-primary)' }}>Result</th>
+                    <th className="py-1.5 text-left font-semibold" style={{ color: 'var(--text-primary)' }}>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr style={{ borderBottom: '1px solid var(--border)' }}><td className="py-1.5 pr-4 align-top font-semibold">Blocked</td><td className="py-1.5">Reading <code>.env</code> files, SSH keys and cloud credentials; sending secrets to the internet; deleting a whole drive, home folder or project; wiping disks; force-pushing to main; piping a download into a shell (<code>curl &hellip; | sh</code>); calling the cloud metadata service; editing git hooks; changing the Agent Verify settings themselves; running encoded (hidden) commands; writing code that sends secrets or environment variables to the internet</td></tr>
+                  <tr style={{ borderBottom: '1px solid var(--border)' }}><td className="py-1.5 pr-4 align-top font-semibold">Asks a person</td><td className="py-1.5">Installing packages; deploying; editing CI files; <code>sudo</code>; deleting folders; other force pushes and history rewrites; dropping database tables; listing all environment variables; writing code that opens a secret file or prints every environment variable; uploading files; MCP tools that delete, pay, or send messages</td></tr>
+                  <tr><td className="py-1.5 pr-4 align-top font-semibold">Allowed</td><td className="py-1.5">Everything else</td></tr>
+                </tbody>
+              </table>
+              <p>Commands are checked in Bash, PowerShell and Windows <code>cmd</code> forms. When the agent is blocked, it&apos;s told the reason and to ask the user rather than look for another way.</p>
+              <p><strong>When nobody is watching.</strong> In Claude Code&apos;s auto and bypass modes, the agent approves its own questions, so nobody would see an &quot;ask&quot;. Agent Verify blocks those actions instead. To let them through, set <code>&quot;whenUnattended&quot;: &quot;allow&quot;</code>.</p>
+              <p><strong>Approve from your phone.</strong> Set <code>&quot;whenUnattended&quot;: &quot;approve&quot;</code> (or pick <em>Ask a person on this dashboard</em> in your company rules) and an action that needs a person pauses the agent instead of failing. The request appears in <Link href="/dashboard" className="underline">Dashboard &rarr; Agent Guard</Link>, and a ping goes to the Slack webhook or email in your alert settings. Tap Approve or Deny on any device. If nobody answers within 2 minutes, or Agent Verify can&apos;t be reached, the action is blocked. Only a signed-in person can answer, never an API key, so an agent can&apos;t approve itself. This also covers the questions Cursor can&apos;t show (reading a file, or an edit). Hard blocks such as reading <code>.env</code> never go to approval. Needs <code>AGENTVERIFY_API_KEY</code>.</p>
+              <p><strong>Your own rules</strong> go in <code>.agentverify/policy.json</code> (or <code>~/.agentverify/policy.json</code> for every project). Patterns are regular expressions, matched without regard to case:</p>
+              <CodeBlock>{`{
+  "disable": ["install-package"],
+  "rules": [
+    { "id": "no-prod-db", "kind": "shell", "pattern": "psql .*prod", "decision": "deny",
+      "reason": "connects to the production database" }
+  ],
+  "allow": ["^npm (i|install) --save-dev (eslint|prettier)$"],
+  "whenUnattended": "block"
+}`}</CodeBlock>
+              <ul className="ml-4 list-disc space-y-1">
+                <li><code>disable</code> &mdash; built-in rule IDs to turn off. The rule IDs appear in every block message.</li>
+                <li><code>rules</code> &mdash; your own rules. <code>kind</code> is <code>shell</code>, <code>read</code>, <code>write</code> (the file path), <code>code</code> (what&apos;s being written into a file), <code>fetch</code> or <code>mcp</code> (or a list of them); <code>decision</code> is <code>allow</code>, <code>ask</code> or <code>deny</code>.</li>
+                <li><code>allow</code> &mdash; commands, paths or URLs that are always allowed.</li>
+                <li>The rule that protects the Agent Verify settings can&apos;t be turned off or allowed, so an agent can&apos;t switch the guard off.</li>
+              </ul>
+              <p><strong>See every action on your dashboard.</strong> Set <code>AGENTVERIFY_API_KEY</code> on the developer&apos;s machine. Blocks and questions are sent right away; allowed actions are sent in batches. Secrets in commands are masked before anything leaves the machine. Set <code>AGENTVERIFY_GUARD_LOG=off</code> to send nothing. The activity view updates live. On the Team plan the owner sees every member&apos;s activity with a summary per person, and members are told on their own dashboard that the owner can see it.</p>
+              <p><strong>Company rules.</strong> Set the rules once in <Link href="/dashboard" className="underline">Dashboard &rarr; Agent Guard</Link>: turn built-in rules off, add your own, and choose what happens when nobody is watching. They apply wherever the guard runs with an API key from your account; on the Team plan they also apply to everyone you add to your team. Changes reach everyone within 5 minutes. A project&apos;s <code>policy.json</code> can add stricter rules but can&apos;t turn company rules off or allow past them; tick <em>Projects can relax built-in rules</em> to let projects turn built-in rules off. Only a signed-in owner can change company rules, never an API key. If Agent Verify can&apos;t be reached, the guard uses the last copy it downloaded. The rules are applied on the developer&apos;s machine, so a developer who removes the hook or the API key opts out; to enforce them on company machines, install the hook with your device management tool.</p>
+              <p><strong>Cursor notes.</strong> Cursor can&apos;t ask about reading a file, so a question about reading becomes a block. It can&apos;t pause a file edit for a question either: edits that need a person go through and are recorded, while edits that are blocked (git hooks, the guard&apos;s settings) and code that reads or prints secrets are stopped before they happen.</p>
+              <p><strong>What it can&apos;t do.</strong> The guard matches commands and paths against rules; it isn&apos;t a sandbox. It checks the code an agent writes as well as the commands it runs, so the common ways around it are covered: wildcards (<code>cat .en*</code>), encoded commands, one-line scripts, and writing a script that reads <code>.env</code> and then running it. A determined agent could still build a file name from pieces or use code the guard has no pattern for. It catches the common and accidental cases and keeps a record of everything. For full isolation, also run agents in a container or VM without production credentials.</p>
+            </Section>
+
+            <Section id="agent-profiles" title="Verified Agent Profiles">
+              <p>Give customers one link that shows your agent is safe. Create a profile in <Link href="/dashboard" className="underline">Dashboard &rarr; Public profiles</Link> and pick its evidence from your account: a security scan, an injection-test agent, and (optionally) the Agent Guard agent that protects it at runtime. You can&apos;t type in results; the page always reflects Agent Verify&apos;s own records.</p>
+              <ul className="ml-4 list-disc space-y-1">
+                <li><strong>Verified agent</strong> means the linked scan is VERIFIED and the agent resisted every injection test, both within the last 30 days. Older evidence shows as out of date. Turn on weekly re-tests to stay current.</li>
+                <li><strong>Owner verified</strong> appears next to your website when an injection-test agent on that domain has passed the ownership check.</li>
+                <li><strong>Nothing private is published:</strong> no code, findings, prompts, replies or commands. Agent Guard is shown as counts only.</li>
+                <li><strong>Signed:</strong> the page data is signed with Agent Verify&apos;s key, and each visitor&apos;s browser checks it against <code>/v1/attestation/public-key</code>. The signature covers the fixed prefix <code>agentverify-agent-profile-v1</code> plus the statement with keys sorted, so it can be checked offline and can&apos;t be mistaken for a scan attestation.</li>
+              </ul>
+              <CodeBlock>{`GET /v1/agents/{slug}             # the public statement and its signature
+GET /v1/agents/{slug}/badge.svg   # live badge for a README or website`}</CodeBlock>
             </Section>
 
             <Section id="npm" title="npm Installation">
@@ -478,6 +538,7 @@ Content-Type: application/json
                 <li>Findings are evidence-based and heuristic. A clean report is not a guarantee of safety, and a finding is not proof of exploitation &mdash; both should be read as signals, not deterministic facts.</li>
                 <li><code>NOT ASSESSED</code> means there wasn&apos;t enough agent execution context to issue a verdict &mdash; it must never be read as, or presented as, <code>VERIFIED</code>.</li>
                 <li>Dashboard, CLI and API scans all run and are saved on the server. Fix &amp; re-check results are not saved as reports until you save them as a new scan.</li>
+                <li>The coding-agent guard checks commands and paths against rules; it is not a sandbox. See <a href="#coding-agents" className="underline">Coding Agents</a>.</li>
                 <li>Detected secrets are redacted in every report; Agent Verify does not store or display live credential values.</li>
               </ul>
             </Section>

@@ -3,6 +3,32 @@
 All notable user-facing changes to Agent Verify are documented here. The CLI/SDK package has its
 own more granular changelog at [packages/cli/CHANGELOG.md](./packages/cli/CHANGELOG.md).
 
+## [2.1.0] - 2026-11-23
+
+### Added
+
+- **Guard for AI coding agents.** `npx agentverify protect` makes Claude Code and Cursor check every shell command,
+  file read, file edit and MCP tool call before it happens. It blocks reading `.env` files and keys, sending secrets
+  out, deleting whole folders, force-pushing to main and piping downloads into a shell, and asks a person before
+  installs and deploys. It checks Bash, PowerShell and Windows `cmd`, catches wildcards and encoded commands, and
+  checks code the agent writes, so "write a script that reads .env, then run it" is caught too. In auto or bypass mode,
+  actions that need a person are blocked instead of approved silently.
+- **Company rules.** Set the coding-agent rules once in Dashboard → Agent Guard. On the Team plan they apply to
+  everyone on the team; a project's own rules can only make them stricter.
+- **Approve from your phone.** With "Ask a person on this dashboard", an action that needs a person pauses the agent
+  and appears on the dashboard, with a Slack or email ping. Only a signed-in person can approve, never an API key.
+- **Live team activity.** The Agent Guard page updates every few seconds. Team owners see each member's activity with a
+  summary per person; members are told the owner can see theirs.
+- **Prompt-injection tests:** 18 attacks (was 10), each mapped to the OWASP Top 10 for LLM apps. If your agent uses
+  Agent Guard, the test also checks what it actually tried to do, so an agent that says "I refused" but makes the call
+  still fails. Weekly automatic re-tests, with an alert when an attack that passed starts getting through.
+- **Verified agent profiles.** A public, signed page and live badge per agent showing its latest scan, injection-test
+  results and runtime protection. Visitors' browsers check the signature. Nothing private is published.
+
+### Changed
+
+- Privacy policy updated for the features above, including what Team owners can see.
+
 ## [2.0.4] - 2026-11-12
 
 ### Fixed

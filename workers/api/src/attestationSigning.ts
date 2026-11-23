@@ -92,6 +92,28 @@ export async function signAttestation(payload: AttestationPayload, env: Attestat
   }
 }
 
+/**
+ * Domain-separation prefix for agent-profile statements. Scan attestations sign canonical JSON, which always
+ * starts with "{"; every agent-profile signature covers this fixed prefix first, so neither kind of signature can
+ * ever be passed off as the other. The prefix is fixed HERE (not chosen by the caller) for exactly that reason.
+ */
+export const AGENT_PROFILE_SIGNING_PREFIX = 'agentverify-agent-profile-v1\n'
+
+/** Signs a public agent-profile statement (already canonical JSON). Null when no key is configured, never faked. */
+export async function signAgentProfileStatement(canonicalStatement: string, env: AttestationSigningEnv): Promise<{ signature: string; algorithm: 'ECDSA-P256-SHA256'; signedPrefix: string; issuer: string; publicKeyUrl: string } | null> {
+  const jwkJson = resolveJwkJson(env)
+  if (!jwkJson) return null
+  try {
+    const key = await importPrivateKey(jwkJson)
+    const data = new TextEncoder().encode(AGENT_PROFILE_SIGNING_PREFIX + canonicalStatement)
+    const sig = await crypto.subtle.sign({ name: 'ECDSA', hash: 'SHA-256' }, key, data as BufferSource)
+    return { signature: base64Encode(sig), algorithm: 'ECDSA-P256-SHA256', signedPrefix: AGENT_PROFILE_SIGNING_PREFIX, issuer: env.ATTESTATION_ISSUER ?? 'agentverify-dev', publicKeyUrl: '/v1/attestation/public-key' }
+  } catch (e) {
+    console.error('Agent profile signing failed:', e instanceof Error ? e.message : e)
+    return null
+  }
+}
+
 /** Exposes just the public verification key + issuer/algorithm — safe to serve at a public endpoint, contains no secret material. */
 export function getAttestationPublicKeyInfo(env: AttestationSigningEnv): { publicKey: JsonWebKey; algorithm: 'ECDSA-P256-SHA256'; issuer: string } | null {
   const jwkJson = resolveJwkJson(env)

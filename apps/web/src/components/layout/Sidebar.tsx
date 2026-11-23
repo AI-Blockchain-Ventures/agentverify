@@ -33,6 +33,7 @@ export const SIDEBAR_SECTIONS: NavSection[] = [
     { id: 'github', label: 'Repos & PR checks' },
     { id: 'guard', label: 'Agent Guard' },
     { id: 'redteam', label: 'Injection tests' },
+    { id: 'profiles', label: 'Public profiles' },
   ] },
   { label: 'Workspace', items: [
     { id: 'workspace', label: 'Team & roles' },

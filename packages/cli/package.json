@@ -1,6 +1,6 @@
 {
   "name": "agentverify",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "mcpName": "io.github.AI-Blockchain-Ventures/agentverify",
   "description": "CLI and SDK for Agent Verify — execution trust analysis for AI agents",
   "bin": {
@@ -29,9 +29,9 @@
     "CHANGELOG.md"
   ],
   "scripts": {
-    "build": "tsup src/cli.ts src/sdk.ts src/guard.ts --format cjs,esm --dts --clean",
-    "dev": "tsup src/cli.ts src/sdk.ts src/guard.ts --format cjs,esm --dts --watch",
-    "test": "npm run build && node test/cli.test.mjs && node --test test/profile.test.mjs test/mcp.test.mjs test/guard.test.mjs",
+    "build": "tsup src/cli.ts src/sdk.ts src/guard.ts src/codingGuard.ts src/codingGuardCli.ts --format cjs,esm --dts --clean",
+    "dev": "tsup src/cli.ts src/sdk.ts src/guard.ts src/codingGuard.ts --format cjs,esm --dts --watch",
+    "test": "npm run build && node test/cli.test.mjs && node --test test/profile.test.mjs test/mcp.test.mjs test/guard.test.mjs test/codingGuard.test.mjs",
     "prepublishOnly": "npm run build"
   },
   "engines": {

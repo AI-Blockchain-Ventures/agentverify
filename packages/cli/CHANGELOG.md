@@ -2,7 +2,17 @@
 
 All notable changes to the `agentverify` CLI/SDK package are documented here.
 
-## [Unreleased]
+## [2.1.0] - 2026-11-23
+
+### Added
+
+- `agentverify protect [claude-code|cursor] [--global]`: installs the coding-agent guard hooks for Claude Code
+  (`.claude/settings.json`) and Cursor (`.cursor/hooks.json`) and creates `.agentverify/policy.json`.
+- `agentverify hook <claude-code|cursor>`: the hook itself (reads the action on stdin, answers allow / ask / deny).
+- Company rules are downloaded with `AGENTVERIFY_API_KEY` and cached for 5 minutes; `whenUnattended`:
+  `block` (default), `allow` or `approve` (wait up to 2 minutes for a person on the dashboard).
+- Activity is sent to the Agent Guard dashboard only when `AGENTVERIFY_API_KEY` is set; `AGENTVERIFY_GUARD_LOG=off`
+  turns it off.
 
 ### Fixed
 

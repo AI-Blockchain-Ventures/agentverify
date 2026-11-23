@@ -29,6 +29,7 @@ const SECTIONS: NavSection[] = [
     { id: 'github', label: 'Repos & PR checks', icon: '⑂' },
     { id: 'guard', label: 'Agent Guard', icon: '⛨' },
     { id: 'redteam', label: 'Injection tests', icon: '⚑' },
+    { id: 'profiles', label: 'Public profiles', icon: '✓' },
     { id: 'api', label: 'API / CLI', icon: '◈' },
     { id: 'settings', label: 'Settings', icon: '⚙' },
   ] },

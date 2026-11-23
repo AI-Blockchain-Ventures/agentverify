@@ -20,6 +20,7 @@ import { Integrations } from '@/components/dashboard/Integrations'
 import { GithubMonitoring } from '@/components/dashboard/GithubMonitoring'
 import { AgentGuard } from '@/components/dashboard/AgentGuard'
 import { InjectionTests } from '@/components/dashboard/InjectionTests'
+import { AgentProfiles } from '@/components/dashboard/AgentProfiles'
 import { Workspace } from '@/components/dashboard/Workspace'
 import { Billing } from '@/components/dashboard/Billing'
 import { useBillingStatusState } from '@/lib/useBillingStatus'
@@ -42,6 +43,7 @@ const pageCopy: Record<DashboardTab, { title: string; subtitle: string; docsHref
   billing: { title: 'Billing & plan', subtitle: 'Your plan, scan usage, and Stripe billing — without leaving the dashboard.' },
   integrations: { title: 'Integrations', subtitle: 'Real ways to connect Agent Verify to your workflow.', docsHref: '/docs#ci-cd' },
   redteam: { title: 'Injection tests', subtitle: 'Send known prompt-injection attacks to your own agent and see which ones it falls for.', docsHref: '/developers' },
+  profiles: { title: 'Public agent profiles', subtitle: 'A signed public page per agent that shows customers its scan, injection-test and runtime-protection results.', docsHref: '/docs#agent-profiles' },
   guard: { title: 'Agent Guard', subtitle: 'Runtime protection: what your agents tried to do, and what was blocked or approved.', docsHref: '/developers#guard' },
   github: { title: 'Repos & PR checks', subtitle: 'Scan every pull request on GitHub, GitLab and Bitbucket, and watch each repo’s security score over time.', docsHref: '/developers' },
   api: { title: 'API access', subtitle: 'Run Agent Verify from your terminal or automation workflow.', docsHref: '/docs#cli' },
@@ -246,6 +248,7 @@ export default function DashboardPage() {
             {tab === 'integrations' && <Integrations user={user} />}
             {tab === 'github' && <GithubMonitoring user={user} />}
             {tab === 'guard' && <AgentGuard user={user} />}
+            {tab === 'profiles' && <AgentProfiles user={user} />}
             {tab === 'redteam' && <InjectionTests user={user} isPro={summarizeBillingState(billing.status).isActivePro} />}
             {tab === 'api' && <APIAccess />}
             {tab === 'settings' && <Settings onNavigate={changeTab} />}

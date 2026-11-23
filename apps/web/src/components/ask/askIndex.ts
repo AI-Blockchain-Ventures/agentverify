@@ -77,7 +77,7 @@ export const STATIC_ENTRIES: AskEntry[] = [
   // Dashboard shortcuts (signed in)
   ...([
     ['scan', 'New scan', 'scan run check'], ['reports', 'Reports', 'history results findings'], ['github', 'Repos & PR checks', 'github gitlab bitbucket pr'],
-    ['guard', 'Agent Guard', 'runtime'], ['redteam', 'Injection tests', 'prompt injection'], ['billing', 'Billing & plan', 'upgrade invoice invite referral seats'],
+    ['guard', 'Agent Guard', 'runtime'], ['redteam', 'Injection tests', 'prompt injection'], ['profiles', 'Public profiles', 'verified agent trust page badge share customers'], ['billing', 'Billing & plan', 'upgrade invoice invite referral seats'],
     ['api', 'API keys / CLI', 'key token'], ['integrations', 'Integrations', 'slack webhook vscode'], ['settings', 'Settings', 'theme dark light email'],
   ] as const).map(([tab, title, keywords]) => ({ id: `t-${tab}`, kind: 'action' as const, title: `Go to ${title}`, tab, text: `Open ${title} in your dashboard.`, keywords, signedInOnly: true })),
 ]

@@ -38,8 +38,11 @@ const GROUPS: Array<{ title: string; intro: string; items: Item[] }> = [
     title: 'Protect what runs',
     intro: 'Controls for agents in production.',
     items: [
+      { title: 'Guard for Claude Code and Cursor', text: 'One command, npx agentverify protect, checks every command, file read, edit and MCP call your AI coding agent makes. It blocks reading .env files and keys, sending secrets out, deleting whole folders and force-pushing to main, and asks before installs and deploys.', href: '/docs#coding-agents', cta: 'Protect your coding agent', badge: 'New' },
+      { title: 'Company rules and approvals from your phone', text: 'Set the rules once for the whole team. When an agent needs a person and nobody is at the screen, it pauses until someone taps Approve or Deny on the dashboard. Team owners see every member’s activity live.', href: '/docs#coding-agents', cta: 'Set up company rules', badge: 'New' },
+      { title: 'Verified agent profiles', text: 'A public, signed page and live badge per agent with its scan, injection-test results and runtime protection, so customers can check it themselves.', href: '/docs#agent-profiles', cta: 'Create a profile', badge: 'New' },
       { title: 'Agent Guard', text: 'Runtime rules for JavaScript/TypeScript agents: allow and deny lists, human approval for risky tools, allowed domains, rate limits, and blocking keys from leaving.', href: '/developers#guard', cta: 'Add Agent Guard' },
-      { title: 'Prompt-injection tests (Pro)', text: 'Ten known attacks sent to your own agent, with clear results on which ones worked.', href: '/developers', cta: 'Learn more' },
+      { title: 'Prompt-injection tests (Pro)', text: '18 known attacks, mapped to the OWASP Top 10 for LLM apps, sent to your own agent. With Agent Guard it also checks what the agent actually tried to do. Weekly re-tests alert you when an attack starts getting through.', href: '/developers', cta: 'Learn more', badge: 'New' },
       { title: 'Compliance evidence pack (Pro)', text: 'EU AI Act and ISO/IEC 42001 mappings plus a one-click .zip of evidence for auditors.', href: '/docs#compliance', cta: 'See compliance' },
     ],
   },

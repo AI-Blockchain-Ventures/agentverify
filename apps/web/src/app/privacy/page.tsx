@@ -17,7 +17,11 @@ const COLLECT: Array<[string, string, string]> = [
   ['Slack', 'Your Slack workspace ID.', 'The /agentverify command.'],
   ['Alerts', 'An email address or Slack webhook address you choose.', 'Sending alerts.'],
   ['Agent Guard', 'Tool name, decision, and a short preview of arguments with secrets masked. Deleted after 30 days.', 'The Agent Guard dashboard.'],
-  ['Prompt-injection tests', 'Target address, request headers (encrypted), and short reply excerpts with secrets masked.', 'Showing which attacks worked on your own agent.'],
+  ['Coding-agent guard (Claude Code, Cursor)', 'The rules are checked on your own computer. Nothing is sent to us unless you set an Agent Verify API key. With a key: a label for the agent (the tool, your project folder name and your computer name), the action type, the decision, and a short preview of the command or file path with secrets masked. Set AGENTVERIFY_GUARD_LOG=off to send nothing. Deleted after 30 days.', 'The Agent Guard activity view.'],
+  ['Company rules', 'The coding-agent rules your account owner saves. Each developer\'s computer keeps a copy for a few minutes so the guard stays fast.', 'Applying the same rules for everyone on a team.'],
+  ['Approval requests', 'When an AI agent waits for a person: the agent label, a short masked preview of what it wants to do, the reason, and who approved or denied it. A notice goes to the Slack webhook or email in your alert settings. Deleted after 7 days.', 'Letting a person approve or deny from the dashboard or a phone.'],
+  ['Prompt-injection tests', 'Target address, request headers (encrypted), short reply excerpts with secrets masked, and your weekly re-test setting.', 'Showing which attacks worked on your own agent, and alerting you when one starts getting through.'],
+  ['Public agent profiles', 'Only what you choose to publish: the agent name, description and website, its scan result and score, how many injection tests it resisted, and Agent Guard counts. Never your code, findings, prompts, replies or commands.', 'Showing customers that your agent was checked.'],
   ['Billing', 'Plan, Stripe customer ID and seats. Card details are handled by Stripe; we never see them.', 'Billing.'],
   ['Referrals', 'Who invited whom.', 'Giving referral rewards.'],
   ['Weekly email', 'Your preference (off unless you turn it on).', 'Sending the Monday summary.'],
@@ -70,18 +74,26 @@ const sections: LegalSection[] = [
     ),
   },
   {
-    title: 'Who at Agent Verify can see it',
-    body: <p>A small number of staff can see account details (email, plan, signup answers and scan counts) in an internal admin panel, to run billing and support. Access requires a verified staff email.</p>,
+    title: 'Who can see it',
+    body: (
+      <>
+        <p>A small number of Agent Verify staff can see account details (email, plan, signup answers and scan counts) in an internal admin panel, to run billing and support. Access requires a verified staff email.</p>
+        <p><strong style={{ color: 'var(--text-primary)' }}>On a Team plan, the Team owner can see each member&apos;s Agent Guard activity and approval requests</strong> (agent label, action, decision and the masked preview), and can approve or deny members&apos; requests. Members are told this on their own Agent Guard page. Members cannot see each other&apos;s activity or the owner&apos;s.</p>
+        <p>A public agent profile can be seen by anyone with its link until you unpublish or delete it.</p>
+      </>
+    ),
   },
   {
     title: 'How long we keep it',
     body: (
       <Bullets items={[
         'Reports and account data: until you delete them or close your account.',
-        'Agent Guard events: 30 days.',
+        'Agent Guard events, including coding-agent activity: 30 days.',
+        'Approval requests: 7 days.',
+        'Company rules and public agent profiles: until you change or delete them.',
         'Error reports: 90 days after the error was last seen.',
         'Free-scan results for identical code: up to 6 hours in cache.',
-        'You can delete reports, repository connections and injection-test targets yourself in the dashboard.',
+        'You can delete reports, repository connections, injection-test targets and public agent profiles yourself in the dashboard.',
         <>To close your account and delete its data, email {mail}. We do this within 30 days, except billing records we must keep by law.</>,
       ]} />
     ),
@@ -116,7 +128,7 @@ export default function PrivacyPage() {
   return (
     <LegalPage
       title="Privacy Policy"
-      updated="November 2, 2026"
+      updated="November 23, 2026"
       intro={<p>This policy explains what Agent Verify (run by AI Blockchain Ventures LLC, &quot;we&quot;) collects, why, and the choices you have. The short version: we don&apos;t store the raw code you scan, we don&apos;t sell data, and analytics only run if you accept them.</p>}
       sections={sections}
     />

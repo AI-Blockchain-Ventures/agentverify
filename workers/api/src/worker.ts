@@ -20,8 +20,11 @@ import { readBoundedBody, decodeBody, isValidUtf8 } from './requestBody'
 import { handleGithubWebhook, githubConfig, linkInstallation, listInstallations, type GithubEnv } from './githubWebhook'
 import { loadAlertSettings, saveAlertSettings } from './alerts'
 import { claimReferral, type GrowthEnv, getDigest, inDigestWindow, POPULAR_MCP_FOR_EMAIL, qualifyReferral, referralSummary, sendDigestBatch, setDigest, unsubscribe } from './growth'
-import { listGuardEvents, storeGuardEvents } from './guardEvents'
-import { createTarget, deleteTarget, listRedteam, processRedteamTick, startRun, verifyTarget } from './redteam'
+import { activityScope, listGuardEvents, storeGuardEvents } from './guardEvents'
+import { getGuardPolicy, putGuardPolicy } from './guardPolicy'
+import { createApproval, decideApproval, getApproval, listApprovals } from './guardApprovals'
+import { agentBadge, deleteAgentProfile, listAgentProfiles, publicAgentProfile, saveAgentProfile, type ReportLoader } from './agentProfiles'
+import { createTarget, deleteTarget, listRedteam, processRedteamTick, setSchedule, startRun, verifyTarget } from './redteam'
 import { finishSlackOauth, handleSlackCommand, linkSlackTeam, slackInstallUrl, type SlackEnv } from './slack'
 import { createConnection, deleteConnection, handleVcsWebhook, listConnections, type VcsEnv } from './vcs'
 import { addMember as addTeamMember, getTeam, removeMember as removeTeamMember } from './team'
@@ -254,6 +257,25 @@ async function handleDemoScan(request: Request, env: WorkerEnv): Promise<Respons
 /** Reads a report's uid (for ownership checks) from either collection reports can live in — same
  * fallback the badge lookup route already uses. Admin auth (not the public apiKeyQueryParam
  * read) since this feeds an authorization decision, not public content. */
+/** For agent profiles: the owner and headline result of one of the caller's reports (server-side read). */
+function reportLoaderFor(env: WorkerEnv): ReportLoader {
+  return async (reportId: string, callerUid: string) => {
+    const headers = await firestoreAdminAuthHeader(env)
+    if (!headers || !/^[A-Za-z0-9_-]{1,120}$/.test(reportId)) return null
+    // Server scans live in cliReports; older dashboard reports live under the person's own folder.
+    for (const path of [`cliReports/${encodeURIComponent(reportId)}`, `reports/${encodeURIComponent(reportId)}`, `users/${encodeURIComponent(callerUid)}/reports/${encodeURIComponent(reportId)}`]) {
+      const res = await fetch(`${firestoreBaseUrl(env)}/${path}`, { headers })
+      if (!res.ok) continue
+      const f = ((await res.json()) as { fields?: Record<string, { stringValue?: string; integerValue?: string; doubleValue?: number }> }).fields ?? {}
+      const uid = f.uid?.stringValue ?? f.userId?.stringValue ?? (path.startsWith('users/') ? callerUid : undefined)
+      const score = Number(f.riskScore?.integerValue ?? f.riskScore?.doubleValue)
+      if (!uid || !f.verdict?.stringValue || !Number.isFinite(score)) return null
+      return { uid, verdict: f.verdict.stringValue, score: Math.round(score), scannedAt: f.scannedAt?.stringValue ?? new Date().toISOString(), artifactHash: f.artifactHash?.stringValue ?? null }
+    }
+    return null
+  }
+}
+
 async function fetchReportOwner(reportId: string, env: WorkerEnv): Promise<string | null> {
   const headers = await firestoreAdminAuthHeader(env)
   if (!headers) return null
@@ -515,6 +537,10 @@ async function routeRequest(request: Request, env: WorkerEnv, ctx?: ExecutionCon
         const res = await verifyTarget(env, principal.uid, String(body.id ?? ''))
         return json(res.body, res.status)
       }
+      if (url.pathname === '/v1/redteam/schedule' && request.method === 'POST') {
+        const res = await setSchedule(env, principal.uid, body)
+        return json(res.body, res.status)
+      }
       if (url.pathname === '/v1/redteam/runs' && request.method === 'POST') {
         const res = await startRun(env, principal.uid, String(body.targetId ?? ''))
         return json(res.body, res.status)
@@ -572,7 +598,95 @@ async function routeRequest(request: Request, env: WorkerEnv, ctx?: ExecutionCon
         return json(res.body, res.status)
       }
       if (request.method === 'GET') {
-        return json(await listGuardEvents(env.BILLING_DB, principal.uid, { agent: url.searchParams.get('agent'), decision: url.searchParams.get('decision'), limit: Number(url.searchParams.get('limit')) || undefined }))
+        // A Team owner signed in on the dashboard sees the whole team's activity; an API key only ever sees its own.
+        const who = principal.type === 'USER' ? await activityScope(env, principal.uid) : principal.uid
+        return json(await listGuardEvents(env.BILLING_DB, who, { agent: url.searchParams.get('agent'), decision: url.searchParams.get('decision'), person: url.searchParams.get('person'), limit: Number(url.searchParams.get('limit')) || undefined }))
+      }
+      return json({ error: 'Not found' }, 404)
+    }
+    // Public agent profile + badge (no sign-in): only what the owner published, never private details.
+    if (request.method === 'GET' && url.pathname.startsWith('/v1/agents/')) {
+      const rest = url.pathname.slice('/v1/agents/'.length).split('/')
+      const slug = decodeURIComponent(rest[0] ?? '')
+      if (rest[1] === 'badge.svg') {
+        return new Response(await agentBadge(env, slug), { status: 200, headers: { 'Content-Type': 'image/svg+xml', 'Cache-Control': 'max-age=300', 'Access-Control-Allow-Origin': '*' } })
+      }
+      if (rest.length !== 1) return json({ error: 'Not found' }, 404)
+      const res = await publicAgentProfile(env, slug)
+      return new Response(JSON.stringify(res.body), { status: res.status, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'max-age=60', 'Access-Control-Allow-Origin': '*' } })
+    }
+    if (url.pathname === '/v1/agent-profiles') {
+      const principal = await authenticateRequest(request, env)
+      if (!principal || principal.type !== 'USER') return unauthorized()
+      if (!env.BILLING_DB) return json({ error: 'Not available' }, 503)
+      if (request.method === 'GET') { const r = await listAgentProfiles(env.BILLING_DB, principal.uid); return json(r.body, r.status) }
+      if (request.method === 'POST') {
+        if (isRateLimited(`agent-profile:${principal.uid}`, 30, 60 * 1000)) return json({ error: 'Too many requests' }, 429)
+        const body = await request.json().catch(() => ({})) as Record<string, unknown>
+        const r = await saveAgentProfile(env, principal.uid, body, reportLoaderFor(env))
+        return json(r.body, r.status)
+      }
+      if (request.method === 'DELETE') { const r = await deleteAgentProfile(env.BILLING_DB, principal.uid, url.searchParams.get('slug') ?? ''); return json(r.body, r.status) }
+      return json({ error: 'Not found' }, 404)
+    }
+    if (url.pathname === '/v1/guard/approvals' || url.pathname.startsWith('/v1/guard/approvals/')) {
+      // The guard (API key) asks and checks; only a signed-in person sees the list and decides.
+      const principal = await authenticateRequest(request, env)
+      if (!principal || principal.type === 'SYSTEM') return unauthorized()
+      if (!env.BILLING_DB) return json({ error: 'Not available' }, 503)
+      const rest = url.pathname.slice('/v1/guard/approvals'.length).split('/').filter(Boolean)
+      const readJson = async (): Promise<{ ok: true; body: unknown } | { ok: false; res: Response }> => {
+        const raw = await readBoundedBody(request)
+        if (!raw.ok) return { ok: false, res: json({ error: 'Request body too large' }, 413) }
+        try { return { ok: true, body: JSON.parse(decodeBody(raw.bytes)) } } catch { return { ok: false, res: json({ error: 'Invalid JSON body' }, 400) } }
+      }
+      if (rest.length === 0 && request.method === 'POST') {
+        if (isRateLimited(`guard-approval:${principal.uid}`, 30, 60 * 1000)) return json({ error: 'Too many requests' }, 429)
+        const b = await readJson()
+        if (!b.ok) return b.res
+        const res = await createApproval(env, principal.uid, b.body, { notify: p => { if (ctx) ctx.waitUntil(p); else void p } })
+        return json(res.body, res.status)
+      }
+      if (rest.length === 0 && request.method === 'GET') {
+        if (principal.type !== 'USER') return json({ error: 'Sign in on the dashboard to see approvals.' }, 403)
+        const res = await listApprovals(env, principal.uid)
+        return json(res.body, res.status)
+      }
+      if (rest.length === 1 && request.method === 'GET') {
+        if (isRateLimited(`guard-approval-poll:${principal.uid}`, 240, 60 * 1000)) return json({ error: 'Too many requests' }, 429)
+        const res = await getApproval(env, principal.uid, rest[0])
+        return json(res.body, res.status)
+      }
+      if (rest.length === 2 && rest[1] === 'decision' && request.method === 'POST') {
+        // Never an API key: the agent can read its own key, and must not approve itself.
+        if (principal.type !== 'USER') return json({ error: 'Only a signed-in person can approve or deny.' }, 403)
+        const b = await readJson()
+        if (!b.ok) return b.res
+        const res = await decideApproval(env, principal.uid, rest[0], b.body)
+        return json(res.body, res.status)
+      }
+      return json({ error: 'Not found' }, 404)
+    }
+    if (url.pathname === '/v1/guard/policy') {
+      // GET: the coding-agent guard (API key) and the dashboard read the company rules. POST: the owner saves them.
+      const principal = await authenticateRequest(request, env)
+      if (!principal || principal.type === 'SYSTEM') return unauthorized()
+      if (!env.BILLING_DB) return json({ error: 'Not available' }, 503)
+      if (request.method === 'GET') {
+        if (isRateLimited(`guard-policy:${principal.uid}`, 120, 60 * 1000)) return json({ error: 'Too many requests' }, 429)
+        const res = await getGuardPolicy(env, principal.uid, { canEdit: principal.type === 'USER' })
+        return json(res.body, res.status)
+      }
+      if (request.method === 'POST') {
+        // Only a signed-in person changes the rules, never an API key (a leaked key must not be able to relax them).
+        if (principal.type !== 'USER') return json({ error: 'Sign in on the dashboard to change the rules.' }, 403)
+        if (isRateLimited(`guard-policy-save:${principal.uid}`, 30, 60 * 1000)) return json({ error: 'Too many requests' }, 429)
+        const raw = await readBoundedBody(request)
+        if (!raw.ok) return json({ error: 'Request body too large' }, 413)
+        let body: unknown
+        try { body = JSON.parse(decodeBody(raw.bytes)) } catch { return json({ error: 'Invalid JSON body' }, 400) }
+        const res = await putGuardPolicy(env, principal.uid, body)
+        return json(res.body, res.status)
       }
       return json({ error: 'Not found' }, 404)
     }

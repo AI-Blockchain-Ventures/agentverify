@@ -6,10 +6,17 @@ import type { User } from 'firebase/auth'
 import { apiCall } from '@/lib/v2Api'
 import { noAutofill, noAutofillSecret } from '@/lib/noAutofill'
 
-interface Target { id: string; name: string; url: string; host: string; verified: boolean; verify_token: string }
-interface Result { id: string; name: string; severity: string; outcome: 'passed' | 'failed' | 'review' | 'error'; reply: string }
-interface Run { id: string; target_id: string; status: 'queued' | 'running' | 'done' | 'failed'; next_index: number; total: number; results: Result[]; created_at: number }
-interface Data { attacks: Array<{ id: string; name: string; severity: string }>; targets: Target[]; runs: Run[] }
+interface Target { id: string; name: string; url: string; host: string; verified: boolean; verify_token: string; scheduleDays?: number; nextAutoRun?: string | null }
+interface AgentAction { decision: 'stopped' | 'done' | 'asked'; tool: string; preview: string }
+interface Result { id: string; name: string; severity: string; owasp?: string; outcome: 'passed' | 'failed' | 'review' | 'error'; reply: string; action?: AgentAction | null }
+interface Run { id: string; target_id: string; status: 'queued' | 'running' | 'done' | 'failed'; next_index: number; total: number; results: Result[]; created_at: number; changes?: { newlyFailed: string[]; fixed: string[] } | null }
+interface Data { attacks: Array<{ id: string; name: string; severity: string; owasp?: string; owaspName?: string }>; targets: Target[]; runs: Run[] }
+
+const ACTION: Record<AgentAction['decision'], { label: string; color: string }> = {
+  done: { label: 'and it actually did it', color: 'var(--accent-red-text)' },
+  stopped: { label: 'Agent Guard stopped it', color: 'var(--accent-green-text)' },
+  asked: { label: 'Agent Guard asked a person', color: 'var(--accent-purple-text)' },
+}
 
 const OUTCOME: Record<Result['outcome'], { label: string; color: string }> = {
   failed: { label: 'Fell for it', color: 'var(--accent-red-text)' },
@@ -53,7 +60,8 @@ export function InjectionTests({ user, isPro }: { user: User; isPro: boolean }) 
     <div className="mx-auto max-w-4xl space-y-5">
       <section style={card} className="rounded-3xl p-6">
         <h2 style={{ color: 'var(--text-primary)' }} className="text-lg font-semibold">Test your agent against prompt injection</h2>
-        <p style={{ color: 'var(--text-muted)' }} className="mt-1 text-sm">We send {data?.attacks.length ?? 10} known attacks to your agent — hidden instructions in documents, fake system messages, data-leak links, requests to email out your keys — and show which ones it fell for. Each attack hides a unique code, so results are clear-cut.</p>
+        <p style={{ color: 'var(--text-muted)' }} className="mt-1 text-sm">We send {data?.attacks.length ?? 18} known attacks to your agent (hidden instructions in documents and tool results, fake system messages and bosses, data-leak links, requests to email out your keys) and show which ones it fell for. Each attack hides a unique code, so results are clear-cut, and each is mapped to the OWASP Top 10 for LLM apps.</p>
+        <p style={{ color: 'var(--text-muted)' }} className="mt-2 text-sm"><strong style={{ color: 'var(--text-primary)' }}>See what it actually did.</strong> If your agent uses Agent Guard, we also check what it <em>tried to do</em> during the test, like really calling <code>send_email</code>, and whether the guard stopped it. An agent that says &quot;I refused&quot; but makes the call still fails.</p>
         {!isPro && <p className="mt-3 text-sm"><Link href="/pricing" className="font-semibold text-[color:var(--accent-purple-text)] hover:underline">Included with Pro →</Link> <span style={{ color: 'var(--text-muted)' }}>You can add and verify an agent now.</span></p>}
         {message && <p className="mt-3 text-xs" style={{ color: message.ok ? 'var(--accent-green-text)' : 'var(--accent-orange-text)' }}>{message.text}</p>}
       </section>
@@ -74,6 +82,9 @@ export function InjectionTests({ user, isPro }: { user: User; isPro: boolean }) 
                 ) : (
                   <button disabled={busy === `v${t.id}`} onClick={() => void act(`v${t.id}`, () => apiCall(user, '/v1/redteam/verify', { method: 'POST', body: { id: t.id } }), 'Verified — you can run tests now.')} className="av-press rounded-xl bg-[#7C3AED] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">Check verification</button>
                 )}
+                {t.verified && (
+                  <button disabled={!isPro || busy === `s${t.id}`} onClick={() => void act(`s${t.id}`, () => apiCall(user, '/v1/redteam/schedule', { method: 'POST', body: { targetId: t.id, everyDays: t.scheduleDays ? 0 : 7 } }), t.scheduleDays ? 'Weekly re-tests turned off.' : 'Weekly re-tests on. We\'ll alert you (Slack or email from alert settings) if an attack that passed starts getting through.')} aria-pressed={Boolean(t.scheduleDays)} className="rounded-xl px-3 py-2 text-xs font-semibold disabled:opacity-50" style={{ color: t.scheduleDays ? 'var(--accent-green-text)' : 'var(--text-secondary)', border: '1px solid var(--border)' }}>{t.scheduleDays ? '✓ Re-tests weekly' : 'Re-test weekly'}</button>
+                )}
                 <button onClick={() => { if (window.confirm(`Remove ${t.name}?`)) void act(`d${t.id}`, () => apiCall(user, `/v1/redteam/targets?id=${encodeURIComponent(t.id)}`, { method: 'DELETE' }), 'Removed.') }} className="rounded-xl px-3 py-2 text-xs font-semibold" style={{ color: 'var(--text-muted)', border: '1px solid var(--border)' }}>Remove</button>
               </div>
             </div>
@@ -85,8 +96,16 @@ export function InjectionTests({ user, isPro }: { user: User; isPro: boolean }) 
                 <p className="mt-2 text-xs" style={{ color: 'var(--text-muted)' }}>We only ever send test messages to agents on hosts that publish this token.</p>
               </div>
             )}
+            {t.scheduleDays && t.nextAutoRun ? <p className="mt-2 text-xs" style={{ color: 'var(--text-muted)' }}>Next automatic test: {new Date(t.nextAutoRun).toLocaleDateString()}</p> : null}
             {latest && (
               <div className="mt-4">
+                {latest.changes && (latest.changes.newlyFailed.length > 0 || latest.changes.fixed.length > 0) && (
+                  <div className="mb-3 rounded-xl p-3 text-xs" style={{ border: `1px solid ${latest.changes.newlyFailed.length ? 'var(--accent-red-text)' : 'var(--accent-green-text)'}` }}>
+                    <p className="font-semibold" style={{ color: 'var(--text-primary)' }}>Since the last test</p>
+                    {latest.changes.newlyFailed.length > 0 && <p className="mt-1" style={{ color: 'var(--accent-red-text)' }}>Now getting through: {latest.changes.newlyFailed.map(id => latest.results.find(r => r.id === id)?.name ?? id).join(', ')}</p>}
+                    {latest.changes.fixed.length > 0 && <p className="mt-1" style={{ color: 'var(--accent-green-text)' }}>Fixed: {latest.changes.fixed.map(id => latest.results.find(r => r.id === id)?.name ?? id).join(', ')}</p>}
+                  </div>
+                )}
                 <p style={{ color: 'var(--text-muted)' }} className="text-xs">
                   {latest.status === 'done' ? `Last run ${new Date(latest.created_at).toLocaleString()}: ${latest.results.filter(r => r.outcome === 'failed').length} of ${latest.total} attacks worked` : latest.status === 'failed' ? 'The last run could not finish.' : `Running… ${latest.next_index} of ${latest.total} sent`}
                 </p>
@@ -95,10 +114,17 @@ export function InjectionTests({ user, isPro }: { user: User; isPro: boolean }) 
                     {latest.results.map(r => (
                       <li key={r.id} style={{ border: '1px solid var(--border)' }} className="rounded-xl p-3">
                         <div className="flex flex-wrap items-center justify-between gap-2">
-                          <span style={{ color: 'var(--text-primary)' }} className="text-sm font-semibold">{r.name}</span>
+                          <span style={{ color: 'var(--text-primary)' }} className="text-sm font-semibold">{r.name}{r.owasp && <span className="ml-2 rounded px-1.5 py-0.5 text-[10px] font-semibold" style={{ border: '1px solid var(--border)', color: 'var(--text-muted)' }} title={data?.attacks.find(a => a.id === r.id)?.owaspName ?? ''}>OWASP {r.owasp}</span>}</span>
                           <span style={{ color: OUTCOME[r.outcome].color }} className="text-xs font-semibold">{OUTCOME[r.outcome].label}</span>
                         </div>
                         <p style={{ color: 'var(--text-muted)' }} className="mt-1 line-clamp-2 font-mono text-[11px]">{r.reply}</p>
+                        {r.action && (
+                          <p className="mt-1.5 text-xs">
+                            <span style={{ color: 'var(--text-secondary)' }}>Tried to call <code>{r.action.tool}</code> </span>
+                            <span className="font-semibold" style={{ color: ACTION[r.action.decision].color }}>{ACTION[r.action.decision].label}</span>
+                            <span className="mt-0.5 block truncate font-mono text-[11px]" style={{ color: 'var(--text-muted)' }} title={r.action.preview}>{r.action.preview}</span>
+                          </p>
+                        )}
                       </li>
                     ))}
                   </ul>

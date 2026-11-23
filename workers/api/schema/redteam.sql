@@ -29,3 +29,29 @@ CREATE TABLE IF NOT EXISTS redteam_runs (
 );
 CREATE INDEX IF NOT EXISTS idx_redteam_runs_uid ON redteam_runs (uid, created_at);
 CREATE INDEX IF NOT EXISTS idx_redteam_runs_status ON redteam_runs (status, created_at);
+
+-- Weekly re-tests: one row per agent that should be re-tested automatically.
+CREATE TABLE IF NOT EXISTS redteam_schedules (
+  target_id TEXT PRIMARY KEY,
+  uid TEXT NOT NULL,
+  every_days INTEGER NOT NULL,      -- 7 = weekly
+  last_started_at INTEGER
+);
+CREATE INDEX IF NOT EXISTS idx_redteam_schedules_due ON redteam_schedules (last_started_at);
+
+-- Verified agent profiles: a public, signed page per agent (slug is public). Evidence is linked, never typed in.
+CREATE TABLE IF NOT EXISTS agent_profiles (
+  slug TEXT PRIMARY KEY,
+  uid TEXT NOT NULL,
+  name TEXT NOT NULL,
+  description TEXT NOT NULL DEFAULT '',
+  website TEXT NOT NULL DEFAULT '',
+  report_id TEXT,
+  report_snapshot TEXT,             -- {verdict, score, scannedAt, artifactHash} copied when the report was linked
+  redteam_target_id TEXT,
+  guard_agent TEXT,                 -- Agent Guard agent name whose activity counts (counts only are published)
+  published INTEGER NOT NULL DEFAULT 1,
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_agent_profiles_uid ON agent_profiles (uid);

@@ -54,6 +54,23 @@ export interface Verdict {
 
 const SECRET_FILE = /(^|[\\/])(\.env(\.[\w-]+)?|\.envrc|id_(rsa|dsa|ecdsa|ed25519)(\.pub)?|\.netrc|\.npmrc|\.pypirc|\.git-credentials|credentials(\.json)?|secrets?\.(json|ya?ml|toml)|service[-_]account.*\.json|[^\\/]+\.(pem|key|p12|pfx|keystore|jks))$|(^|[\\/])\.(ssh|aws|gnupg|kube|docker)[\\/]/i
 /** Code that reads a secret file by name (fs.readFile('.env'), open('~/.ssh/id_rsa'), Get-Content .env, …). */
+/**
+ * A secret file named as a string anywhere in the code ('.env', ".ssh/id_rsa", `credentials`...). Example and
+ * template files don't count. Used with READS_FILES, so code that stores the name in a variable first is caught.
+ */
+const SECRET_FILE_LITERAL = /['"`](?:[^'"`\n]*[\\/])?(\.env(\.(?!example|sample|template|defaults)[\w-]+)?|\.envrc|id_(rsa|dsa|ecdsa|ed25519)|\.git-credentials|\.netrc|\.npmrc|\.pypirc|\.aws[\\/]credentials|\.ssh[\\/][^'"`\n]+)['"`]/i
+/** The code reads a file somehow (Node, Python, PowerShell, shell, Go, Ruby...). */
+const READS_FILES = /\b(readFile(Sync)?|createReadStream|readFileSync|open\s*\(|fopen|read_text|read_bytes|File\.Read\w*|Get-Content|ReadAllText|os\.ReadFile|ioutil\.ReadFile|File\.read|cat\s)/
+
+/**
+ * True when the code names a secret file somewhere other than a normal env loader (dotenv.config({ path: '.env.local' }),
+ * load_dotenv('.env')), and also reads files. Loading .env into the environment is how apps are meant to use it.
+ */
+function namesSecretAndReadsFiles(code: string): boolean {
+  if (!READS_FILES.test(code)) return false
+  return code.split('\n').some(line => SECRET_FILE_LITERAL.test(line) && !/\b(dotenv|load_dotenv|dotenv_values)\b|\bconfig\s*\(\s*\{\s*path\b/i.test(line))
+}
+
 const CODE_READS_SECRET = /\b(readFile(Sync)?|createReadStream|open|fopen|read_text|read_bytes|File\.Read\w*|Get-Content|gc|cat|type|load_dotenv|dotenv_values)\b[^\n;]{0,120}?['"`]?[^'"`\s]*([\\/]|['"`\s(])(\.env(\.[\w-]+)?|id_(rsa|dsa|ecdsa|ed25519)|\.aws[\\/]credentials|\.ssh[\\/][^'"`\s]*|\.npmrc|\.netrc|\.git-credentials|\.pypirc)['"`\s)]/i
 /** Code that prints or serialises every environment variable at once. */
 const ENV_DUMP_CODE = /(console\.(log|dir|table|error)|JSON\.stringify|util\.inspect|print|pprint|Write-(Output|Host)|echo)\s*\(?\s*(process\.env|os\.environ|dict\(\s*os\.environ\s*\)|\$env)\s*[,)]|Object\.(entries|keys|values)\(\s*process\.env\s*\)[^;\n]*(console\.log|forEach)|for\s+\w+(\s*,\s*\w+)?\s+in\s+os\.environ(\.items\(\))?\s*:\s*print/i
@@ -136,6 +153,8 @@ export const DEFAULT_RULES: Rule[] = [
   { id: 'mcp-destructive', kind: 'mcp', pattern: /(delete|drop|destroy|remove|purge|truncate|wipe|revoke)/i, decision: 'ask', reason: 'an MCP tool that deletes something' },
   { id: 'mcp-money', kind: 'mcp', pattern: /(transfer|payout|refund|charge|payment|invoice|send_?money|withdraw)/i, decision: 'ask', reason: 'an MCP tool that moves money' },
   // Scripts the agent writes are checked before they exist, so "write a script that reads .env, then run it" is caught.
+  // Same, when the file name is put in a variable first: path.join(__dirname, '.env') ... readFileSync(envPath).
+  { id: 'code-reads-secret-indirect', kind: 'code', pattern: SECRET_FILE_LITERAL, test: namesSecretAndReadsFiles, decision: 'ask', reason: 'writes code that names a file holding secrets or keys and reads files' },
   { id: 'code-reads-secret', kind: 'code', pattern: CODE_READS_SECRET, unless: /\.env\.(example|sample|template|defaults)['"`]/i, decision: 'ask', reason: 'writes code that opens a file holding secrets or keys' },
   { id: 'code-dumps-env', kind: 'code', pattern: ENV_DUMP_CODE, decision: 'ask', reason: 'writes code that prints every environment variable' },
   { id: 'code-sends-secrets', kind: 'code', pattern: /(process\.env|os\.environ|readFileSync\(\s*['"`][^'"`]*\.env['"`])[\s\S]{0,400}\b(fetch|axios|https?\.request|requests\.(post|put)|urllib|XMLHttpRequest|WebSocket)\b|\b(fetch|axios|requests\.(post|put))\b[\s\S]{0,400}(JSON\.stringify\(\s*process\.env\s*\)|dict\(\s*os\.environ\s*\))/i, test: sendsWholeEnvOrSecretFile, decision: 'deny', reason: 'writes code that sends secrets or environment variables to a web address' },

@@ -2,6 +2,13 @@
 
 All notable changes to the `agentverify` CLI/SDK package are documented here.
 
+## [2.1.1] - 2026-11-24
+
+### Fixed
+
+- Cursor: a block by the Claude Code hook (which Cursor also runs) now shows up on the Agent Guard dashboard. Before,
+  the block stopped the action before Cursor's own hook ran, so nothing recorded it. Found in a live test.
+
 ## [2.1.0] - 2026-11-23
 
 ### Added

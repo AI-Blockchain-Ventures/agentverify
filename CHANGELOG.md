@@ -3,6 +3,15 @@
 All notable user-facing changes to Agent Verify are documented here. The CLI/SDK package has its
 own more granular changelog at [packages/cli/CHANGELOG.md](./packages/cli/CHANGELOG.md).
 
+## [2.1.1] - 2026-11-24
+
+### Fixed
+
+- **Coding-agent guard in Cursor:** blocked actions now appear on the Agent Guard dashboard (CLI 2.1.1).
+- **Copy buttons:** when a browser refuses clipboard access, copying falls back to an older method, and if that is refused
+  too the text is selected and the button says "Press Ctrl+C" instead of doing nothing.
+- **Dashboard menu:** Public profiles has its own icon instead of repeating the Overview icon.
+
 ## [2.1.0] - 2026-11-23
 
 ### Added

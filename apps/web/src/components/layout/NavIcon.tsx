@@ -9,6 +9,7 @@ const PATHS: Record<string, string> = {
   github: 'M6 3v12M18 9a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM6 21a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM18 9a9 9 0 0 1-9 9',
   guard: 'M5 11h14v10H5zM8 11V7a4 4 0 0 1 8 0v4',
   redteam: 'M12 2v4M12 18v4M2 12h4M18 12h4M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8z',
+  profiles: 'M3 5h18v14H3zM8.5 11.5a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM5.5 16a3 3 0 0 1 6 0M14 9h4M14 13h4',
   workspace: 'M9 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM3 20a6 6 0 0 1 12 0M16 4a3 3 0 0 1 0 6M21 20a6 6 0 0 0-4-5.6',
   integrations: 'M8 12h8M12 8v8M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z',
   api: 'M8 9l-4 3 4 3M16 9l4 3-4 3M14 5l-4 14',

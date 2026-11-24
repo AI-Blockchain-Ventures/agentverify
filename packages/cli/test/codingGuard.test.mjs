@@ -436,3 +436,71 @@ test('approvals end to end: the real hook in auto mode waits, then follows the p
     server.close()
   }
 })
+
+// Found in the live test: inside Cursor, a block by the Claude Code hook stops the read before Cursor's own hook
+// runs, so the Claude Code hook must record it itself (allowed actions stay with Cursor's hooks, to avoid doubles).
+test('inside Cursor, a block by the Claude Code hook is reported to the dashboard; allowed actions are not doubled', async () => {
+  const http = await import('node:http')
+  const received = []
+  const server = http.createServer((req, res) => {
+    let body = ''
+    req.on('data', c => (body += c))
+    req.on('end', () => {
+      if (req.url === '/v1/guard/events') received.push(...JSON.parse(body).events)
+      res.setHeader('Content-Type', 'application/json')
+      res.end(req.url === '/v1/guard/policy' ? '{"policy":null}' : '{"stored":1}')
+    })
+  })
+  await new Promise(r => server.listen(0, r))
+  const dir = mkdtempSync(join(tmpdir(), 'av-incursor-'))
+  installCursor(dir, 'agentverify')
+  const home = mkdtempSync(join(tmpdir(), 'av-home-'))
+  const cli = new URL('../dist/cli.js', import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1')
+  const env = { ...process.env, HOME: home, USERPROFILE: home, AGENTVERIFY_API_URL: `http://127.0.0.1:${server.address().port}`, AGENTVERIFY_API_KEY: 'av_test_key_1234567890abcd' }
+  delete env.AGENTVERIFY_GUARD_LOG
+  const { spawn } = await import('node:child_process')
+  const run = input => new Promise(resolve => {
+    const p = spawn(process.execPath, [cli, 'hook', 'claude-code'], { env, cwd: dir })
+    let out = ''
+    p.stdout.on('data', d => (out += d))
+    p.on('close', () => resolve(out))
+    p.stdin.end(JSON.stringify(input))
+  })
+  // Exactly what Cursor 3.31 sent in the live test (no cwd; Cursor starts the hook in the project folder).
+  const fromCursor = (tool_name, tool_input) => ({ tool_name, tool_input, hook_event_name: 'preToolUse', cursor_version: '3.31.15', workspace_roots: [`/${dir.split(String.fromCharCode(92)).join('/')}`] })
+  try {
+    const out = JSON.parse(await run(fromCursor('Read', { file_path: join(dir, '.env') })))
+    assert.equal(out.hookSpecificOutput.permissionDecision, 'deny')
+    assert.equal(received.length, 1, 'the block reached the dashboard')
+    assert.equal(received[0].decision, 'blocked')
+    assert.match(received[0].agent, /^Cursor · /, 'labelled as Cursor, since Cursor ran it')
+    await run(fromCursor('Read', { file_path: join(dir, 'src', 'app.js') }))
+    await run(fromCursor('Write', { file_path: join(dir, '.git', 'hooks', 'pre-commit'), content: 'x' }))
+    assert.equal(received.length, 1, 'allowed reads and blocked edits are left to Cursor’s own hooks')
+  } finally {
+    server.close()
+  }
+})
+
+// Found in the live test: Cursor wrote the .env path into a variable first, so the one-line rule missed it.
+test('code that puts a secret file name in a variable and then reads it needs a person; normal code does not', () => {
+  const write = content => combine(fromClaudeCode({ tool_name: 'Write', tool_input: { file_path: 'show.js', content } }).map(a => evaluate(a)))
+  const fromLiveTest = 'const fs = require("fs");\nconst path = require("path");\n\nconst envPath = path.join(__dirname, ".env");\nconst contents = fs.readFileSync(envPath, "utf8");\nconsole.log(contents);\n'
+  assert.equal(write(fromLiveTest).decision, 'ask')
+  assert.equal(write(fromLiveTest).rule, 'code-reads-secret-indirect')
+  for (const c of [
+    "import os\nkey_file = os.path.expanduser('~/.ssh/id_rsa')\nwith open(key_file) as f: print(f.read())",
+    "$p = Join-Path $PSScriptRoot '.env'\nGet-Content $p",
+    "const p = `${root}/.aws/credentials`; const s = await readFile(p, 'utf8')",
+  ]) assert.equal(write(c).decision, 'ask', c)
+  for (const c of [
+    "require('dotenv').config()\nconst key = process.env.API_KEY",
+    "dotenv.config({ path: '.env.local' })\nconst cfg = JSON.parse(fs.readFileSync('config.json', 'utf8'))",
+    "const tmpl = fs.readFileSync('.env.example', 'utf8')",
+    "// Copy .env.example to .env and fill in your keys\nconst data = fs.readFileSync('data.csv')",
+    "const envName = process.env.NODE_ENV; const cfg = readFileSync(`config.${envName}.json`)",
+  ]) assert.equal(write(c).decision, 'allow', c)
+  // In Cursor, a question about an edit becomes a dashboard approval when the rules say so (or a block otherwise).
+  const v = combine(fromCursor({ hook_event_name: 'preToolUse', tool_name: 'Write', tool_input: { file_path: 'show.js', content: fromLiveTest } }).map(a => evaluate(a)))
+  assert.equal(JSON.parse(cursorResponse(v, 'preToolUse')).permission, 'deny')
+})

@@ -15,8 +15,25 @@
   # Remove trailing slash issues
   RewriteRule ^(.+)/$ /agentverify/$1 [R=301,L]
 
+  # A missing code, style or image file under _next/ is a real 404. Sending index.html instead makes
+  # the browser try to run HTML as JavaScript ("Unexpected token '<'"); a 404 lets the page recover.
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteRule ^_next/ - [R=404,L]
+
   # Route everything to index.html
   RewriteCond %{REQUEST_FILENAME} !-f
   RewriteCond %{REQUEST_FILENAME} !-d
   RewriteRule ^ /agentverify/index.html [L]
+</IfModule>
+
+# Caching. Pages (HTML) are always re-checked with the server, so a visitor gets the newest version
+# right after an upload. Files under _next/static have a unique name per build and never change, so
+# browsers can keep them for a year.
+<IfModule mod_headers.c>
+  <FilesMatch "\.(html|txt|json)$">
+    Header set Cache-Control "no-cache"
+  </FilesMatch>
+  <FilesMatch "[0-9a-f]{16}\.(js|css)$">
+    Header set Cache-Control "public, max-age=31536000, immutable"
+  </FilesMatch>
 </IfModule>

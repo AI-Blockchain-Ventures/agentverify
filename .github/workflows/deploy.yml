@@ -1,0 +1,119 @@
+name: Deploy
+
+# Every merge to main: test everything with the real (private) scanner, then deploy the API to Cloudflare
+# and upload the website to aimodularity.com/agentverify over FTPS. Can also be run by hand (Actions tab).
+#
+# Repository secrets it needs (Settings → Secrets and variables → Actions):
+#   SCANNER_REPO_TOKEN     read-only token for AI-Blockchain-Ventures/agentverify-scanner (the private engine)
+#   CLOUDFLARE_API_TOKEN   Cloudflare token with "Edit Cloudflare Workers" permission
+#   CLOUDFLARE_ACCOUNT_ID  Cloudflare account id
+#   WEB_ENV_LOCAL          the contents of apps/web/.env.local (public Firebase settings + base path)
+#   FTP_SERVER             cPanel FTP host, e.g. ftp.aimodularity.com
+#   FTP_USERNAME           cPanel FTP user
+#   FTP_PASSWORD           cPanel FTP password
+#   FTP_SERVER_DIR         folder for the site on the server. Best: an FTP account that can only reach the
+#                          agentverify folder, and then this is just /
+#   (Cloudflare token: "Edit Cloudflare Workers" template plus Account → D1 → Edit.)
+#
+# Uploads add and replace files but never delete old ones, so a visitor whose page was open during a deploy
+# can still load the previous version's files.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Get the private scanner
+        uses: actions/checkout@v4
+        with:
+          repository: AI-Blockchain-Ventures/agentverify-scanner
+          token: ${{ secrets.SCANNER_REPO_TOKEN }}
+          path: packages/scanner
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build and test the scanner
+        run: |
+          npm run build --workspace=packages/scanner
+          npm test --workspace=packages/scanner
+
+      - name: Build and test the API
+        run: |
+          npm run build --workspace=workers/api
+          npm test --workspace=workers/api
+
+      - name: Test the CLI
+        run: |
+          npm run build --workspace=packages/cli
+          npm test --workspace=packages/cli
+
+      - name: Website settings
+        env:
+          WEB_ENV_LOCAL: ${{ secrets.WEB_ENV_LOCAL }}
+        run: |
+          test -n "$WEB_ENV_LOCAL" || { echo "WEB_ENV_LOCAL secret is missing"; exit 1; }
+          printf '%s\n' "$WEB_ENV_LOCAL" > apps/web/.env.local
+
+      - name: Check the website
+        run: |
+          npm run check:web
+          npm run lint --workspace=apps/web
+          npm run test:unit --workspace=apps/web
+          npm run check:private-boundary
+
+      - name: Build the website
+        run: |
+          npm run build --workspace=apps/web
+          npm run export --workspace=apps/web
+          test -f apps/web/out/agentverify/index.html
+          test -f apps/web/out/agentverify/.htaccess
+
+      - name: Deploy the API to Cloudflare
+        working-directory: workers/api
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npx --yes wrangler@4.86.0 deploy
+
+      - name: Check the API is up
+        run: curl -fsS --retry 5 --retry-delay 3 https://agentverify-api.agentverify.workers.dev/health
+
+      # Code files (_next) go up first, then the pages that point to them, so no page ever references a
+      # file that is not there yet. "mirror -R" without --delete only adds and replaces.
+      - name: Upload the website
+        env:
+          FTP_SERVER: ${{ secrets.FTP_SERVER }}
+          FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
+          FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+          FTP_SERVER_DIR: ${{ secrets.FTP_SERVER_DIR }}
+        run: |
+          sudo apt-get install -y -qq lftp > /dev/null
+          printf 'machine %s login %s password %s\n' "$FTP_SERVER" "$FTP_USERNAME" "$FTP_PASSWORD" > ~/.netrc
+          chmod 600 ~/.netrc
+          DIR="${FTP_SERVER_DIR%/}"
+          DIR="${DIR:-.}"
+          lftp -e "set ftp:ssl-force true; set ssl:verify-certificate yes; set net:max-retries 3; \
+            mirror -R --parallel=6 --no-perms apps/web/out/agentverify/_next $DIR/_next; \
+            mirror -R --parallel=6 --no-perms --exclude-glob _next/ apps/web/out/agentverify $DIR; \
+            bye" "$FTP_SERVER"
+          rm -f ~/.netrc
+
+      - name: Check the website is up
+        run: curl -fsS --retry 5 --retry-delay 3 -o /dev/null https://aimodularity.com/agentverify/

@@ -117,6 +117,38 @@ await test('Authenticated user cannot list the apiKeyIndex collection either', a
   await assertFails(getDocs(collection(ownerA.firestore(), 'apiKeyIndex')))
 })
 
+await test('User A cannot re-point User B\'s known key at their own account', async () => {
+  await assertFails(setDoc(doc(ownerA.firestore(), 'apiKeyIndex', 'av_seeded_key_1111111111111111'), { uid: 'user_a', createdAt: new Date().toISOString() }))
+})
+
+await test('User A cannot revoke or merge into User B\'s key', async () => {
+  await assertFails(setDoc(doc(ownerA.firestore(), 'apiKeyIndex', 'av_seeded_key_1111111111111111'), { uid: 'user_a', disabled: true }, { merge: true }))
+})
+
+await test('Owner CAN create a new key for themselves (dashboard "Generate key")', async () => {
+  await assertSucceeds(setDoc(doc(ownerA.firestore(), 'apiKeyIndex', 'av_new_key_for_a_000000000000'), { uid: 'user_a', createdAt: new Date().toISOString() }))
+})
+
+await test('Owner cannot create a key that belongs to someone else', async () => {
+  await assertFails(setDoc(doc(ownerA.firestore(), 'apiKeyIndex', 'av_new_key_for_b_000000000000'), { uid: 'user_b', createdAt: new Date().toISOString() }))
+})
+
+await test('Owner CAN revoke their own old key (dashboard "Regenerate" path, merge write)', async () => {
+  await assertSucceeds(setDoc(doc(ownerA.firestore(), 'apiKeyIndex', 'av_seeded_key_0000000000000000'), { uid: 'user_a', disabled: true, revokedAt: new Date().toISOString() }, { merge: true }))
+})
+
+await test('An owner cannot change a key\'s creation time (an old key cannot be made to look new)', async () => {
+  await assertFails(setDoc(doc(ownerA.firestore(), 'apiKeyIndex', 'av_new_key_for_a_000000000000'), { uid: 'user_a', createdAt: '2030-01-01T00:00:00.000Z' }, { merge: true }))
+})
+
+await test('A revoked key cannot be switched back on, even by its owner', async () => {
+  await assertFails(setDoc(doc(ownerA.firestore(), 'apiKeyIndex', 'av_seeded_key_0000000000000000'), { uid: 'user_a', disabled: false }, { merge: true }))
+})
+
+await test('Nobody can delete a key record from the client', async () => {
+  await assertFails(deleteDoc(doc(ownerA.firestore(), 'apiKeyIndex', 'av_new_key_for_a_000000000000')))
+})
+
 // --- 4. Public sharing: explicit share works, revoke works ---
 await test('Public report can be read by anonymous user when isPublic=true', async () => {
   await assertSucceeds(getDoc(doc(anon.firestore(), 'reports', 'REPORT-a-public')))

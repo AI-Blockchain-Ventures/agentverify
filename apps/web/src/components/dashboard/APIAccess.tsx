@@ -6,12 +6,14 @@ import { db } from '@/lib/firebase'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { trackAPIPage } from '@/lib/analytics'
 import { copyToClipboard, selectTextIn } from '@/lib/clipboard'
+import { isRetiredApiKey } from '@/lib/apiKeyRetirement'
 
 const installCommand = 'npm install -g agentverify'
 
 export function APIAccess() {
   const { user } = useAuth()
   const [apiKey, setApiKey] = useState<string | null>(null)
+  const [keyCreatedAt, setKeyCreatedAt] = useState<unknown>(null)
   const [keyLoading, setKeyLoading] = useState(true)
   const [keyError, setKeyError] = useState<string | null>(null)
   // What each Copy button shows: copied, or "press Ctrl+C" when the browser refused (the text is then selected).
@@ -20,7 +22,8 @@ export function APIAccess() {
   const installRef = useRef<HTMLPreElement>(null)
   const scanRef = useRef<HTMLPreElement>(null)
 
-  const scanCommand = `agentverify scan . --key ${apiKey ?? 'YOUR_KEY'}`
+  const keyRetired = apiKey !== null && isRetiredApiKey(keyCreatedAt)
+  const scanCommand = `agentverify scan . --key ${apiKey && !keyRetired ? apiKey : 'YOUR_KEY'}`
 
   useEffect(() => { trackAPIPage() }, [])
   useEffect(() => {
@@ -30,7 +33,10 @@ export function APIAccess() {
     }
     setKeyLoading(true)
     getDoc(doc(db, 'users', user.uid, 'apiKeys', 'default'))
-      .then(snap => setApiKey(snap.exists() ? String(snap.data().key) : null))
+      .then(snap => {
+        setApiKey(snap.exists() ? String(snap.data().key) : null)
+        setKeyCreatedAt(snap.exists() ? snap.data().createdAt : null)
+      })
       .finally(() => setKeyLoading(false))
   }, [user])
 
@@ -73,6 +79,8 @@ export function APIAccess() {
       }
 
       setApiKey(newKey)
+      setKeyCreatedAt(createdAt)
+      window.dispatchEvent(new Event('agentverify:api-key-changed'))
     } catch (err) {
       console.error('Key generation error:', err)
       setKeyError('Failed to generate key. Please try again.')
@@ -100,6 +108,17 @@ export function APIAccess() {
 
         {keyLoading ? (
           <div style={{ backgroundColor: 'var(--input-bg)' }} className="h-10 animate-pulse rounded-lg" />
+        ) : keyRetired ? (
+          <div role="alert" style={{ border: '1px solid var(--accent-orange-text)' }} className="rounded-2xl p-4">
+            <p style={{ color: 'var(--text-primary)' }} className="text-sm font-semibold">This key was retired for security</p>
+            <p style={{ color: 'var(--text-secondary)' }} className="mt-1 text-xs leading-relaxed">
+              On November 24, 2026 we found and fixed a problem that let API keys be read by others, and retired every key made before the fix. Your old key no longer works. Create a new one, then update it wherever you use it: your terminal, CI, and the <code className="font-mono">AGENTVERIFY_API_KEY</code> setting for Agent Guard.
+            </p>
+            <p style={{ color: 'var(--text-muted)' }} className="mt-2 truncate font-mono text-xs line-through" aria-label="Retired key">{apiKey}</p>
+            <button onClick={generateKey} className="mt-3 w-full rounded-2xl bg-[#7C3AED] py-3 font-semibold text-white transition-colors hover:bg-[#6D28D9]">
+              Create new key
+            </button>
+          </div>
         ) : apiKey ? (
           <>
             <div className="flex flex-col gap-2 sm:flex-row">

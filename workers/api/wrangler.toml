@@ -38,6 +38,9 @@ ONBOARDING_EMAILS = "true"
 # Free trial for first-time Pro buyers, in days (1–30; "0" turns it off). Stripe Checkout still takes a
 # card up front and charges when the trial ends unless the customer cancels.
 PRO_TRIAL_DAYS = "14"
+# API keys made before this time are refused: they were readable by others before the
+# Firestore rules fix deployed on 2026-11-24. Users create a new key in the dashboard.
+API_KEYS_ISSUED_AFTER = "2026-11-24T18:17:00Z"
 
 # Cloudflare's built-in rate limiter for public routes (free scan, Ask): 10 requests a minute per
 # network (Ask: per account when signed in), shared across each Cloudflare location. On top of the

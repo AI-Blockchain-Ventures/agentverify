@@ -10,7 +10,7 @@
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
-    "test:unit": "node test/comparisonAndGrouping.test.mjs && node test/firebaseConfigGuard.test.mjs && node test/billingNavigation.test.mjs && node test/complianceMapping.test.mjs && node test/sixViewContract.test.mjs && node test/conformanceLegacy.test.mjs && node test/owaspProfile.test.mjs && node test/siteContent.test.mjs && node test/repoImport.test.mjs && node test/evidencePack.test.mjs",
+    "test:unit": "node test/apiKeyRetirement.test.mjs && node test/comparisonAndGrouping.test.mjs && node test/firebaseConfigGuard.test.mjs && node test/billingNavigation.test.mjs && node test/complianceMapping.test.mjs && node test/sixViewContract.test.mjs && node test/conformanceLegacy.test.mjs && node test/owaspProfile.test.mjs && node test/siteContent.test.mjs && node test/repoImport.test.mjs && node test/evidencePack.test.mjs",
     "test:e2e": "playwright test"
   },
   "dependencies": {

@@ -25,7 +25,24 @@ export type Principal =
   | { type: 'API_KEY'; uid: string; apiKey: string }
   | { type: 'SYSTEM' }
 
-export type AuthzEnv = FirebaseServiceAccountEnv & OrganizationsEnv
+export type AuthzEnv = FirebaseServiceAccountEnv & OrganizationsEnv & {
+  /**
+   * ISO time. API keys created before it are refused (they were readable by others before the
+   * 2026-11-24 Firestore rules fix). Keys with no createdAt count as before it. Unset = no cutoff.
+   */
+  API_KEYS_ISSUED_AFTER?: string
+}
+
+export const RETIRED_API_KEY_MESSAGE = "This API key was retired for security on November 24, 2026. Create a new key in your Agent Verify dashboard (API tab): https://aimodularity.com/agentverify/dashboard/?tab=api, then use the new key."
+
+/** True when a key with this createdAt was made before the API_KEYS_ISSUED_AFTER cutoff. */
+export function isRetiredKeyCreatedAt(createdAt: string | undefined, cutoff: string | undefined): boolean {
+  if (!cutoff) return false
+  const cut = Date.parse(cutoff)
+  if (Number.isNaN(cut)) return false
+  const made = createdAt ? Date.parse(createdAt) : NaN
+  return Number.isNaN(made) || made < cut
+}
 
 function extractBearerToken(request: Request): string | null {
   const raw = request.headers.get('Authorization')?.trim() ?? ''
@@ -40,24 +57,43 @@ interface ApiKeyIndexFields {
   status?: { stringValue?: string }
   disabled?: { booleanValue?: boolean }
   revoked?: { booleanValue?: boolean }
+  createdAt?: { stringValue?: string; timestampValue?: string }
 }
 
-/** Resolves an Agent Verify API key to a uid — same apiKeyIndex lookup the CLI/API path has always used, now shared so both auth paths live in one file. */
-async function resolveApiKey(apiKey: string, env: AuthzEnv): Promise<Principal | null> {
+type ApiKeyLookup = { state: 'ok'; uid: string } | { state: 'retired' } | { state: 'invalid' }
+
+/** Reads one key from apiKeyIndex and says whether it is usable, retired by the cutoff, or not valid at all. */
+async function lookupApiKey(apiKey: string, env: AuthzEnv): Promise<ApiKeyLookup> {
   try {
     const url = `${firestoreBaseUrl(env)}/apiKeyIndex/${encodeURIComponent(apiKey)}?key=${apiKeyQueryParam(env)}`
     const res = await fetch(url)
-    if (!res.ok) return null
+    if (!res.ok) return { state: 'invalid' }
     const data = await res.json() as { fields?: ApiKeyIndexFields }
     const fields = data.fields ?? {}
     const uid = fields.uid?.stringValue
     const status = fields.status?.stringValue?.toLowerCase()
     const disabled = fields.disabled?.booleanValue === true || fields.revoked?.booleanValue === true || status === 'disabled' || status === 'revoked'
-    if (!uid || disabled) return null
-    return { type: 'API_KEY', uid, apiKey }
+    if (!uid || disabled) return { state: 'invalid' }
+    const createdAt = fields.createdAt?.stringValue ?? fields.createdAt?.timestampValue
+    if (isRetiredKeyCreatedAt(createdAt, env.API_KEYS_ISSUED_AFTER)) return { state: 'retired' }
+    return { state: 'ok', uid }
   } catch {
-    return null
+    return { state: 'invalid' }
   }
+}
+
+/** True when the request carries an Agent Verify API key that exists but was retired by the cutoff (used to explain a 401). */
+export async function requestUsesRetiredApiKey(request: Request, env: AuthzEnv): Promise<boolean> {
+  if (!env.API_KEYS_ISSUED_AFTER) return false
+  const token = extractBearerToken(request)
+  if (!token || !API_KEY_PATTERN.test(token)) return false
+  return (await lookupApiKey(token, env)).state === 'retired'
+}
+
+/** Resolves an Agent Verify API key to a uid — same apiKeyIndex lookup the CLI/API path has always used, now shared so both auth paths live in one file. */
+async function resolveApiKey(apiKey: string, env: AuthzEnv): Promise<Principal | null> {
+  const found = await lookupApiKey(apiKey, env)
+  return found.state === 'ok' ? { type: 'API_KEY', uid: found.uid, apiKey } : null
 }
 
 /**

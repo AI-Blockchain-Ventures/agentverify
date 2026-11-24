@@ -38,8 +38,11 @@ function respond(parsed, rel) {
     const condsOk = (r.conds ?? []).every(c => (c.test === 'f' ? isFile(rel) : isDir(rel)) !== c.negate)
     if (!condsOk || !r.pattern.test(rel)) continue
     const status = (r.flags.find(f => f.startsWith('R=')) ?? '').slice(2)
-    if (status === '404') return { status: 404, body: parsed.errorDoc ? 'not-found page' : 'host 404' }
+    // Seen live on 2026-11-24: GoDaddy ignores ErrorDocument here, so [R=404] shows only a bare "404 Not Found".
+    if (status === '404') return { status: 404, body: 'plain 404 text' }
     if (status === '301') return { status: 301, location: r.target.replace('$1', rel.match(r.pattern)[1] ?? '') }
+    // 404.php sends a real 404 status and then the designed "Page not found" page (also verified live).
+    if (r.target === '404.php') return { status: 404, body: 'not-found page' }
     return { status: 200, body: r.target } // internal rewrite
   }
   if (isFile(rel) || isFile(rel.replace(/\/?$/, '/index.html').replace(/^\//, ''))) return { status: 200, body: rel }
@@ -96,4 +99,14 @@ const looped = `<IfModule mod_rewrite.c>
 ErrorDocument 404 /agentverify/404.html`
 assert.equal(follow(looped, 'this-page-does-not-exist').status, 'LOOP', 'the simulation must reproduce the loop seen live')
 
-console.log('htaccess.test.mjs: missing pages answer 404 with no loop; real pages load; the old looping rules are caught')
+// --- control: answering with [R=404] alone gave only bare text on GoDaddy; the test must notice ---
+const plain = looped.replace('RewriteRule ^(.+)/$ /agentverify/$1 [R=301,L]', 'RewriteRule ^ - [R=404,L]')
+assert.equal(follow(plain, 'this-page-does-not-exist').body, 'plain 404 text', 'the simulation must reproduce the bare 404 seen live')
+
+// --- 404.php: real 404 status, then the static "Page not found" page, nothing else ---
+const php = readFileSync(path.join(__dirname, '..', 'public', '404.php'), 'utf8')
+assert.match(php, /http_response_code\(404\)/)
+assert.match(php, /readfile\(__DIR__ \. '\/404\.html'\)/)
+assert.doesNotMatch(php, /\$_(GET|POST|REQUEST|SERVER|COOKIE)|include|require|eval|exec|system/, '404.php must not read input or run anything')
+
+console.log('htaccess.test.mjs: missing pages answer 404 with the designed page and no loop; real pages load; both live failures are caught')

@@ -481,3 +481,26 @@ test('inside Cursor, a block by the Claude Code hook is reported to the dashboar
     server.close()
   }
 })
+
+// Found in the live test: Cursor wrote the .env path into a variable first, so the one-line rule missed it.
+test('code that puts a secret file name in a variable and then reads it needs a person; normal code does not', () => {
+  const write = content => combine(fromClaudeCode({ tool_name: 'Write', tool_input: { file_path: 'show.js', content } }).map(a => evaluate(a)))
+  const fromLiveTest = 'const fs = require("fs");\nconst path = require("path");\n\nconst envPath = path.join(__dirname, ".env");\nconst contents = fs.readFileSync(envPath, "utf8");\nconsole.log(contents);\n'
+  assert.equal(write(fromLiveTest).decision, 'ask')
+  assert.equal(write(fromLiveTest).rule, 'code-reads-secret-indirect')
+  for (const c of [
+    "import os\nkey_file = os.path.expanduser('~/.ssh/id_rsa')\nwith open(key_file) as f: print(f.read())",
+    "$p = Join-Path $PSScriptRoot '.env'\nGet-Content $p",
+    "const p = `${root}/.aws/credentials`; const s = await readFile(p, 'utf8')",
+  ]) assert.equal(write(c).decision, 'ask', c)
+  for (const c of [
+    "require('dotenv').config()\nconst key = process.env.API_KEY",
+    "dotenv.config({ path: '.env.local' })\nconst cfg = JSON.parse(fs.readFileSync('config.json', 'utf8'))",
+    "const tmpl = fs.readFileSync('.env.example', 'utf8')",
+    "// Copy .env.example to .env and fill in your keys\nconst data = fs.readFileSync('data.csv')",
+    "const envName = process.env.NODE_ENV; const cfg = readFileSync(`config.${envName}.json`)",
+  ]) assert.equal(write(c).decision, 'allow', c)
+  // In Cursor, a question about an edit becomes a dashboard approval when the rules say so (or a block otherwise).
+  const v = combine(fromCursor({ hook_event_name: 'preToolUse', tool_name: 'Write', tool_input: { file_path: 'show.js', content: fromLiveTest } }).map(a => evaluate(a)))
+  assert.equal(JSON.parse(cursorResponse(v, 'preToolUse')).permission, 'deny')
+})

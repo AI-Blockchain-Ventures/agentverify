@@ -45,6 +45,7 @@ export const BUILT_IN_RULES: Array<{ group: string; rules: Array<{ id: string; d
     { id: 'dump-env', decision: 'ask', label: 'Listing every environment variable' },
     { id: 'dump-env-code', decision: 'ask', label: 'One-line scripts that print every environment variable' },
     { id: 'code-reads-secret', decision: 'ask', label: 'Writing code that opens a secret file' },
+    { id: 'code-reads-secret-indirect', decision: 'ask', label: 'Writing code that names a secret file and reads files' },
     { id: 'code-dumps-env', decision: 'ask', label: 'Writing code that prints every environment variable' },
     { id: 'code-sends-secrets', decision: 'deny', label: 'Writing code that sends secrets to a web address' },
   ] },

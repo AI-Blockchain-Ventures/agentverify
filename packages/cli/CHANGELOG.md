@@ -2,6 +2,11 @@
 
 All notable changes to the `agentverify` CLI/SDK package are documented here.
 
+## [2.1.3] - 2026-11-24
+
+### Fixed
+- `protect` no longer prints a Node.js DeprecationWarning (DEP0190) on newer Node versions when it checks the installed agentverify version.
+
 ## [2.1.2] - 2026-11-24
 
 ### Fixed

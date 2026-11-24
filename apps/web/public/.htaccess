@@ -3,21 +3,17 @@
   RewriteBase /agentverify/
 
   # A page folder asked for without its ending slash (e.g. /agentverify/pricing):
-  # add the slash. Otherwise the main aimodularity.com app answers with a 404.
+  # add the slash. Otherwise the main aimodularity.com app answers instead.
   # The query string (e.g. ?id=...) is kept.
   RewriteCond %{REQUEST_FILENAME} -d
   RewriteRule ^(.*[^/])$ /agentverify/$1/ [R=301,L]
 
-  # Serve existing files and directories directly
+  # Anything that is not a real file or page folder: answer "Page not found" (404) here,
+  # so the request never reaches the main aimodularity.com app (which would add a slash
+  # and send it back, looping forever). Every Agent Verify page is a real file in the export.
   RewriteCond %{REQUEST_FILENAME} !-f
   RewriteCond %{REQUEST_FILENAME} !-d
-
-  # Remove trailing slash issues
-  RewriteRule ^(.+)/$ /agentverify/$1 [R=301,L]
-
+  RewriteRule ^ - [R=404,L]
 </IfModule>
 
-# Anything that is not a real page gets the "Page not found" page with a real 404 status
-# (every page, including /checks/<id> and /mcp/<id>, is a real file in this static export).
-# Sending unknown addresses to the home page with 200 made search engines see duplicate pages.
 ErrorDocument 404 /agentverify/404.html

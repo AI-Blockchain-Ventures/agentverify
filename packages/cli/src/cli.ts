@@ -8,7 +8,7 @@ import { runMcpServer } from './mcp'
 import { runHook, runProtect } from './codingGuardCli'
 import { PackageError, SUPPORTED_ASSESSMENT_SCHEMA, SUPPORTED_PROFILES, buildPackage, displayPath, formatAssessment, postProfile, safeText, serializeRequest } from './profile'
 
-const VERSION = '2.1.2'
+const VERSION = '2.1.3'
 const API_URL = process.env.AGENTVERIFY_API_URL ?? 'https://agentverify-api.agentverify.workers.dev/v1/scan'
 const A2SPA_DOCS_URL = 'https://aimodularity.com/A2SPA/docs'
 

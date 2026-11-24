@@ -190,7 +190,7 @@ console.log('✓ unsigned vs signed states render distinctly')
 // ============================================================================
 assert.match(signed, /1\.0\.0-alpha\.1/, 'the profile mapping version itself must be shown')
 assert.match(signed, /not of Agent Verify/i)
-assert.match(signed, /Agent Verify is released as v2\.0\.0/)
+assert.match(signed, /Agent Verify itself is a released product \(currently version 2\.1\)/)
 assert.doesNotMatch(signedCollapsedByDefault, /1\.0\.0-alpha\.1/, 'the technical-details section (which carries the alpha version string) is collapsed by default — secondary, not front-and-center (requirement 12)')
 console.log('✓ profile-version alpha wording is clarified against Agent Verify v2.0.0, and is collapsed/secondary by default')
 

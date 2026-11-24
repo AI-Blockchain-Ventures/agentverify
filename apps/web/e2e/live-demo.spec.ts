@@ -27,7 +27,7 @@ test('live demo: Run live scan calls the API and shows the report', async ({ pag
   })
   const button = await openDemo(page)
   await button.click()
-  await expect(page.getByRole('status').filter({ hasText: 'Scanner returned NOT_VERIFIED with 7 findings' })).toBeVisible()
+  await expect(page.getByRole('status').filter({ hasText: 'Result: Not verified, with 7 findings' })).toBeVisible()
   await expect(page.getByText('NOT VERIFIED', { exact: true }).first()).toBeVisible()
   await expect(button).toHaveText('Run again')
   expect(calls).toBe(1)

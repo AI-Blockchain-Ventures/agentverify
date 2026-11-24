@@ -22,12 +22,24 @@ or what it's *allowed to do*.
   that can block risky merges.
 - **Prompt-injection tests** against your own running agent, so you see which attacks it falls
   for (Pro).
-- **Agent Guard** at runtime: allow lists, a person's approval for risky tools, and every decision
-  on a dashboard.
+- **Guard for AI coding agents (Claude Code and Cursor), free:** one command in your project
+  checks every command, file read, file edit and MCP tool call before it runs. Reading `.env`
+  and SSH keys, sending secrets out, wiping folders and force-pushing to main are blocked;
+  installing packages and deploying ask you first; normal work like running tests is untouched.
+  Set company rules once for every developer, approve risky steps from your phone, and see every
+  decision on a dashboard.
+- **Agent Guard** at runtime for your own agents: allow lists, a person's approval for risky
+  tools, and every decision on a dashboard.
 - **Works where you build:** a VS Code extension and an MCP server for Claude Code and Cursor.
 
-**Try it:** [scan an agent free](https://aimodularity.com/agentverify/) (your first scan needs no
-account), or from your terminal:
+**Protect your project from your AI coding agent** (run it in the project folder):
+
+```bash
+npx agentverify@latest protect
+```
+
+**Scan an agent:** [free in your browser](https://aimodularity.com/agentverify/) (your first scan
+needs no account), or from your terminal:
 
 ```bash
 npx agentverify scan ./agents --key av_your_key
@@ -92,7 +104,7 @@ CI exit codes distinguish a real security failure from an execution problem:
 ## GitHub Action
 
 ```yaml
-- uses: AI-Blockchain-Ventures/agentverify@v1.4.0
+- uses: AI-Blockchain-Ventures/agentverify@v2
   with:
     path: ./agents
     api-key: ${{ secrets.AGENTVERIFY_API_KEY }}

@@ -65,7 +65,7 @@ export function OwaspProfileResult({ response, onNewAssessment, initiallyShowDet
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[color:var(--accent-purple-text)]">OWASP profile assessment</p>
-            <h1 style={{ color: 'var(--text-primary)' }} className="mt-2 text-2xl font-semibold tracking-tight">OWASP Agentic Skills Top 10</h1>
+            <h2 style={{ color: 'var(--text-primary)' }} className="mt-2 text-2xl font-semibold tracking-tight">OWASP Agentic Skills Top 10</h2>
           </div>
           {onNewAssessment && (
             <button onClick={onNewAssessment} style={{ border: '1px solid var(--border)', color: 'var(--text-primary)' }} className="no-print rounded-xl px-3.5 py-2 text-xs font-semibold hover:opacity-70">

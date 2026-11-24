@@ -2,6 +2,11 @@
 
 All notable changes to the `agentverify` CLI/SDK package are documented here.
 
+## [2.1.4] - 2026-11-24
+
+### Changed
+- The npm page now starts with `agentverify protect`, the guard for Claude Code and Cursor: what it blocks, what it asks about, and which files it writes. No code changes.
+
 ## [2.1.3] - 2026-11-24
 
 ### Fixed

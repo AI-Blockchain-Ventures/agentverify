@@ -24,7 +24,7 @@ const columns: Array<{ title: string; links: Array<{ href: string; label: string
     { href: '/state-of-agent-security', label: 'State of AI Agent Security' },
     { href: '/owasp-agentic-skills', label: 'OWASP agentic profile' },
     { href: '/profile-attestation', label: 'Signing key' },
-    { href: '/whats-new', label: "What's new in 2.0" },
+    { href: '/whats-new', label: "What's new in 2.1" },
     { href: '/status', label: 'Status' },
     { href: 'https://github.com/AI-Blockchain-Ventures/agentverify/blob/main/CHANGELOG.md', label: 'Changelog', external: true },
   ] },

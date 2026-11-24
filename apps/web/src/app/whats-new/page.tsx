@@ -8,8 +8,8 @@ const newChecks = checkLibrary.checks.filter(c => c.addedIn === '2.0.0').length
 
 export const metadata: Metadata = pageMetadata(
   '/whats-new',
-  "What's new in Agent Verify 2.0",
-  `Agent Verify 2.0: ${checkLibrary.total} checks (${newChecks} new), PR checks for GitHub, GitLab and Bitbucket, VS Code and MCP, Agent Guard, a Team plan, and the State of MCP Security report.`,
+  "What's new in Agent Verify 2.1",
+  `Agent Verify 2.1: a guard for Claude Code and Cursor, company rules, approvals from your phone, 18 OWASP-mapped injection tests and verified agent profiles. Plus everything from 2.0: ${checkLibrary.total} checks, PR checks for GitHub, GitLab and Bitbucket, VS Code and MCP, and Agent Guard.`,
 )
 
 type Item = { title: string; text: string; href: string; cta: string; badge?: string }
@@ -63,8 +63,8 @@ export default function WhatsNewPage() {
   return (
     <main style={{ backgroundColor: 'var(--bg)' }} className="min-h-screen px-4 py-12 md:px-6 md:py-16">
       <div className="mx-auto max-w-5xl">
-        <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[color:var(--accent-purple-text)]">Agent Verify 2.0</p>
-        <h1 style={{ color: 'var(--text-primary)' }} className="mt-2 text-3xl font-semibold tracking-tight md:text-5xl">What&apos;s new in 2.0</h1>
+        <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[color:var(--accent-purple-text)]">Agent Verify 2.1</p>
+        <h1 style={{ color: 'var(--text-primary)' }} className="mt-2 text-3xl font-semibold tracking-tight md:text-5xl">What&apos;s new in 2.1</h1>
         <p style={{ color: 'var(--text-secondary)' }} className="mt-4 max-w-3xl text-lg leading-8">
           Agent Verify now checks AI agents everywhere they are built and run — in your editor, on every pull request, and in production — with {checkLibrary.total} tested checks.
         </p>

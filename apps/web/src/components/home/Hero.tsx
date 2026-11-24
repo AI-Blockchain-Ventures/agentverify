@@ -24,7 +24,7 @@ export function Hero({ openAuth }: HeroProps) {
             style={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}
             className="inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-medium"
           >
-            <span className="font-semibold text-[color:var(--accent-purple-text)]">New</span> Agent Verify 2.0 · 124 checks, PR checks, Agent Guard →
+            <span className="font-semibold text-[color:var(--accent-purple-text)]">New</span> Agent Verify 2.1 · Guard for Claude Code &amp; Cursor →
           </Link>
 
           <h1 style={{ color: 'var(--text-primary)' }} className="mt-5 text-4xl font-bold leading-[1.08] tracking-tight sm:text-5xl xl:text-[56px] 2xl:text-[64px]">

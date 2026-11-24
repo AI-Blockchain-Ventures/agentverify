@@ -131,10 +131,16 @@ export async function requestRemoteApproval(req: { agent: string; tool: string; 
 const LOG_DECISION: Record<Verdict['decision'], string> = { allow: 'allowed', deny: 'blocked', ask: 'asked' }
 
 /** Activity goes to the Agent Guard dashboard when an API key is set. Allowed actions are batched to stay fast. */
+/** Which coding agent this hook is running for. Cursor also runs Claude Code's hooks, so check the input, not only the target. */
+let startedByCursor = false
+function agentApp(target: HookTarget): string {
+  return target === 'cursor' || startedByCursor ? 'Cursor' : 'Claude Code'
+}
+
 async function logActivity(target: HookTarget, actions: AgentAction[], verdict: Verdict, project: string, decisionOverride?: string): Promise<void> {
   const key = process.env.AGENTVERIFY_API_KEY
   if (!key || process.env.AGENTVERIFY_GUARD_LOG === 'off') return
-  const agent = `${target === 'cursor' ? 'Cursor' : 'Claude Code'} · ${project} · ${hostname().slice(0, 40)}`
+  const agent = `${agentApp(target)} · ${project} · ${hostname().slice(0, 40)}`
   // A write and its contents are one action in the log.
   const events = actions.filter(a => a.kind !== 'code' || actions.length === 1).map(a => ({ agent, tool: a.agentTool ?? a.kind, decision: decisionOverride ?? LOG_DECISION[verdict.decision], reason: verdict.rule ? `${verdict.reason} (rule ${verdict.rule})` : verdict.reason, argsPreview: previewAction(a), at: new Date().toISOString() }))
   let batch = events
@@ -170,6 +176,7 @@ export async function runHook(target: string | undefined): Promise<number> {
     return 0
   }
   const cwd = typeof input.cwd === 'string' && input.cwd ? input.cwd : process.cwd()
+  startedByCursor = typeof input.cursor_version === 'string'
   const { file } = loadPolicyFile(cwd)
   const company = await loadCompanyPolicy()
   const { policy } = buildPolicy(file, company.policy)
@@ -181,7 +188,7 @@ export async function runHook(target: string | undefined): Promise<number> {
   let verdict = combine(actions.map(a => evaluate(a, policy)))
   const permissionMode = typeof input.permission_mode === 'string' ? input.permission_mode : undefined
   const event = String(input.hook_event_name ?? '')
-  const agentLabel = `${target === 'cursor' ? 'Cursor' : 'Claude Code'} · ${basename(cwd)} · ${hostname().slice(0, 40)}`
+  const agentLabel = `${agentApp(target)} · ${basename(cwd)} · ${hostname().slice(0, 40)}`
   // Nobody at the screen, and the rules say a person decides on the dashboard: ask there and wait.
   if (wantsRemoteApproval(verdict, policy, { target, permissionMode, event })) {
     const main = actions.find(a => a.kind !== 'code') ?? actions[0]

@@ -473,7 +473,7 @@ test('inside Cursor, a block by the Claude Code hook is reported to the dashboar
     assert.equal(out.hookSpecificOutput.permissionDecision, 'deny')
     assert.equal(received.length, 1, 'the block reached the dashboard')
     assert.equal(received[0].decision, 'blocked')
-    assert.match(received[0].agent, /^Claude Code · /)
+    assert.match(received[0].agent, /^Cursor · /, 'labelled as Cursor, since Cursor ran it')
     await run(fromCursor('Read', { file_path: join(dir, 'src', 'app.js') }))
     await run(fromCursor('Write', { file_path: join(dir, '.git', 'hooks', 'pre-commit'), content: 'x' }))
     assert.equal(received.length, 1, 'allowed reads and blocked edits are left to Cursor’s own hooks')

@@ -8,12 +8,12 @@
   RewriteCond %{REQUEST_FILENAME} -d
   RewriteRule ^(.*[^/])$ /agentverify/$1/ [R=301,L]
 
-  # Anything that is not a real file or page folder: answer "Page not found" (404) here,
-  # so the request never reaches the main aimodularity.com app (which would add a slash
-  # and send it back, looping forever). Every Agent Verify page is a real file in the export.
+  # Anything that is not a real file or page folder: show the "Page not found" page with a
+  # real 404 status (404.php sends the status, then the page). Answered here, so the request
+  # never reaches the main aimodularity.com app (which adds a slash and would loop).
   RewriteCond %{REQUEST_FILENAME} !-f
   RewriteCond %{REQUEST_FILENAME} !-d
-  RewriteRule ^ - [R=404,L]
+  RewriteRule ^ 404.php [L]
 </IfModule>
 
 ErrorDocument 404 /agentverify/404.html

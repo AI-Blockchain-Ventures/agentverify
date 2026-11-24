@@ -137,6 +137,10 @@ await test('Owner CAN revoke their own old key (dashboard "Regenerate" path, mer
   await assertSucceeds(setDoc(doc(ownerA.firestore(), 'apiKeyIndex', 'av_seeded_key_0000000000000000'), { uid: 'user_a', disabled: true, revokedAt: new Date().toISOString() }, { merge: true }))
 })
 
+await test('An owner cannot change a key\'s creation time (an old key cannot be made to look new)', async () => {
+  await assertFails(setDoc(doc(ownerA.firestore(), 'apiKeyIndex', 'av_new_key_for_a_000000000000'), { uid: 'user_a', createdAt: '2030-01-01T00:00:00.000Z' }, { merge: true }))
+})
+
 await test('A revoked key cannot be switched back on, even by its owner', async () => {
   await assertFails(setDoc(doc(ownerA.firestore(), 'apiKeyIndex', 'av_seeded_key_0000000000000000'), { uid: 'user_a', disabled: false }, { merge: true }))
 })

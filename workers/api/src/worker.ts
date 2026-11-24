@@ -11,7 +11,7 @@ import { isValidRole } from './rbac'
 import { recordAuditEvent, listAuditEvents, type AuditLogEnv } from './auditLog'
 import { createWebhook, listWebhooks, setWebhookStatus, type WebhooksEnv } from './webhooks'
 import { enqueueWebhookDeliveries, runDueDeliveries, listDeliveries, retryDelivery, type WebhooksDeliveryEnv } from './webhookDelivery'
-import { authenticateRequest, authorize, type AuthzEnv } from './authz'
+import { authenticateRequest, authorize, requestUsesRetiredApiKey, RETIRED_API_KEY_MESSAGE, type AuthzEnv } from './authz'
 import { isRateLimited, clientIp, edgeRateLimited, type RateLimiterBinding } from './rateLimit'
 import { demoCacheKey, readDemoCache, writeDemoCache, DEMO_SCANS_PER_HOUR } from './demoCache'
 import { handleProfileRequest } from './profiles'
@@ -1219,7 +1219,14 @@ export default {
   /** Every request goes through routeRequest; anything it throws is recorded for the admin and answered with a plain 500. */
   async fetch(request: Request, env: WorkerEnv, ctx?: ExecutionContext): Promise<Response> {
     try {
-      return await routeRequest(request, env, ctx)
+      const response = await routeRequest(request, env, ctx)
+      // A refused request that used a key retired by API_KEYS_ISSUED_AFTER gets a clear reason instead of a bare 401.
+      if (response.status === 401 && await requestUsesRetiredApiKey(request, env)) {
+        const headers = new Headers(response.headers)
+        headers.set('Content-Type', 'application/json')
+        return new Response(JSON.stringify({ error: RETIRED_API_KEY_MESSAGE, code: 'api_key_retired' }), { status: 401, headers })
+      }
+      return response
     } catch (e) {
       console.error('Unhandled API error:', e instanceof Error ? e.stack ?? e.message : e)
       const err = e instanceof Error ? e : new Error(String(e))

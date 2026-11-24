@@ -31,6 +31,7 @@ import { FeedbackDialog, openFeedback } from '@/components/growth/FeedbackDialog
 import { DASHBOARD_TAB_EVENT } from '@/components/ask/AskPalette'
 import { OnboardingProfile } from '@/components/growth/OnboardingProfile'
 import { SectionErrorBoundary } from '@/components/ui/SectionErrorBoundary'
+import { RetiredKeyNotice } from '@/components/dashboard/RetiredKeyNotice'
 
 const pageCopy: Record<DashboardTab, { title: string; subtitle: string; docsHref?: string }> = {
   overview: { title: 'Dashboard', subtitle: 'Your agent security posture at a glance — what changed, what needs attention.' },
@@ -222,6 +223,7 @@ export default function DashboardPage() {
           </div>
 
           <div key={`content-${tab}`} className="av-animate-rise">
+            {tab !== 'api' && <RetiredKeyNotice user={user} onOpenApi={() => changeTab('api')} />}
             <SectionErrorBoundary label={pageCopy[tab].title}>
             {tab === 'overview' && (
               <DashboardOverview user={user} onGoToScan={() => changeTab('scan')} onGoToAgent={goToAgent} />

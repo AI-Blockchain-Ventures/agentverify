@@ -70,7 +70,7 @@ export async function loadCompanyPolicy(opts: { now?: number; fetchImpl?: typeof
   const ctrl = new AbortController()
   const timer = setTimeout(() => ctrl.abort(), 1500)
   try {
-    const res = await (opts.fetchImpl ?? fetch)(`${API_BASE}/v1/guard/policy`, { signal: ctrl.signal, headers: { Authorization: `Bearer ${key}`, 'User-Agent': 'agentverify-coding-guard/2.1.0' } })
+    const res = await (opts.fetchImpl ?? fetch)(`${API_BASE}/v1/guard/policy`, { signal: ctrl.signal, headers: { Authorization: `Bearer ${key}`, 'User-Agent': 'agentverify-coding-guard/2.1.1' } })
     if (res.ok) {
       const body = (await res.json()) as { policy?: CompanyPolicyFile | null }
       const policy = body && typeof body.policy === 'object' ? body.policy ?? null : null
@@ -100,7 +100,7 @@ export async function requestRemoteApproval(req: { agent: string; tool: string; 
   const f = opts.fetchImpl ?? fetch
   const now = opts.now ?? Date.now
   const sleep = opts.sleep ?? (ms => new Promise(r => setTimeout(r, ms)))
-  const headers = { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json', 'User-Agent': 'agentverify-coding-guard/2.1.0' }
+  const headers = { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json', 'User-Agent': 'agentverify-coding-guard/2.1.1' }
   const call = async (path: string, init: RequestInit = {}) => {
     const ctrl = new AbortController()
     const t = setTimeout(() => ctrl.abort(), 5000)
@@ -152,7 +152,7 @@ async function logActivity(target: HookTarget, actions: AgentAction[], verdict: 
   try {
     const ctrl = new AbortController()
     const t = setTimeout(() => ctrl.abort(), 1500)
-    const res = await fetch(`${API_BASE}/v1/guard/events`, { method: 'POST', signal: ctrl.signal, headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json', 'User-Agent': 'agentverify-coding-guard/2.1.0' }, body: JSON.stringify({ events: batch.slice(-100) }) })
+    const res = await fetch(`${API_BASE}/v1/guard/events`, { method: 'POST', signal: ctrl.signal, headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json', 'User-Agent': 'agentverify-coding-guard/2.1.1' }, body: JSON.stringify({ events: batch.slice(-100) }) })
     clearTimeout(t)
     if (res.ok && existsSync(QUEUE)) unlinkSync(QUEUE)
   } catch { /* offline: the queue is kept and sent next time */ }
@@ -194,7 +194,7 @@ export async function runHook(target: string | undefined): Promise<number> {
       : `${base} It needs a person's OK and the Agent Verify dashboard could not be reached, so it was blocked. Ask the user.`
     if (target === 'cursor') process.stdout.write(JSON.stringify(event === 'beforeReadFile' ? { permission: approved ? 'allow' : 'deny', ...(approved ? {} : { user_message: why }) } : { permission: approved ? 'allow' : 'deny', user_message: why, agent_message: why }))
     else process.stdout.write(JSON.stringify({ hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: approved ? 'allow' : 'deny', permissionDecisionReason: why } }))
-    if (!(target === 'claude-code' && typeof input.cursor_version === 'string' && cursorHooksInstalled(cwd))) {
+    if (!(target === 'claude-code' && approved && insideCursorWithItsOwnHooks(input, cwd))) {
       await logActivity(target, actions, { decision: approved ? 'allow' : 'deny', rule: verdict.rule, reason: why.replace(/^Agent Verify: /, '') }, basename(cwd), approved ? 'approved' : outcome === 'denied' ? 'rejected' : 'blocked')
     }
     return 0
@@ -207,9 +207,11 @@ export async function runHook(target: string | undefined): Promise<number> {
     const out = claudeCodeResponse(verdict)
     if (out) process.stdout.write(out)
   }
-  // Cursor also runs Claude Code's project hooks. When Cursor's own hooks are installed too, they do the recording,
-  // so the same action isn't recorded twice. The answer above still counts: the strictest one wins.
-  if (target === 'claude-code' && typeof input.cursor_version === 'string' && cursorHooksInstalled(cwd)) return 0
+  // Cursor also runs Claude Code's project hooks. When Cursor's own hooks are installed too, they record what they see,
+  // so this hook stays quiet to avoid recording an action twice. But a block here stops the action before Cursor's
+  // own read/shell hooks run, so this hook must record its own blocks (file edits excepted: Cursor's preToolUse hook
+  // checks those too and records its blocks). The answer above still counts: the strictest one wins.
+  if (target === 'claude-code' && insideCursorWithItsOwnHooks(input, cwd) && (verdict.decision !== 'deny' || actions.some(a => a.kind === 'write'))) return 0
   // A Cursor edit is recorded once, by afterFileEdit; preToolUse only records the edits it stopped.
   if (target === 'cursor' && input.hook_event_name === 'preToolUse' && verdict.decision !== 'deny') return 0
   await logActivity(target, actions, verdict, basename(cwd))
@@ -269,6 +271,11 @@ export function installClaudeCode(root: string, cmd: string): { path: string; ch
 }
 
 /** True when Agent Verify's Cursor hooks are set up for this folder (or a parent) or for the whole machine. */
+/** This Claude Code hook was started by Cursor (Cursor runs Claude Code's project hooks too) and Cursor's own hooks are set up. */
+function insideCursorWithItsOwnHooks(input: Record<string, unknown>, cwd: string): boolean {
+  return typeof input.cursor_version === 'string' && cursorHooksInstalled(cwd)
+}
+
 export function cursorHooksInstalled(cwd: string): boolean {
   const has = (p: string) => { try { return readFileSync(p, 'utf8').includes('hook cursor') } catch { return false } }
   for (let dir = resolve(cwd); ; dir = dirname(dir)) {

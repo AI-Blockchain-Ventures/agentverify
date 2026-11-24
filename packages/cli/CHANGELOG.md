@@ -2,6 +2,12 @@
 
 All notable changes to the `agentverify` CLI/SDK package are documented here.
 
+## [2.1.5] - 2026-11-24
+
+### Added
+- `agentverify log`: see what the guard blocked or asked about on this computer, newest first. Every decision is saved in `~/.agentverify/guard-log.jsonl` with secrets masked, with or without an account. `--all` adds allowed actions, `-n` shows more, `--json` for scripts, `--path` prints where the log is. The log never leaves the computer, rolls over at about 1 MB (one older copy kept), and `AGENTVERIFY_LOCAL_LOG=off` turns it off.
+- `protect` now says where to see what was blocked.
+
 ## [2.1.4] - 2026-11-24
 
 ### Changed

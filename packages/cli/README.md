@@ -18,6 +18,18 @@ From then on, every command, file read, file edit and MCP tool call that Claude 
 
 `protect` writes `.claude/settings.json`, `.cursor/hooks.json` and a team rules file, `.agentverify/policy.json`, that you can commit so everyone on the project gets the same rules. Set `AGENTVERIFY_API_KEY` to see every decision on your [Agent Guard dashboard](https://aimodularity.com/agentverify/dashboard/?tab=guard), set company rules once for every developer, and approve risky steps from your phone.
 
+### See what was blocked
+
+Every decision is also saved on your own computer (no account needed, secrets masked):
+
+```bash
+npx agentverify@latest log          # what was blocked or asked about, newest first
+npx agentverify@latest log --all    # include allowed actions
+npx agentverify@latest log -n 50    # show more
+```
+
+The log lives in `~/.agentverify/guard-log.jsonl`, never leaves your computer, and stays small (about 1 MB, plus one older copy). Set `AGENTVERIFY_LOCAL_LOG=off` to turn it off.
+
 ## Scan an agent
 
 Scan AI agent code and configurations for security issues, credential exposure, and governance gaps. Saved CLI reports appear in your Agent Verify dashboard when API report save succeeds.

@@ -5,10 +5,10 @@ import { join, relative, extname } from 'path'
 import { scan } from './sdk'
 import type { ScanResult } from './types'
 import { runMcpServer } from './mcp'
-import { runHook, runProtect } from './codingGuardCli'
+import { runHook, runLog, runProtect } from './codingGuardCli'
 import { PackageError, SUPPORTED_ASSESSMENT_SCHEMA, SUPPORTED_PROFILES, buildPackage, displayPath, formatAssessment, postProfile, safeText, serializeRequest } from './profile'
 
-const VERSION = '2.1.4'
+const VERSION = '2.1.5'
 const API_URL = process.env.AGENTVERIFY_API_URL ?? 'https://agentverify-api.agentverify.workers.dev/v1/scan'
 const A2SPA_DOCS_URL = 'https://aimodularity.com/A2SPA/docs'
 
@@ -138,6 +138,7 @@ ${c.bold}Usage:${c.reset}
   agentverify scan --file <file> --key <api-key>
   agentverify mcp
   agentverify protect [claude-code|cursor] [--global]
+  agentverify log [--all] [-n <number>] [--json]
 
 ${c.bold}Commands:${c.reset}
   scan          Scan agent files in a directory or a single file
@@ -147,6 +148,8 @@ ${c.bold}Commands:${c.reset}
                 MCP tool call before Claude Code or Cursor runs it (blocks secrets
                 leaks, destructive commands, force-push to main; asks before installs
                 and deploys). Team rules: .agentverify/policy.json
+  log           Show what the guard blocked or asked about on this computer, newest
+                first (--all includes allowed actions). Saved locally; no account needed
   hook          Used by protect: the check Claude Code or Cursor calls before each action
 
 ${c.bold}Options:${c.reset}
@@ -576,6 +579,7 @@ async function main() {
   const first = process.argv[2]
   if (first === 'hook') process.exit(await runHook(process.argv[3]))
   if (first === 'protect') process.exit(await runProtect(process.argv.slice(3), VERSION, write))
+  if (first === 'log') process.exit(runLog(process.argv.slice(3), write))
 
   const args = parseArgs(process.argv)
 

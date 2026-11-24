@@ -71,7 +71,7 @@ export async function loadCompanyPolicy(opts: { now?: number; fetchImpl?: typeof
   const ctrl = new AbortController()
   const timer = setTimeout(() => ctrl.abort(), 1500)
   try {
-    const res = await (opts.fetchImpl ?? fetch)(`${API_BASE}/v1/guard/policy`, { signal: ctrl.signal, headers: { Authorization: `Bearer ${key}`, 'User-Agent': 'agentverify-coding-guard/2.1.3' } })
+    const res = await (opts.fetchImpl ?? fetch)(`${API_BASE}/v1/guard/policy`, { signal: ctrl.signal, headers: { Authorization: `Bearer ${key}`, 'User-Agent': 'agentverify-coding-guard/2.1.4' } })
     if (res.ok) {
       const body = (await res.json()) as { policy?: CompanyPolicyFile | null }
       const policy = body && typeof body.policy === 'object' ? body.policy ?? null : null
@@ -101,7 +101,7 @@ export async function requestRemoteApproval(req: { agent: string; tool: string; 
   const f = opts.fetchImpl ?? fetch
   const now = opts.now ?? Date.now
   const sleep = opts.sleep ?? (ms => new Promise(r => setTimeout(r, ms)))
-  const headers = { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json', 'User-Agent': 'agentverify-coding-guard/2.1.3' }
+  const headers = { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json', 'User-Agent': 'agentverify-coding-guard/2.1.4' }
   const call = async (path: string, init: RequestInit = {}) => {
     const ctrl = new AbortController()
     const t = setTimeout(() => ctrl.abort(), 5000)
@@ -159,7 +159,7 @@ async function logActivity(target: HookTarget, actions: AgentAction[], verdict: 
   try {
     const ctrl = new AbortController()
     const t = setTimeout(() => ctrl.abort(), 1500)
-    const res = await fetch(`${API_BASE}/v1/guard/events`, { method: 'POST', signal: ctrl.signal, headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json', 'User-Agent': 'agentverify-coding-guard/2.1.3' }, body: JSON.stringify({ events: batch.slice(-100) }) })
+    const res = await fetch(`${API_BASE}/v1/guard/events`, { method: 'POST', signal: ctrl.signal, headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json', 'User-Agent': 'agentverify-coding-guard/2.1.4' }, body: JSON.stringify({ events: batch.slice(-100) }) })
     clearTimeout(t)
     if (res.ok && existsSync(QUEUE)) unlinkSync(QUEUE)
   } catch { /* offline: the queue is kept and sent next time */ }

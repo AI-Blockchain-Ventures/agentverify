@@ -1,8 +1,26 @@
 # agentverify
 
-**Execution trust analysis for AI agents — CLI and SDK**
+**Security for AI agents: a guard for Claude Code and Cursor, plus a scanner, CLI and SDK.**
 
-Scan AI agent configurations for security issues, credential exposure, and governance gaps. Saved CLI reports appear in your Agent Verify dashboard when API report save succeeds.
+## Protect your project from your AI coding agent (free)
+
+Run this once in your project folder:
+
+```bash
+npx agentverify@latest protect
+```
+
+From then on, every command, file read, file edit and MCP tool call that Claude Code or Cursor makes is checked before it runs:
+
+- **Blocked:** reading `.env` files and SSH keys, sending secrets to the internet, wiping folders, piping downloads into a shell, force-pushing to main, and the agent changing these settings. It also catches the sneaky versions, like wildcards (`cat .en*`), encoded commands, and the agent writing a small script to read your keys for it.
+- **Asks you first:** installing packages, deploys, pushing to main, CI edits, and MCP tools that delete, pay or send.
+- **Untouched:** normal work like running tests and editing code.
+
+`protect` writes `.claude/settings.json`, `.cursor/hooks.json` and a team rules file, `.agentverify/policy.json`, that you can commit so everyone on the project gets the same rules. Set `AGENTVERIFY_API_KEY` to see every decision on your [Agent Guard dashboard](https://aimodularity.com/agentverify/dashboard/?tab=guard), set company rules once for every developer, and approve risky steps from your phone.
+
+## Scan an agent
+
+Scan AI agent code and configurations for security issues, credential exposure, and governance gaps. Saved CLI reports appear in your Agent Verify dashboard when API report save succeeds.
 
 ## Install
 

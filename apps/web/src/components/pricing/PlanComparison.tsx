@@ -53,7 +53,8 @@ const ROWS: Array<{ group: string; items: Array<[string, Cell, Cell, Cell]> }> =
     items: [
       ['Shared workspace with roles', true, true, true],
       ['Pro features for every member', false, false, true],
-      ['Company rules for every developer’s AI coding agent, set once', false, false, true],
+      ['Company rules for your AI coding agents (your own keys)', true, true, true],
+      ['Company rules applied to every teammate’s AI coding agent, set once', false, false, true],
       ['Onboarding call + priority support', false, false, true],
     ],
   },

@@ -39,9 +39,9 @@ test('State of MCP Security report shows computed numbers and links to servers',
 
 test("What's new page is linked from the homepage announcement", async ({ page }) => {
   await page.goto('./')
-  await page.getByRole('link', { name: /Agent Verify 2\.0 · 124 checks/ }).click()
+  await page.getByRole('link', { name: /Agent Verify 2\.1 · Guard for Claude Code/ }).click()
   await expect(page).toHaveURL(/\/whats-new\/$/)
-  await expect(page.getByRole('heading', { level: 1, name: "What's new in 2.0" })).toBeVisible()
+  await expect(page.getByRole('heading', { level: 1, name: "What's new in 2.1" })).toBeVisible()
 })
 
 test('new homepage examples load into the free scan box', async ({ page }) => {

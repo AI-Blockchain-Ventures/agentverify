@@ -15,8 +15,9 @@
   # Remove trailing slash issues
   RewriteRule ^(.+)/$ /agentverify/$1 [R=301,L]
 
-  # Route everything to index.html
-  RewriteCond %{REQUEST_FILENAME} !-f
-  RewriteCond %{REQUEST_FILENAME} !-d
-  RewriteRule ^ /agentverify/index.html [L]
 </IfModule>
+
+# Anything that is not a real page gets the "Page not found" page with a real 404 status
+# (every page, including /checks/<id> and /mcp/<id>, is a real file in this static export).
+# Sending unknown addresses to the home page with 200 made search engines see duplicate pages.
+ErrorDocument 404 /agentverify/404.html

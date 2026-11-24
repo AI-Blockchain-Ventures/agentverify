@@ -111,4 +111,4 @@ export const PUBLIC_KEY_ROUTE = 'GET /v1/profile-attestation/public-key'
 
 /** Clarifies the profile MAPPING's own "1.0.0-alpha.1" version is unrelated to Agent Verify's own release maturity (requirement 5). Agent Verify itself ships as v2.0.0. */
 export const PROFILE_VERSION_CLARIFICATION =
-  "This is the version of the OWASP Agentic Skills profile mapping itself, not of Agent Verify. Agent Verify is released as v2.0.0."
+  "This is the version of the OWASP Agentic Skills profile mapping itself, not of Agent Verify. Agent Verify itself is a released product (currently version 2.1)."

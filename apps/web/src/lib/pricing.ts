@@ -47,7 +47,7 @@ export const plans: Plan[] = [
     period: '/seat/month',
     description: 'For teams shipping several agents who want one shared place to review them.',
     limits: '2-seat minimum',
-    features: ['Pro features for every member', '300 scans per person each month', 'Add and remove teammates yourself', 'Shared workspace with roles', 'Audit log of security actions', 'Priority support'],
+    features: ['Pro features for every member', '300 scans per person each month', 'Add and remove teammates yourself', 'Company rules applied to every teammate’s AI coding agent', 'Audit log of security actions', 'Priority support'],
     cta: 'Talk to us',
   },
   {

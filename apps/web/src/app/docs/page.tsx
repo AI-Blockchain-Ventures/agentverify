@@ -387,7 +387,7 @@ Content-Type: application/json
 
             <Section id="ci-cd" title="CI/CD & GitHub Actions">
               <p>Run Agent Verify as a required PR check:</p>
-              <CodeBlock>{`- uses: AI-Blockchain-Ventures/agentverify@v1.4.0
+              <CodeBlock>{`- uses: AI-Blockchain-Ventures/agentverify@v2
   with:
     path: ./agents
     api-key: \${{ secrets.AGENTVERIFY_API_KEY }}

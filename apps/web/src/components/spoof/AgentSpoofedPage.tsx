@@ -93,7 +93,8 @@ export function AgentSpoofedPage() {
         return
       }
       const count = data.findings.length
-      const summary = `Scanner returned ${data.verdict} with ${count} finding${count === 1 ? '' : 's'}. The full report is below.`
+      const verdictLabel = data.verdict === 'VERIFIED' ? 'Verified' : data.verdict === 'NOT_VERIFIED' ? 'Not verified' : data.verdict === 'NOT_ASSESSED' ? 'Not assessed' : String(data.verdict)
+      const summary = `Result: ${verdictLabel}, with ${count} finding${count === 1 ? '' : 's'}. The full report is below.`
       setEvents(current => [...current, summary])
       setStatus({ kind: 'done', summary })
       setResult(data as ScanResultType)

@@ -1,15 +1,16 @@
 'use client'
 
 import type { DashboardTab } from '@/types'
+import { NavIcon } from '@/components/layout/NavIcon'
 
 // The 4 most-reached-for destinations, thumb-accessible without opening the drawer. Everything
 // else (Verification Checks, Policies, Integrations, Docs, Settings, Sign out) lives in
 // MobileNavDrawer, opened via "Menu" here — a proper mobile nav pattern, not the desktop
 // sidebar's 8+ items squeezed into a 375px bar.
 const tabs = [
-  { id: 'overview' as DashboardTab, label: 'Dashboard', icon: '◧' },
-  { id: 'scan' as DashboardTab, label: 'Scan', icon: '⌕' },
-  { id: 'reports' as DashboardTab, label: 'Reports', icon: '≡' },
+  { id: 'overview' as DashboardTab, label: 'Dashboard' },
+  { id: 'scan' as DashboardTab, label: 'Scan' },
+  { id: 'reports' as DashboardTab, label: 'Reports' },
 ]
 
 export function BottomNav({ active, onChange, reportBadge, onOpenMenu }: {
@@ -29,7 +30,7 @@ export function BottomNav({ active, onChange, reportBadge, onOpenMenu }: {
             style={{ color: active === tab.id ? '#06B6D4' : 'var(--text-muted)' }}
             className="av-press relative flex flex-col items-center gap-0.5 rounded-lg px-4 py-2 transition-colors hover:opacity-70"
           >
-            <span className="text-lg" aria-hidden="true">{tab.icon}</span>
+            <NavIcon id={tab.id} size={20} />
             <span className="text-xs font-medium">{tab.label}</span>
             {tab.id === 'reports' && reportBadge && reportBadge > 0 ? (
               <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-[#E03E3E] text-xs font-bold text-white">
@@ -44,7 +45,7 @@ export function BottomNav({ active, onChange, reportBadge, onOpenMenu }: {
           style={{ color: 'var(--text-muted)' }}
           className="av-press flex flex-col items-center gap-0.5 rounded-lg px-4 py-2 transition-colors hover:opacity-70"
         >
-          <span className="text-lg" aria-hidden="true">☰</span>
+          <NavIcon id="menu" size={20} />
           <span className="text-xs font-medium">Menu</span>
         </button>
       </div>

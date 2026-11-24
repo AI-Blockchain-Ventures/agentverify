@@ -7,31 +7,32 @@ import Image from 'next/image'
 import type { DashboardTab } from '@/types'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { assetUrl } from '@/lib/assets'
+import { NavIcon } from '@/components/layout/NavIcon'
 
-interface NavItem { id: DashboardTab; label: string; icon: string }
+interface NavItem { id: DashboardTab; label: string }
 interface NavSection { label: string; items: NavItem[] }
 
 const SECTIONS: NavSection[] = [
   { label: 'Overview', items: [
-    { id: 'overview', label: 'Dashboard', icon: '◧' },
-    { id: 'agents', label: 'Agents', icon: '▤' },
+    { id: 'overview', label: 'Dashboard' },
+    { id: 'agents', label: 'Agents' },
   ] },
   { label: 'Verify', items: [
-    { id: 'scan', label: 'Scan', icon: '⌕' },
-    { id: 'reports', label: 'Reports', icon: '≡' },
-    { id: 'checks', label: 'Verification Checks', icon: '✓' },
-    { id: 'policies', label: 'Policies', icon: '▣' },
+    { id: 'scan', label: 'Scan' },
+    { id: 'reports', label: 'Reports' },
+    { id: 'checks', label: 'Verification Checks' },
+    { id: 'policies', label: 'Policies' },
   ] },
   { label: 'Platform', items: [
-    { id: 'workspace', label: 'Workspace', icon: '▣' },
-    { id: 'billing', label: 'Billing / Plan', icon: '◆' },
-    { id: 'integrations', label: 'Integrations', icon: '⇄' },
-    { id: 'github', label: 'Repos & PR checks', icon: '⑂' },
-    { id: 'guard', label: 'Agent Guard', icon: '⛨' },
-    { id: 'redteam', label: 'Injection tests', icon: '⚑' },
-    { id: 'profiles', label: 'Public profiles', icon: '✓' },
-    { id: 'api', label: 'API / CLI', icon: '◈' },
-    { id: 'settings', label: 'Settings', icon: '⚙' },
+    { id: 'workspace', label: 'Workspace' },
+    { id: 'billing', label: 'Billing / Plan' },
+    { id: 'integrations', label: 'Integrations' },
+    { id: 'github', label: 'Repos & PR checks' },
+    { id: 'guard', label: 'Agent Guard' },
+    { id: 'redteam', label: 'Injection tests' },
+    { id: 'profiles', label: 'Public profiles' },
+    { id: 'api', label: 'API / CLI' },
+    { id: 'settings', label: 'Settings' },
   ] },
 ]
 
@@ -106,7 +107,7 @@ export function MobileNavDrawer({
                     }}
                     className="flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-sm font-semibold"
                   >
-                    <span className="w-4 text-center" aria-hidden="true">{item.icon}</span>
+                    <NavIcon id={item.id} />
                     <span>{item.label}</span>
                     {item.id === 'reports' && reportBadge && reportBadge > 0 ? (
                       <span className="ml-auto rounded-full bg-[#E03E3E] px-2 py-0.5 text-[11px] font-bold text-white">{reportBadge > 9 ? '9+' : reportBadge}</span>

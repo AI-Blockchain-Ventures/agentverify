@@ -163,7 +163,7 @@ test('team rules file is found from a sub-folder; broken JSON falls back to the 
 test('the hook command: blocks with a reason, stays silent on allow, never breaks on bad input', () => {
   const cli = new URL('../dist/cli.js', import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1')
   const dir = mkdtempSync(join(tmpdir(), 'av-hook-'))
-  const env = { ...process.env, AGENTVERIFY_API_KEY: '', AGENTVERIFY_GUARD_LOG: 'off' }
+  const env = { ...process.env, HOME: join(dir, 'home'), USERPROFILE: join(dir, 'home'), AGENTVERIFY_API_KEY: '', AGENTVERIFY_GUARD_LOG: 'off' }
   const run = (target, input) => spawnSync(process.execPath, [cli, 'hook', target], { input: typeof input === 'string' ? input : JSON.stringify({ cwd: dir, ...input }), env, encoding: 'utf8' })
   const deny = run('claude-code', { tool_name: 'Read', tool_input: { file_path: join(dir, '.env') } })
   assert.equal(deny.status, 0)
@@ -211,7 +211,7 @@ test('in auto or bypass mode, a question for a person becomes a block (unless th
 
   const cli = new URL('../dist/cli.js', import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1')
   const dir = mkdtempSync(join(tmpdir(), 'av-unatt-'))
-  const env = { ...process.env, AGENTVERIFY_API_KEY: '', AGENTVERIFY_GUARD_LOG: 'off' }
+  const env = { ...process.env, HOME: join(dir, 'home'), USERPROFILE: join(dir, 'home'), AGENTVERIFY_API_KEY: '', AGENTVERIFY_GUARD_LOG: 'off' }
   const run = mode => spawnSync(process.execPath, [cli, 'hook', 'claude-code'], { input: JSON.stringify({ cwd: dir, permission_mode: mode, tool_name: 'PowerShell', tool_input: { command: 'npm install lodash' } }), env, encoding: 'utf8' })
   assert.equal(JSON.parse(run('auto').stdout).hookSpecificOutput.permissionDecision, 'deny')
   assert.equal(JSON.parse(run('default').stdout).hookSpecificOutput.permissionDecision, 'ask')
@@ -238,7 +238,7 @@ test('Cursor: answers match its schema, edits are checked through preToolUse, ba
   assert.ok(new RegExp(c.hooks.preToolUse[0].matcher).test('Write'))
 
   const cli = new URL('../dist/cli.js', import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1')
-  const env = { ...process.env, AGENTVERIFY_API_KEY: '', AGENTVERIFY_GUARD_LOG: 'off' }
+  const env = { ...process.env, HOME: join(dir, 'home'), USERPROFILE: join(dir, 'home'), AGENTVERIFY_API_KEY: '', AGENTVERIFY_GUARD_LOG: 'off' }
   const run = input => spawnSync(process.execPath, [cli, 'hook', 'cursor'], { input, env, encoding: 'utf8' })
   assert.deepEqual(JSON.parse(run('not json').stdout), { permission: 'allow' })
   const blocked = run(JSON.stringify({ hook_event_name: 'preToolUse', cwd: dir, tool_name: 'Write', tool_input: { file_path: join(dir, '.agentverify', 'policy.json') } }))
@@ -255,7 +255,7 @@ test('inside Cursor, the Claude Code hook still answers but leaves the recording
   assert.equal(cursorHooksInstalled(join(dir, 'src')), true)
   assert.equal(fromClaudeCode({ tool_name: 'Grep', tool_input: { file_path: '.env', pattern: 'KEY' } })[0].path, '.env')
   const cli = new URL('../dist/cli.js', import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1')
-  const env = { ...process.env, AGENTVERIFY_API_KEY: '', AGENTVERIFY_GUARD_LOG: 'off' }
+  const env = { ...process.env, HOME: join(dir, 'home'), USERPROFILE: join(dir, 'home'), AGENTVERIFY_API_KEY: '', AGENTVERIFY_GUARD_LOG: 'off' }
   const r = spawnSync(process.execPath, [cli, 'hook', 'claude-code'], { input: JSON.stringify({ cursor_version: '3.31.15', cwd: dir, hook_event_name: 'preToolUse', tool_name: 'Shell', tool_input: { command: 'Remove-Item -Recurse -Force *' } }), env, encoding: 'utf8' })
   assert.equal(JSON.parse(r.stdout).hookSpecificOutput.permissionDecision, 'deny')
 })

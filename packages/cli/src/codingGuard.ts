@@ -98,6 +98,68 @@ function globHitsSecret(command: string): boolean {
   return false
 }
 
+/** Commands that send something over the network. */
+const NETWORK_COMMAND = /\b(curl|wget|http|https|httpie|xh|Invoke-WebRequest|iwr|Invoke-RestMethod|irm|nc|ncat|netcat|scp|sftp|ftp|telnet)\b/i
+
+/**
+ * Key formats that are unmistakably real secrets, and the services each one is meant for. Sending a key to its own
+ * service (e.g. testing an OpenAI key against api.openai.com) is normal; sending it anywhere else is how keys leak.
+ */
+const LITERAL_SECRETS: { re: RegExp; services: string[] }[] = [
+  { re: /\bsk-ant-[A-Za-z0-9_-]{20,}/, services: ['anthropic.com'] },
+  { re: /\bsk-(proj-|svcacct-|admin-)?[A-Za-z0-9_-]{20,}/, services: ['openai.com', 'anthropic.com'] },
+  { re: /\b(ghp|gho|ghu|ghs|ghr)_[A-Za-z0-9]{30,}|\bgithub_pat_[A-Za-z0-9_]{40,}/, services: ['github.com', 'githubusercontent.com'] },
+  { re: /\bglpat-[A-Za-z0-9_-]{20,}/, services: ['gitlab.com'] },
+  { re: /\b(AKIA|ASIA)[0-9A-Z]{16}\b/, services: ['amazonaws.com'] },
+  { re: /\b(sk|rk)_(live|test)_[A-Za-z0-9]{20,}/, services: ['stripe.com'] },
+  { re: /\bxox[abprs]-[A-Za-z0-9-]{10,}/, services: ['slack.com'] },
+  { re: /\bAIza[0-9A-Za-z_-]{35}\b/, services: ['googleapis.com', 'google.com'] },
+  { re: /\bnpm_[A-Za-z0-9]{36}\b/, services: ['npmjs.org', 'npmjs.com'] },
+  { re: /\bSG\.[A-Za-z0-9_-]{22}\.[A-Za-z0-9_-]{43}\b/, services: ['sendgrid.com'] },
+  { re: /\bav_[A-Za-z0-9_-]{20,}/, services: ['agentverify.workers.dev', 'aimodularity.com'] },
+  { re: /-----BEGIN ([A-Z]+ )?PRIVATE KEY-----/, services: [] },
+]
+
+/** This computer: sending a key to your own local server is not a leak. */
+const LOCAL_HOST = /^(localhost|127\.\d+\.\d+\.\d+|0\.0\.0\.0|\[?::1\]?|host\.docker\.internal|[\w.-]+\.localhost)$/i
+
+/** curl/wget options that never take a value, so the next word is not skipped. */
+const FLAG_ONLY = /^-([sSLkivfIqOJ#]+|-(silent|show-error|location|insecure|include|verbose|fail|head|compressed|quiet|remote-name|no-check-certificate|http1\.1|http2))$/
+const BARE_HOST = /^(\[[0-9a-f:]+\]|\d{1,3}(?:\.\d{1,3}){3}|localhost|[a-z0-9][a-z0-9.-]{0,252}\.(?:com|net|org|io|dev|app|ai|co|sh|xyz|site|me|info|biz|us|uk|de|ru|cn|cc|tk|top|online|cloud|run|link|page|so|gg|tv))(?::\d+)?(?:[/?#].*)?$/i
+
+/** The hosts a command talks to: web addresses, plus bare "host" / "host:port" arguments to curl, nc, scp and friends. */
+function commandHosts(command: string): string[] {
+  const hosts = new Set<string>()
+  for (const m of command.matchAll(/\b(?:https?|ftp|wss?):\/\/(?:[^\s/@'"`]+@)?(\[[^\]\s]+\]|[^\s/:?#'"`]+)/gi)) hosts.add(m[1].toLowerCase())
+  // Addresses written without "https://" (curl example.com/x, nc 1.2.3.4 9000, scp f user@host:path): read word by word.
+  const words = command.slice(0, 4000).split(/\s+/).map(w => w.replace(/^['"`]+|['"`;,)]+$/g, ''))
+  let inNetwork = false
+  for (let i = 0; i < words.length; i++) {
+    const w = words[i]
+    if (/^(curl|wget|http|https|xh|nc|ncat|netcat|telnet|scp|sftp|ftp)$/i.test(w)) { inNetwork = true; continue }
+    if (!inNetwork) continue
+    if (/^[|;&]+$/.test(w)) { inNetwork = false; continue }
+    if (w.startsWith('-')) { if (!w.includes('=') && !FLAG_ONLY.test(w)) i++; continue }
+    const remote = w.match(/^[\w.-]+@([\w.-]+):/)
+    if (remote) { hosts.add(remote[1].toLowerCase()); continue }
+    const bare = w.match(BARE_HOST)
+    if (bare) hosts.add(bare[1].toLowerCase())
+  }
+  return [...hosts]
+}
+
+const hostIsService = (host: string, services: string[]) => services.some(s => host === s || host.endsWith('.' + s))
+
+/** True when a network command carries a real-looking key to somewhere other than that key's own service or this computer. */
+export function sendsLiteralSecretElsewhere(command: string): boolean {
+  const keys = LITERAL_SECRETS.filter(k => k.re.test(command))
+  if (!keys.length) return false
+  const hosts = commandHosts(command).filter(h => !LOCAL_HOST.test(h))
+  // A key in a network command with no recognisable destination: treat the destination as unknown.
+  if (!hosts.length) return commandHosts(command).length === 0
+  return keys.some(k => hosts.some(h => !hostIsService(h, k.services)))
+}
+
 const SECRET_FILE_SAFE = /\.(example|sample|template|dist)$|\.env\.(example|sample|template|defaults)$|id_\w+\.pub$/i
 const GUARD_CONFIG = /(^|[\\/])(\.claude[\\/]settings(\.local)?\.json|\.cursor[\\/]hooks\.json|\.agentverify[\\/][^\\/]+)$/i
 
@@ -132,6 +194,7 @@ export const DEFAULT_RULES: Rule[] = [
   { id: 'dump-env', kind: 'shell', pattern: /(^|[;&|]\s*)(printenv|env|set|export\s+-p|(Get-ChildItem|gci|dir|ls|Get-Item)\s+env:\\?\*?)\s*($|[|>;&])|\[Environment\]::GetEnvironmentVariables\(\)/i, decision: 'ask', reason: 'prints every environment variable, which usually include API keys' },
   { id: 'exfil-upload', kind: 'shell', pattern: /\b(curl|wget|http|httpie|Invoke-WebRequest|iwr|nc|ncat|netcat)\b[^;&]*(\s(-d|--data(-\w+)?|-F|--form|-T|--upload-file|--post-file|--body-file|-InFile)\b|\s<\s*\S)/i, decision: 'ask', reason: 'sends data from this computer to a web address' },
   { id: 'exfil-secret', kind: 'shell', pattern: /(\$\{?[A-Z0-9_]*(KEY|TOKEN|SECRET|PASSWORD|PASSWD|CREDENTIAL)[A-Z0-9_]*\}?|\.env\b|id_rsa|\.aws[\\/]credentials)[^;&]*\|\s*(curl|wget|nc|ncat|http)\b|\b(curl|wget)\b[^;&]*(\$\{?[A-Z0-9_]*(KEY|TOKEN|SECRET|PASSWORD)[A-Z0-9_]*\}?)/i, decision: 'deny', reason: 'sends a secret or key to a web address' },
+  { id: 'exfil-secret-literal', kind: 'shell', pattern: NETWORK_COMMAND, test: sendsLiteralSecretElsewhere, decision: 'deny', reason: 'sends a key written into the command to a web address that is not that key\'s own service' },
 
   // --- Supply chain and system changes ---
   { id: 'install-package', kind: 'shell', pattern: /\b(npm|pnpm|bun)\s+(i|install|add)\b(\s+--?[\w-]+)*\s+[@a-z0-9]|\byarn\s+add\b|\b(pip3?|uv\s+pip|poetry|pipx)\s+(install|add)\s+(?!-r\b|-e\s+\.)\S|\bcargo\s+(add|install)\b|\bgo\s+(get|install)\b|\bgem\s+install\b|\bbrew\s+install\b|\b(apt|apt-get|yum|dnf|choco|winget)\s+install\b/i, decision: 'ask', reason: 'installs a new package, which runs code from the internet' },
@@ -395,6 +458,16 @@ export function previewAction(a: AgentAction): string {
     .replace(/\b(sk-(proj-|ant-)?[A-Za-z0-9_-]{8})[A-Za-z0-9_-]+/g, '$1****')
     .replace(/\b(gh[pousr]_[A-Za-z0-9]{4})[A-Za-z0-9]+/g, '$1****')
     .replace(/\b(AKIA[0-9A-Z]{4})[0-9A-Z]+/g, '$1****')
+    .replace(/\b(github_pat_[A-Za-z0-9]{4})[A-Za-z0-9_]+/g, '$1****')
+    .replace(/\b(glpat-[A-Za-z0-9]{4})[A-Za-z0-9_-]+/g, '$1****')
+    .replace(/\b((sk|rk)_(live|test)_[A-Za-z0-9]{4})[A-Za-z0-9]+/g, '$1****')
+    .replace(/\b(xox[abprs]-[A-Za-z0-9]{4})[A-Za-z0-9-]+/g, '$1****')
+    .replace(/\b(AIza[0-9A-Za-z_-]{4})[0-9A-Za-z_-]+/g, '$1****')
+    .replace(/\b(npm_[A-Za-z0-9]{4})[A-Za-z0-9]+/g, '$1****')
+    .replace(/\b(SG\.[A-Za-z0-9_-]{4})[A-Za-z0-9_.-]+/g, '$1****')
+    .replace(/\b(av_[A-Za-z0-9]{4})[A-Za-z0-9_-]+/g, '$1****')
+    .replace(/(-----BEGIN ([A-Z]+ )?PRIVATE KEY-----)[\s\S]*?(-----END ([A-Z]+ )?PRIVATE KEY-----|$)/g, '$1 **** ')
+    .replace(/(\bBearer\s+)[A-Za-z0-9._~+/=-]{12,}/gi, '$1****')
     .replace(/((?:KEY|TOKEN|SECRET|PASSWORD)[A-Z0-9_]*\s*=\s*)\S+/gi, '$1****')
   return `${a.kind}: ${s}`.slice(0, 300)
 }

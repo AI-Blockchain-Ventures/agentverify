@@ -2,6 +2,14 @@
 
 All notable changes to the `agentverify` CLI/SDK package are documented here.
 
+## [2.1.6] - 2026-11-24
+
+### Added
+- New guard rule `exfil-secret-literal` (blocks): a network command (curl, wget, Invoke-WebRequest/RestMethod, nc, scp and others) that carries a key typed straight into it (OpenAI, Anthropic, GitHub, GitLab, AWS, Stripe, Slack, Google, npm, SendGrid, Agent Verify, or a private key) to anywhere other than that key's own service or this computer. Sending a key to its own service (e.g. api.openai.com) or to localhost is still allowed.
+
+### Changed
+- The activity log masks more key formats: GitHub fine-grained tokens, GitLab, Stripe, Slack, Google, npm, SendGrid and Agent Verify keys, private key blocks, and any `Bearer` token.
+
 ## [2.1.5] - 2026-11-24
 
 ### Added

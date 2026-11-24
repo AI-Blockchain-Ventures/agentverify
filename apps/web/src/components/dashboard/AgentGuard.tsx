@@ -156,7 +156,7 @@ export function AgentGuard({ user }: { user: User }) {
           <p style={{ color: 'var(--text-muted)' }} className="mt-3 text-xs">Works with any JavaScript or TypeScript agent: LangChain.js, the OpenAI Agents SDK, the Claude Agent SDK, or your own tool functions.</p>
           <h3 style={{ color: 'var(--text-primary)' }} className="mt-6 text-base font-semibold">Guard your team&apos;s AI coding agents</h3>
           <p style={{ color: 'var(--text-muted)' }} className="mt-1 text-sm">Using Claude Code or Cursor? One command makes every shell command, file read, file edit and MCP tool call go through Agent Verify first. It blocks reading .env files and keys, sending secrets out, deleting whole folders and force-pushing to main, and asks before installs and deploys. Set AGENTVERIFY_API_KEY to see every action here.</p>
-          <div className="mt-4"><CodeBlock code={'npx agentverify protect'} label="Run in your project folder" /></div>
+          <div className="mt-4"><CodeBlock code={'npx agentverify@latest protect'} label="Run in your project folder" /></div>
         </section>
       ) : (
         <section style={card} className="rounded-3xl p-5">

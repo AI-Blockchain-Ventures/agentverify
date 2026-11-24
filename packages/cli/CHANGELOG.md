@@ -2,6 +2,16 @@
 
 All notable changes to the `agentverify` CLI/SDK package are documented here.
 
+## [2.1.2] - 2026-11-24
+
+### Fixed
+
+- `protect` only points the hooks at an installed `agentverify` when it reports this exact version. An old global
+  install (for example 1.4.0, which has no `hook` command) is no longer wired in, which would have made the guard
+  silently do nothing. `protect` now says when an older version is installed and how to update it.
+- Docs and the dashboard now say `npx agentverify@latest protect`, so `npx` fetches the newest version even when an
+  older one is installed globally. Found in a live test.
+
 ## [2.1.1] - 2026-11-24
 
 ### Fixed

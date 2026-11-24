@@ -41,6 +41,7 @@ export const BUILT_IN_RULES: Array<{ group: string; rules: Array<{ id: string; d
     { id: 'shell-secret-glob', decision: 'deny', label: 'Wildcards that match secret files (cat .en*)' },
     { id: 'write-secret-file', decision: 'ask', label: 'Changing a secret file' },
     { id: 'exfil-secret', decision: 'deny', label: 'Sending a secret or key to a web address' },
+    { id: 'exfil-secret-literal', decision: 'deny', label: 'Sending a key typed into a command to a site that is not its own service' },
     { id: 'exfil-upload', decision: 'ask', label: 'Uploading data from the computer' },
     { id: 'dump-env', decision: 'ask', label: 'Listing every environment variable' },
     { id: 'dump-env-code', decision: 'ask', label: 'One-line scripts that print every environment variable' },

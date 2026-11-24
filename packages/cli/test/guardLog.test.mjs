@@ -106,14 +106,14 @@ test('end to end: the hook saves blocks, asks and allows locally with no account
   assert.ok(existsSync(logFile), 'the log is created in the home folder')
   const raw = readFileSync(logFile, 'utf8')
   assert.doesNotMatch(raw, /abcdefghijklmnopqrstuvwxyz123456/, 'secrets are masked before they are saved')
-  assert.match(raw, /sk-proj-abcdefgh\*\*\*\*/)
+  assert.match(raw, /Bearer \*{4,}/, 'a Bearer token is fully masked')
   const decisions = raw.trim().split('\n').map(l => JSON.parse(l).decision)
-  // A key typed straight into a command is not blocked today (only secrets from files and env vars are); it is still masked here.
-  assert.deepEqual(decisions, ['blocked', 'allowed', 'asked', 'allowed'])
+  // The last command sends a key typed into it to an unknown site: blocked by exfil-secret-literal.
+  assert.deepEqual(decisions, ['blocked', 'allowed', 'asked', 'blocked'])
 
   const shown = spawnSync(process.execPath, [cli, 'log'], { env, encoding: 'utf8' })
   assert.equal(shown.status, 0)
-  assert.match(shown.stdout, /1 blocked · 1 asked · 2 allowed/)
+  assert.match(shown.stdout, /2 blocked · 1 asked · 1 allowed/)
   assert.match(shown.stdout, /Blocked  Claude Code · av-log-e2e-\w+ · /)
   assert.match(shown.stdout, /\.env/)
   assert.match(shown.stdout, /Asked you  Cursor · /)

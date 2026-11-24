@@ -150,9 +150,9 @@ agentverify --version`}</CodeBlock>
             <Section id="coding-agents" title="Coding Agents (Claude Code & Cursor)">
               <p>AI coding agents run commands, read files and install packages on a developer&apos;s machine, often with nobody watching each step. Agent Verify checks each action <strong>before it happens</strong> and either lets it run, asks a person, or blocks it. Normal work (running tests, reading and editing code, committing) goes through untouched.</p>
               <CodeBlock>{`cd your-project
-npx agentverify protect              # Claude Code and Cursor
-npx agentverify protect claude-code  # just one of them
-npx agentverify protect --global     # every project on this machine`}</CodeBlock>
+npx agentverify@latest protect              # Claude Code and Cursor
+npx agentverify@latest protect claude-code  # just one of them
+npx agentverify@latest protect --global     # every project on this machine`}</CodeBlock>
               <p>This adds a hook to <code>.claude/settings.json</code> and <code>.cursor/hooks.json</code>, and creates a rules file at <code>.agentverify/policy.json</code>. Commit all three so the whole team is covered. Start a new agent session afterwards: agents load hooks when a session starts.</p>
               <p>What it does out of the box:</p>
               <table className="w-full border-collapse text-xs">

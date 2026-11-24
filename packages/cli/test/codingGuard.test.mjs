@@ -504,3 +504,26 @@ test('code that puts a secret file name in a variable and then reads it needs a 
   const v = combine(fromCursor({ hook_event_name: 'preToolUse', tool_name: 'Write', tool_input: { file_path: 'show.js', content: fromLiveTest } }).map(a => evaluate(a)))
   assert.equal(JSON.parse(cursorResponse(v, 'preToolUse')).permission, 'deny')
 })
+
+// Found in the live test: an old global install (1.4.0, no "hook" command) must never be wired into the hooks.
+test('protect only points the hooks at an installed agentverify when it is this exact version', async () => {
+  const { hookCommand, installedVersion } = await import('../dist/codingGuardCli.mjs')
+  const savedPath = process.env.PATH
+  const savedArgv = process.argv[1]
+  const dir = mkdtempSync(join(tmpdir(), 'av-bin-'))
+  for (const n of ['agentverify', 'agentverify.cmd']) writeFileSync(join(dir, n), '')
+  try {
+    process.argv[1] = '/usr/lib/node_modules/agentverify/dist/cli.js'
+    process.env.PATH = dir
+    assert.equal(hookCommand('2.1.2', () => '1.4.0'), 'npx -y agentverify@2.1.2', 'an old global version is not used')
+    assert.equal(hookCommand('2.1.2', () => null), 'npx -y agentverify@2.1.2', 'one that does not answer is not used')
+    assert.equal(hookCommand('2.1.2', () => '2.1.2'), 'agentverify', 'the same version is used (faster)')
+    process.env.PATH = ''
+    assert.equal(hookCommand('2.1.2', () => '2.1.2'), 'npx -y agentverify@2.1.2', 'nothing installed: pinned npx')
+    assert.equal(installedVersion(() => 'agentverify v1.4.0\n'), '1.4.0')
+    assert.equal(installedVersion(() => null), null)
+  } finally {
+    process.env.PATH = savedPath
+    process.argv[1] = savedArgv
+  }
+})

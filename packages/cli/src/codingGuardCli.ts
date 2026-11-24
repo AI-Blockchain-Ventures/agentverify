@@ -7,6 +7,7 @@
  */
 import { existsSync, mkdirSync, readFileSync, writeFileSync, appendFileSync, statSync, unlinkSync, renameSync } from 'fs'
 import { createHash } from 'crypto'
+import { spawnSync } from 'child_process'
 import { homedir, hostname } from 'os'
 import { dirname, join, resolve, basename } from 'path'
 import { CURSOR_WRITE_TOOLS, wantsRemoteApproval, buildPolicy, claudeCodeResponse, combine, cursorResponse, evaluate, forUnattended, fromClaudeCode, fromCursor, previewAction, type AgentAction, type CompanyPolicyFile, type PolicyFile, type Verdict } from './codingGuard'
@@ -70,7 +71,7 @@ export async function loadCompanyPolicy(opts: { now?: number; fetchImpl?: typeof
   const ctrl = new AbortController()
   const timer = setTimeout(() => ctrl.abort(), 1500)
   try {
-    const res = await (opts.fetchImpl ?? fetch)(`${API_BASE}/v1/guard/policy`, { signal: ctrl.signal, headers: { Authorization: `Bearer ${key}`, 'User-Agent': 'agentverify-coding-guard/2.1.1' } })
+    const res = await (opts.fetchImpl ?? fetch)(`${API_BASE}/v1/guard/policy`, { signal: ctrl.signal, headers: { Authorization: `Bearer ${key}`, 'User-Agent': 'agentverify-coding-guard/2.1.2' } })
     if (res.ok) {
       const body = (await res.json()) as { policy?: CompanyPolicyFile | null }
       const policy = body && typeof body.policy === 'object' ? body.policy ?? null : null
@@ -100,7 +101,7 @@ export async function requestRemoteApproval(req: { agent: string; tool: string; 
   const f = opts.fetchImpl ?? fetch
   const now = opts.now ?? Date.now
   const sleep = opts.sleep ?? (ms => new Promise(r => setTimeout(r, ms)))
-  const headers = { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json', 'User-Agent': 'agentverify-coding-guard/2.1.1' }
+  const headers = { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json', 'User-Agent': 'agentverify-coding-guard/2.1.2' }
   const call = async (path: string, init: RequestInit = {}) => {
     const ctrl = new AbortController()
     const t = setTimeout(() => ctrl.abort(), 5000)
@@ -158,7 +159,7 @@ async function logActivity(target: HookTarget, actions: AgentAction[], verdict: 
   try {
     const ctrl = new AbortController()
     const t = setTimeout(() => ctrl.abort(), 1500)
-    const res = await fetch(`${API_BASE}/v1/guard/events`, { method: 'POST', signal: ctrl.signal, headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json', 'User-Agent': 'agentverify-coding-guard/2.1.1' }, body: JSON.stringify({ events: batch.slice(-100) }) })
+    const res = await fetch(`${API_BASE}/v1/guard/events`, { method: 'POST', signal: ctrl.signal, headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json', 'User-Agent': 'agentverify-coding-guard/2.1.2' }, body: JSON.stringify({ events: batch.slice(-100) }) })
     clearTimeout(t)
     if (res.ok && existsSync(QUEUE)) unlinkSync(QUEUE)
   } catch { /* offline: the queue is kept and sent next time */ }
@@ -247,14 +248,27 @@ export function hasGlobalInstall(pathEnv = process.env.PATH ?? ''): boolean {
   return pathEnv.split(process.platform === 'win32' ? ';' : ':').some(dir => dir && names.some(n => existsSync(join(dir, n))))
 }
 
+/** The version the `agentverify` found on the PATH reports, or null (none, or it didn't answer in time). */
+export function installedVersion(run: (cmd: string) => string | null = cmd => {
+  const r = spawnSync(cmd, ['--version'], { shell: true, timeout: 5000, encoding: 'utf8', windowsHide: true })
+  return r.status === 0 ? `${r.stdout ?? ''}` : null
+}): string | null {
+  const out = run('agentverify')
+  const m = out?.match(/(\d+\.\d+\.\d+)/)
+  return m ? m[1] : null
+}
+
 /**
- * The command the hooks run. A missing command would make the coding agent skip the check silently, so
- * it is the installed CLI only when one is really on the PATH; otherwise a version-pinned npx call.
+ * The command the hooks run. A missing or old command would make the coding agent skip the check silently (an
+ * old global install has no "hook" command), so it is the installed CLI only when it is this exact version;
+ * otherwise a version-pinned npx call.
  */
-export function hookCommand(version: string): string {
-  if (process.env.AGENTVERIFY_HOOK_NPX === '1') return `npx -y agentverify@${version}`
+export function hookCommand(version: string, installed: () => string | null = installedVersion): string {
+  const pinned = `npx -y agentverify@${version}`
+  if (process.env.AGENTVERIFY_HOOK_NPX === '1') return pinned
   const runningFromNpx = /[\\/]_npx[\\/]/.test(process.argv[1] ?? '')
-  return !runningFromNpx && hasGlobalInstall() ? 'agentverify' : `npx -y agentverify@${version}`
+  if (runningFromNpx || !hasGlobalInstall()) return pinned
+  return installed() === version ? 'agentverify' : pinned
 }
 
 /** Long enough for a person to answer an approval (the guard itself waits 120 seconds at most). */
@@ -327,6 +341,9 @@ export async function runProtect(argv: string[], version: string, print: (s: str
   const which = argv.find(a => a === 'claude-code' || a === 'cursor')
   const root = global ? homedir() : process.cwd()
   const cmd = hookCommand(version)
+  // An old global install would otherwise go unnoticed (and makes "npx agentverify" run it instead of the latest).
+  const found = cmd === 'agentverify' || !hasGlobalInstall() ? null : installedVersion()
+  const oldGlobal = found && found !== version ? found : null
   const done: string[] = []
   try {
     if (!which || which === 'claude-code') { const r = installClaudeCode(root, cmd); done.push(`${r.changed ? 'Added' : 'Already set up'}: Claude Code  (${r.path})`) }
@@ -349,7 +366,9 @@ export async function runProtect(argv: string[], version: string, print: (s: str
     '',
     `Try it:  echo '{"tool_name":"Bash","tool_input":{"command":"cat .env"}}' | ${cmd} hook claude-code`,
     process.env.AGENTVERIFY_API_KEY ? 'Activity is sent to your Agent Guard dashboard.' : 'Set AGENTVERIFY_API_KEY to see every action in your Agent Guard dashboard.',
-    cmd === 'agentverify' ? '' : 'Tip: run "npm install -g agentverify" so each check starts faster, then run protect again.',
+    cmd === 'agentverify' ? '' : oldGlobal
+      ? `Note: an older Agent Verify (${oldGlobal}) is installed on this computer. The hooks use ${version} instead. To update it: npm install -g agentverify@latest`
+      : 'Tip: run "npm install -g agentverify" so each check starts faster, then run protect again.',
     '',
   ].join('\n'))
   return 0

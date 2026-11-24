@@ -3,6 +3,13 @@
 All notable user-facing changes to Agent Verify are documented here. The CLI/SDK package has its
 own more granular changelog at [packages/cli/CHANGELOG.md](./packages/cli/CHANGELOG.md).
 
+## [2.1.2] - 2026-11-24
+
+### Fixed
+
+- **Coding-agent guard setup:** on computers with an old Agent Verify installed, `protect` no longer points the hooks at it
+  (it would have silently done nothing), and it says how to update. Instructions now say `npx agentverify@latest protect`.
+
 ## [2.1.1] - 2026-11-24
 
 ### Fixed

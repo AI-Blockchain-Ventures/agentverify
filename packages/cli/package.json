@@ -1,6 +1,6 @@
 {
   "name": "agentverify",
-  "version": "2.1.1",
+  "version": "2.1.2",
   "mcpName": "io.github.AI-Blockchain-Ventures/agentverify",
   "description": "CLI and SDK for Agent Verify — execution trust analysis for AI agents",
   "bin": {
